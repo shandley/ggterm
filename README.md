@@ -57,8 +57,35 @@ function Dashboard({ data }) {
 }
 ```
 
+## Interactive REPL
+
+Explore data and build plots interactively:
+
+```bash
+npx ggterm
+```
+
+```
+ggterm> .data sample 30
+Generated 30 sample rows with columns: x, y, group, size
+
+ggterm> gg(data).aes({x: "x", y: "y", color: "group"}).geom(geom_point())
+
+  My First Plot
+  40 ┤                                    ●
+     │                        ●       ●
+  30 ┤    ●   ●       ●   ●       ●
+     │        ●   ●           ●       ●
+  20 ┤●           ●   ●   ●
+     │    ●           ●
+  10 ┤
+     └────────────────────────────────────
+      0    5    10   15   20   25   30
+```
+
 ## Features
 
+- **Interactive REPL**: Build plots interactively with `npx ggterm`
 - **Multiple Renderers**: Braille (high-res), Block (compatible), Sixel/Kitty (pixel-perfect)
 - **Grammar Layers**: Data, Aesthetics, Geometries, Statistics, Scales, Coordinates, Facets, Themes
 - **Streaming Data**: Real-time updates with `plot.push(newData)`
@@ -84,6 +111,7 @@ bun add @ggterm/core @ggterm/opentui
 ## Documentation
 
 - [Quick Start](./docs/QUICKSTART.md) - Get started in 5 minutes
+- [Interactive REPL](./docs/REPL.md) - Interactive plotting guide
 - [Gallery](./docs/GALLERY.md) - Visual examples of all plot types
 - [API Reference](./docs/API.md) - Full API documentation
 - [Architecture](./docs/ARCHITECTURE.md) - Technical design

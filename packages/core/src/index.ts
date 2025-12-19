@@ -322,3 +322,7 @@ export type {
   DiffResult,
   DiffOptions,
 } from './performance'
+
+// REPL (Phase 8)
+export { GGTermREPL, startREPL } from './repl'
+export type { REPLOptions, REPLState } from './repl'
