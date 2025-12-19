@@ -90,7 +90,7 @@ ggterm> gg(data).aes({x: "x", y: "y", color: "group"}).geom(geom_point())
 - **Grammar Layers**: Data, Aesthetics, Geometries, Statistics, Scales, Coordinates, Facets, Themes
 - **Streaming Data**: Real-time updates with `plot.push(newData)`
 - **Terminal Detection**: Automatic color capability detection and graceful degradation
-- **Framework Support**: React, Solid.js, Svelte components and reactive stores
+- **Framework Support**: React, Solid.js, Svelte, Vue 3 components and composables
 
 ## Packages
 
@@ -99,6 +99,7 @@ ggterm> gg(data).aes({x: "x", y: "y", color: "group"}).geom(geom_point())
 | `@ggterm/core` | Grammar engine, scales, statistics |
 | `@ggterm/solid` | Solid.js components and primitives |
 | `@ggterm/svelte` | Svelte components and stores |
+| `@ggterm/vue` | Vue 3 components and composables |
 | `@ggterm/render-braille` | Braille dot matrix renderer (2x4 per cell) |
 | `@ggterm/render-block` | Block character renderer (universal compatibility) |
 | `@ggterm/render-sixel` | Sixel/Kitty graphics protocol renderer |
