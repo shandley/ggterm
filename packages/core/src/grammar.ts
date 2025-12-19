@@ -54,6 +54,15 @@ export class GGPlot {
   }
 
   /**
+   * Add an annotation layer
+   * Annotations are geometry layers with fixed positions (not mapped from data)
+   */
+  annotate(annotation: Geom): this {
+    this._geoms.push(annotation)
+    return this
+  }
+
+  /**
    * Add a statistical transformation
    */
   stat(stat: Stat): this {

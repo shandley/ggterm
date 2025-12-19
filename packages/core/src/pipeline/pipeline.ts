@@ -4,7 +4,7 @@
  * Orchestrates the full flow from PlotSpec to rendered output.
  */
 
-import type { AestheticMapping, DataSource, Facet, PlotSpec, RenderOptions, RGBA } from '../types'
+import type { AestheticMapping, DataSource, Facet, Geom, PlotSpec, RenderOptions, RGBA } from '../types'
 import { TerminalCanvas, createCanvas } from '../canvas/canvas'
 import { buildScaleContext, inferContinuousDomain, niceDomain } from './scales'
 import type { ScaleContext } from './scales'
@@ -294,11 +294,34 @@ export function renderToCanvas(
 
   // Render each geometry layer
   for (const geom of spec.geoms) {
-    // Apply statistical transformation if needed
-    let geomData = applyStatTransform(spec.data, geom, spec.aes)
-    // Apply coordinate transformation (flip, polar, trans, etc.)
-    geomData = applyCoordTransform(geomData, spec.aes, spec.coord)
-    renderGeom(geomData, geom, spec.aes, scales, canvas, spec.coord.type)
+    let geomData: DataSource
+    let geomAes = spec.aes
+
+    // Annotations have their data in params, not in spec.data
+    if (geom.params.annotation) {
+      geomData = synthesizeAnnotationData(geom, scales)
+      // Use annotation-specific aes mapping that maps to synthesized fields
+      geomAes = {
+        x: 'x',
+        y: 'y',
+        label: 'label',
+        xend: 'xend',
+        yend: 'yend',
+        xmin: 'xmin',
+        xmax: 'xmax',
+        ymin: 'ymin',
+        ymax: 'ymax',
+        color: geomData[0]?.color !== undefined ? 'color' : undefined,
+        fill: geomData[0]?.fill !== undefined ? 'fill' : undefined,
+      }
+    } else {
+      // Apply statistical transformation if needed
+      geomData = applyStatTransform(spec.data, geom, spec.aes)
+      // Apply coordinate transformation (flip, polar, trans, etc.)
+      geomData = applyCoordTransform(geomData, spec.aes, spec.coord)
+    }
+
+    renderGeom(geomData, geom, geomAes, scales, canvas, spec.coord.type)
   }
 
   // Render legend if needed (supports multiple aesthetics)
@@ -341,6 +364,48 @@ export function renderToCanvas(
   }
 
   return canvas
+}
+
+/**
+ * Synthesize data from annotation params
+ * Annotations store their coordinates in geom.params rather than in the data array
+ */
+function synthesizeAnnotationData(geom: Geom, scales: ScaleContext): DataSource {
+  const params = geom.params
+
+  // Helper to resolve 'Inf' / '-Inf' edge positions
+  const resolveInf = (
+    value: unknown,
+    domain: readonly unknown[]
+  ): unknown => {
+    if (value === 'Inf') return domain[1]
+    if (value === '-Inf') return domain[0]
+    return value
+  }
+
+  // Get domains for edge resolution
+  const xDomain = scales.x?.domain ?? [0, 1]
+  const yDomain = scales.y?.domain ?? [0, 1]
+
+  // Build data row from params
+  const row: Record<string, unknown> = {}
+
+  // Copy coordinate params with Inf resolution
+  if (params.x !== undefined) row.x = resolveInf(params.x, xDomain)
+  if (params.y !== undefined) row.y = resolveInf(params.y, yDomain)
+  if (params.xend !== undefined) row.xend = resolveInf(params.xend, xDomain)
+  if (params.yend !== undefined) row.yend = resolveInf(params.yend, yDomain)
+  if (params.xmin !== undefined) row.xmin = resolveInf(params.xmin, xDomain)
+  if (params.xmax !== undefined) row.xmax = resolveInf(params.xmax, xDomain)
+  if (params.ymin !== undefined) row.ymin = resolveInf(params.ymin, yDomain)
+  if (params.ymax !== undefined) row.ymax = resolveInf(params.ymax, yDomain)
+  if (params.label !== undefined) row.label = params.label
+
+  // Copy styling params for color mapping
+  if (params.color !== undefined) row.color = params.color
+  if (params.fill !== undefined) row.fill = params.fill
+
+  return [row]
 }
 
 /**

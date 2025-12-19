@@ -44,6 +44,11 @@ import {
   as_labeller,
   themeMinimal,
   themeDark,
+  annotate_text,
+  annotate_rect,
+  annotate_segment,
+  annotate_hline,
+  annotate_vline,
   renderToString,
 } from './index'
 
@@ -696,6 +701,62 @@ console.log(renderToString(
 ))
 
 // ============================================================================
+// ANNOTATIONS
+// ============================================================================
+
+header('ANNOTATIONS')
+
+subheader('annotate_text - Text Labels')
+console.log(renderToString(
+  gg(scatterData)
+    .aes({ x: 'x', y: 'y' })
+    .geom(geom_point())
+    .annotate(annotate_text(15, 30, 'Important Region', { color: 'red' }))
+    .annotate(annotate_text(25, 45, 'Peak Value'))
+    .labs({ title: 'Plot with Text Annotations', x: 'X', y: 'Y' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('annotate_rect - Highlighted Region')
+console.log(renderToString(
+  gg(scatterData)
+    .aes({ x: 'x', y: 'y' })
+    .geom(geom_point())
+    .annotate(annotate_rect(10, 25, 20, 45, { fill: 'blue', alpha: 0.3 }))
+    .annotate(annotate_text(17, 32, 'Focus Area'))
+    .labs({ title: 'Plot with Highlighted Region', x: 'X', y: 'Y' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('annotate_segment - Connecting Lines')
+console.log(renderToString(
+  gg(scatterData)
+    .aes({ x: 'x', y: 'y' })
+    .geom(geom_point())
+    .annotate(annotate_segment(5, 10, 25, 50, { color: 'red' }))
+    .annotate(annotate_text(15, 35, 'Trend'))
+    .labs({ title: 'Plot with Segment Annotation', x: 'X', y: 'Y' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('annotate_hline / annotate_vline - Reference Lines')
+console.log(renderToString(
+  gg(scatterData)
+    .aes({ x: 'x', y: 'y' })
+    .geom(geom_point())
+    .annotate(annotate_hline(30, { color: 'red' }))
+    .annotate(annotate_vline(15, { color: 'blue' }))
+    .annotate(annotate_text(20, 32, 'Threshold'))
+    .annotate(annotate_text(17, 10, 'Midpoint'))
+    .labs({ title: 'Reference Lines with Labels', x: 'X', y: 'Y' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+// ============================================================================
 // COMBINED EXAMPLES
 // ============================================================================
 
@@ -793,6 +854,7 @@ Features demonstrated:
   • Position adjustments (position_jitter)
   • Coordinate transformations (flip, fixed)
   • Faceting (wrap and grid with custom labellers)
+  • Annotations (text, rect, segment, hline, vline)
   • Themes (minimal, dark)
   • Multi-layer plots
 `)
