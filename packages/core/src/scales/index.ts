@@ -21,6 +21,7 @@ export {
 } from './discrete'
 
 export {
+  // Core color scales
   scale_color_continuous,
   scale_color_viridis,
   scale_color_discrete,
@@ -29,9 +30,59 @@ export {
   scale_fill_viridis,
   scale_fill_discrete,
   scale_fill_manual,
+  // ColorBrewer scales
+  scale_color_brewer,
+  scale_fill_brewer,
+  scale_color_distiller,
+  scale_fill_distiller,
+  // Gradient scales
+  scale_color_gradient,
+  scale_fill_gradient,
+  scale_color_gradient2,
+  scale_fill_gradient2,
+  scale_color_gradientn,
+  scale_fill_gradientn,
+  // Viridis family
+  scale_color_viridis_c,
+  scale_fill_viridis_c,
+  scale_color_plasma,
+  scale_fill_plasma,
+  scale_color_inferno,
+  scale_fill_inferno,
+  scale_color_magma,
+  scale_fill_magma,
+  scale_color_cividis,
+  scale_fill_cividis,
+  scale_color_turbo,
+  scale_fill_turbo,
+  // Grey scale
+  scale_color_grey,
+  scale_color_gray,
+  scale_fill_grey,
+  scale_fill_gray,
+  // Identity and hue scales
+  scale_color_identity,
+  scale_fill_identity,
+  scale_color_hue,
+  scale_fill_hue,
+  // Utility functions
+  getAvailablePalettes,
+  getPaletteColors,
+  // Types
   type ColorContinuousOptions,
   type ColorDiscreteOptions,
   type ColorManualOptions,
+  type BrewerPalette,
+  type BrewerOptions,
+  type DistillerOptions,
+  type GradientOptions,
+  type Gradient2Options,
+  type GradientNOptions,
+  type ViridisOption,
+  type ViridisOptions,
+  type GreyOptions,
+  type HueOptions,
+  type PaletteName,
 } from './color'
 
 // Phase 7: Advanced Scales
