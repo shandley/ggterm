@@ -169,6 +169,60 @@ export function renderGeomLine(
 }
 
 /**
+ * Render geom_path (ordered path, not sorted by x)
+ *
+ * Unlike geom_line which sorts by x, geom_path connects points
+ * in the order they appear in the data. Useful for trajectories,
+ * drawing shapes, and non-monotonic sequences.
+ */
+export function renderGeomPath(
+  data: DataSource,
+  _geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  if (data.length < 2) return
+
+  // DO NOT sort - preserve data order (key difference from geom_line)
+
+  // Group by color/group aesthetic if present
+  // We need to preserve order within groups, so we use an array of entries
+  const groups = new Map<string, DataSource>()
+  const groupField = aes.group || aes.color
+
+  if (groupField) {
+    for (const row of data) {
+      const key = String(row[groupField] ?? 'default')
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(row)
+    }
+  } else {
+    groups.set('default', [...data])
+  }
+
+  // Draw paths for each group
+  for (const [groupKey, groupData] of groups) {
+    if (groupData.length < 2) continue
+
+    const color = scales.color?.map(groupKey) ?? DEFAULT_POINT_COLOR
+
+    // Draw line segments between consecutive points (in data order)
+    for (let i = 0; i < groupData.length - 1; i++) {
+      const row1 = groupData[i]
+      const row2 = groupData[i + 1]
+
+      const x1 = Math.round(scales.x.map(row1[aes.x]))
+      const y1 = Math.round(scales.y.map(row1[aes.y]))
+      const x2 = Math.round(scales.x.map(row2[aes.x]))
+      const y2 = Math.round(scales.y.map(row2[aes.y]))
+
+      drawLine(canvas, x1, y1, x2, y2, color)
+    }
+  }
+}
+
+/**
  * Render geom_step (stairstep lines)
  *
  * Draws lines that only move horizontally or vertically, creating
@@ -1553,6 +1607,9 @@ export function renderGeom(
       break
     case 'line':
       renderGeomLine(data, geom, aes, scales, canvas)
+      break
+    case 'path':
+      renderGeomPath(data, geom, aes, scales, canvas)
       break
     case 'step':
       renderGeomStep(data, geom, aes, scales, canvas)

@@ -49,6 +49,7 @@ export type { PlotLayout, ResolvedScale, ScaleContext } from './pipeline'
 export {
   geom_point,
   geom_line,
+  geom_path,
   geom_hline,
   geom_vline,
   geom_bar,
@@ -79,6 +80,7 @@ export {
   geom_abline,
 } from './geoms'
 export type {
+  PathOptions,
   SmoothOptions,
   StepOptions,
   ViolinOptions,
