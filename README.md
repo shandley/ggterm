@@ -90,13 +90,14 @@ ggterm> gg(data).aes({x: "x", y: "y", color: "group"}).geom(geom_point())
 - **Grammar Layers**: Data, Aesthetics, Geometries, Statistics, Scales, Coordinates, Facets, Themes
 - **Streaming Data**: Real-time updates with `plot.push(newData)`
 - **Terminal Detection**: Automatic color capability detection and graceful degradation
-- **React/Solid Support**: Declarative components via OpenTUI reconcilers
+- **Framework Support**: React, Solid.js components and reactive primitives
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
 | `@ggterm/core` | Grammar engine, scales, statistics |
+| `@ggterm/solid` | Solid.js components and primitives |
 | `@ggterm/render-braille` | Braille dot matrix renderer (2x4 per cell) |
 | `@ggterm/render-block` | Block character renderer (universal compatibility) |
 | `@ggterm/render-sixel` | Sixel/Kitty graphics protocol renderer |

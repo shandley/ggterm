@@ -1,0 +1,43 @@
+{
+  "name": "@ggterm/solid",
+  "version": "0.0.1",
+  "description": "Solid.js components for ggterm - Grammar of Graphics for terminals",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "echo 'No tests yet'",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "keywords": [
+    "ggterm",
+    "solid",
+    "solidjs",
+    "grammar-of-graphics",
+    "visualization",
+    "terminal",
+    "charts",
+    "tui"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "@ggterm/core": "^0.0.1",
+    "solid-js": "^1.8.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "solid-js": "^1.8.0"
+  }
+}
