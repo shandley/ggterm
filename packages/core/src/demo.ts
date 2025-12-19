@@ -53,6 +53,7 @@ import {
   annotate_segment,
   annotate_hline,
   annotate_vline,
+  stat_summary,
   renderToString,
 } from './index'
 
@@ -159,6 +160,53 @@ const facetData = [
   ...Array.from({ length: 15 }, (_, i) => ({ x: i, y: i + Math.random() * 5, panel: 'Linear' })),
   ...Array.from({ length: 15 }, (_, i) => ({ x: i, y: i * i / 10 + Math.random() * 3, panel: 'Quadratic' })),
   ...Array.from({ length: 15 }, (_, i) => ({ x: i, y: Math.sin(i * 0.5) * 5 + 7, panel: 'Sinusoidal' })),
+]
+
+// Experiment data for stat_summary (multiple observations per group)
+const experimentData = [
+  // Control group
+  { treatment: 'Control', value: 10 },
+  { treatment: 'Control', value: 12 },
+  { treatment: 'Control', value: 11 },
+  { treatment: 'Control', value: 9 },
+  { treatment: 'Control', value: 13 },
+  // Treatment A
+  { treatment: 'Treatment A', value: 18 },
+  { treatment: 'Treatment A', value: 20 },
+  { treatment: 'Treatment A', value: 17 },
+  { treatment: 'Treatment A', value: 22 },
+  { treatment: 'Treatment A', value: 19 },
+  // Treatment B
+  { treatment: 'Treatment B', value: 25 },
+  { treatment: 'Treatment B', value: 28 },
+  { treatment: 'Treatment B', value: 24 },
+  { treatment: 'Treatment B', value: 30 },
+  { treatment: 'Treatment B', value: 27 },
+]
+
+// Dose-response data for stat_summary with color grouping
+const doseResponseData = [
+  // Low dose
+  { dose: 'Low', response: 5, drug: 'Drug A' },
+  { dose: 'Low', response: 7, drug: 'Drug A' },
+  { dose: 'Low', response: 6, drug: 'Drug A' },
+  { dose: 'Low', response: 8, drug: 'Drug B' },
+  { dose: 'Low', response: 10, drug: 'Drug B' },
+  { dose: 'Low', response: 9, drug: 'Drug B' },
+  // Medium dose
+  { dose: 'Medium', response: 12, drug: 'Drug A' },
+  { dose: 'Medium', response: 15, drug: 'Drug A' },
+  { dose: 'Medium', response: 13, drug: 'Drug A' },
+  { dose: 'Medium', response: 18, drug: 'Drug B' },
+  { dose: 'Medium', response: 20, drug: 'Drug B' },
+  { dose: 'Medium', response: 19, drug: 'Drug B' },
+  // High dose
+  { dose: 'High', response: 20, drug: 'Drug A' },
+  { dose: 'High', response: 22, drug: 'Drug A' },
+  { dose: 'High', response: 21, drug: 'Drug A' },
+  { dose: 'High', response: 30, drug: 'Drug B' },
+  { dose: 'High', response: 32, drug: 'Drug B' },
+  { dose: 'High', response: 28, drug: 'Drug B' },
 ]
 
 // ============================================================================
@@ -397,6 +445,74 @@ console.log(renderToString(
     .geom(geom_ribbon())
     .geom(geom_line())
     .labs({ title: 'Line with Confidence Ribbon', x: 'Time', y: 'Value' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+// ============================================================================
+// STATISTICAL SUMMARIES
+// ============================================================================
+
+header('STATISTICAL SUMMARIES')
+
+subheader('stat_summary - Mean Points')
+console.log(renderToString(
+  gg(experimentData)
+    .aes({ x: 'treatment', y: 'value' })
+    .geom(geom_point({ stat: 'summary' }))
+    .labs({ title: 'Mean Values by Treatment', x: 'Treatment', y: 'Value' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('stat_summary with mean_se - Point with SE Bars')
+console.log(renderToString(
+  gg(experimentData)
+    .aes({ x: 'treatment', y: 'value' })
+    .geom(geom_pointrange({ stat: 'summary', funData: 'mean_se' }))
+    .labs({ title: 'Mean ± Standard Error', x: 'Treatment', y: 'Value' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('stat_summary with mean_sd - Error Bars')
+console.log(renderToString(
+  gg(experimentData)
+    .aes({ x: 'treatment', y: 'value' })
+    .geom(geom_errorbar({ stat: 'summary', funData: 'mean_sd' }))
+    .geom(geom_point({ stat: 'summary' }))
+    .labs({ title: 'Mean ± Standard Deviation', x: 'Treatment', y: 'Value' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('stat_summary with mean_cl_normal - 95% CI')
+console.log(renderToString(
+  gg(experimentData)
+    .aes({ x: 'treatment', y: 'value' })
+    .geom(geom_pointrange({ stat: 'summary', funData: 'mean_cl_normal' }))
+    .labs({ title: 'Mean with 95% Confidence Interval', x: 'Treatment', y: 'Value' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('stat_summary with Color Grouping')
+console.log(renderToString(
+  gg(doseResponseData)
+    .aes({ x: 'dose', y: 'response', color: 'drug' })
+    .geom(geom_point({ stat: 'summary' }))
+    .scale(scale_color_brewer({ palette: 'Set1' }))
+    .labs({ title: 'Mean Response by Dose and Drug', x: 'Dose', y: 'Response' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('stat_summary with median_range')
+console.log(renderToString(
+  gg(experimentData)
+    .aes({ x: 'treatment', y: 'value' })
+    .geom(geom_pointrange({ stat: 'summary', funData: 'median_range' }))
+    .labs({ title: 'Median with Min/Max Range', x: 'Treatment', y: 'Value' })
     .spec(),
   { width: WIDTH, height: HEIGHT }
 ))
@@ -912,6 +1028,7 @@ Features demonstrated:
   • Date scales (scale_x_date)
   • ColorBrewer palettes (scale_color_brewer, scale_color_distiller)
   • Gradient scales (scale_color_gradient2)
+  • Statistical summaries (stat_summary with mean, SE, SD, CI)
   • Position adjustments (position_jitter)
   • Coordinate transformations (flip, fixed)
   • Faceting (wrap and grid with custom labellers)
