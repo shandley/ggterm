@@ -32,6 +32,7 @@ import {
   scale_color_discrete,
   scale_x_log10,
   scale_y_log10,
+  scale_x_date,
   scale_y2_continuous,
   coordFlip,
   coordFixed,
@@ -554,6 +555,28 @@ console.log(renderToString(
   { width: WIDTH, height: HEIGHT }
 ))
 
+subheader('scale_x_date - Date Axis')
+const dateData = [
+  { date: '2024-01-01', value: 42 },
+  { date: '2024-02-15', value: 58 },
+  { date: '2024-04-01', value: 35 },
+  { date: '2024-05-15', value: 72 },
+  { date: '2024-07-01', value: 61 },
+  { date: '2024-08-15', value: 89 },
+  { date: '2024-10-01', value: 76 },
+  { date: '2024-11-15', value: 54 },
+]
+console.log(renderToString(
+  gg(dateData)
+    .aes({ x: 'date', y: 'value' })
+    .geom(geom_line())
+    .geom(geom_point())
+    .scale(scale_x_date())
+    .labs({ title: 'Time Series with Date Scale', x: 'Date', y: 'Value' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
 subheader('scale_color_viridis - Continuous Color')
 console.log(renderToString(
   gg(scatterData)
@@ -765,9 +788,11 @@ Features demonstrated:
   • Color aesthetics (discrete and continuous)
   • Size aesthetics
   • Secondary y-axis (y2)
-  • Log scales
+  • Log scales (scale_x_log10, scale_y_log10)
+  • Date scales (scale_x_date)
+  • Position adjustments (position_jitter)
   • Coordinate transformations (flip, fixed)
-  • Faceting (wrap and grid)
+  • Faceting (wrap and grid with custom labellers)
   • Themes (minimal, dark)
   • Multi-layer plots
 `)
