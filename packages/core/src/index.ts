@@ -115,6 +115,20 @@ export {
 // Coordinates
 export { coordCartesian, coordFlip, coordPolar } from './coords/cartesian'
 
+// Facets
+export {
+  facet_wrap,
+  facet_grid,
+  computeFacetPanels,
+  calculatePanelLayouts,
+} from './facets'
+export type {
+  FacetWrapOptions,
+  FacetGridOptions,
+  FacetPanel,
+  PanelLayout,
+} from './facets'
+
 // Themes
 export {
   defaultTheme,

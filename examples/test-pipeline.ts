@@ -329,4 +329,92 @@ const loessLinePlot = gg([...noiseData, ...loessData])
 console.log(loessLinePlot.render({ width: 50, height: 15 }))
 console.log('\n')
 
+// Test 15: Facet Wrap
+console.log('=== Test 15: Facet Wrap ===\n')
+
+import { facet_wrap, facet_grid } from '../packages/core/src/facets'
+
+const facetData = [
+  // Category A
+  { x: 1, y: 2, category: 'A' },
+  { x: 2, y: 4, category: 'A' },
+  { x: 3, y: 3, category: 'A' },
+  { x: 4, y: 5, category: 'A' },
+  // Category B
+  { x: 1, y: 3, category: 'B' },
+  { x: 2, y: 5, category: 'B' },
+  { x: 3, y: 4, category: 'B' },
+  { x: 4, y: 6, category: 'B' },
+  // Category C
+  { x: 1, y: 1, category: 'C' },
+  { x: 2, y: 2, category: 'C' },
+  { x: 3, y: 2.5, category: 'C' },
+  { x: 4, y: 3, category: 'C' },
+]
+
+const facetWrapPlot = gg(facetData)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_point())
+  .facet(facet_wrap('category', { ncol: 3 }))
+  .labs({ title: 'Facet Wrap by Category' })
+
+console.log(facetWrapPlot.render({ width: 70, height: 20 }))
+console.log('\n')
+
+// Test 16: Facet Grid
+console.log('=== Test 16: Facet Grid ===\n')
+
+const gridData = [
+  // Treatment A, Male
+  { x: 1, y: 10, treatment: 'Control', gender: 'M' },
+  { x: 2, y: 12, treatment: 'Control', gender: 'M' },
+  { x: 3, y: 11, treatment: 'Control', gender: 'M' },
+  // Treatment A, Female
+  { x: 1, y: 8, treatment: 'Control', gender: 'F' },
+  { x: 2, y: 9, treatment: 'Control', gender: 'F' },
+  { x: 3, y: 10, treatment: 'Control', gender: 'F' },
+  // Treatment B, Male
+  { x: 1, y: 15, treatment: 'Drug', gender: 'M' },
+  { x: 2, y: 18, treatment: 'Drug', gender: 'M' },
+  { x: 3, y: 20, treatment: 'Drug', gender: 'M' },
+  // Treatment B, Female
+  { x: 1, y: 12, treatment: 'Drug', gender: 'F' },
+  { x: 2, y: 14, treatment: 'Drug', gender: 'F' },
+  { x: 3, y: 16, treatment: 'Drug', gender: 'F' },
+]
+
+const facetGridPlot = gg(gridData)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_point())
+  .geom(geom_line())
+  .facet(facet_grid({ rows: 'gender', cols: 'treatment' }))
+  .labs({ title: 'Facet Grid: Gender x Treatment' })
+
+console.log(facetGridPlot.render({ width: 60, height: 22 }))
+console.log('\n')
+
+// Test 17: Facet with Free Scales
+console.log('=== Test 17: Facet with Free Scales ===\n')
+
+const freeScalesData = [
+  // Group A - small values
+  { x: 1, y: 0.1, group: 'Micro' },
+  { x: 2, y: 0.2, group: 'Micro' },
+  { x: 3, y: 0.15, group: 'Micro' },
+  // Group B - large values
+  { x: 1, y: 100, group: 'Macro' },
+  { x: 2, y: 150, group: 'Macro' },
+  { x: 3, y: 120, group: 'Macro' },
+]
+
+const freeScalesPlot = gg(freeScalesData)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_point())
+  .geom(geom_line())
+  .facet(facet_wrap('group', { ncol: 2, scales: 'free_y' }))
+  .labs({ title: 'Free Y Scales per Panel' })
+
+console.log(freeScalesPlot.render({ width: 60, height: 18 }))
+console.log('\n')
+
 console.log('=== All tests completed ===')
