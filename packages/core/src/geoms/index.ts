@@ -11,6 +11,7 @@ export { geom_histogram, type HistogramOptions } from './histogram'
 export { geom_boxplot, type BoxplotOptions } from './boxplot'
 export { geom_segment, geom_curve, type SegmentOptions } from './segment'
 export { geom_smooth, type SmoothOptions } from './smooth'
+export { geom_step, type StepOptions } from './step'
 
 // Phase 7: Extended Grammar
 export { geom_violin, type ViolinOptions } from './violin'

@@ -169,6 +169,86 @@ export function renderGeomLine(
 }
 
 /**
+ * Render geom_step (stairstep lines)
+ *
+ * Draws lines that only move horizontally or vertically, creating
+ * a stairstep pattern. Useful for time series with discrete changes.
+ */
+export function renderGeomStep(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  if (data.length < 2) return
+
+  const direction = (geom.params.direction as string) ?? 'hv'
+
+  // Sort data by x value for proper step drawing
+  const sorted = [...data].sort((a, b) => {
+    const ax = Number(a[aes.x]) || 0
+    const bx = Number(b[aes.x]) || 0
+    return ax - bx
+  })
+
+  // Group by color/group aesthetic if present
+  const groups = new Map<string, typeof sorted>()
+  const groupField = aes.group || aes.color
+
+  if (groupField) {
+    for (const row of sorted) {
+      const key = String(row[groupField] ?? 'default')
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(row)
+    }
+  } else {
+    groups.set('default', sorted)
+  }
+
+  // Draw steps for each group
+  for (const [groupKey, groupData] of groups) {
+    if (groupData.length < 2) continue
+
+    const color = scales.color?.map(groupKey) ?? DEFAULT_POINT_COLOR
+
+    // Draw step segments between consecutive points
+    for (let i = 0; i < groupData.length - 1; i++) {
+      const row1 = groupData[i]
+      const row2 = groupData[i + 1]
+
+      const x1 = Math.round(scales.x.map(row1[aes.x]))
+      const y1 = Math.round(scales.y.map(row1[aes.y]))
+      const x2 = Math.round(scales.x.map(row2[aes.x]))
+      const y2 = Math.round(scales.y.map(row2[aes.y]))
+
+      if (direction === 'hv') {
+        // Horizontal first, then vertical
+        // Draw horizontal line from (x1, y1) to (x2, y1)
+        drawLine(canvas, x1, y1, x2, y1, color)
+        // Draw vertical line from (x2, y1) to (x2, y2)
+        drawLine(canvas, x2, y1, x2, y2, color)
+      } else if (direction === 'vh') {
+        // Vertical first, then horizontal
+        // Draw vertical line from (x1, y1) to (x1, y2)
+        drawLine(canvas, x1, y1, x1, y2, color)
+        // Draw horizontal line from (x1, y2) to (x2, y2)
+        drawLine(canvas, x1, y2, x2, y2, color)
+      } else if (direction === 'mid') {
+        // Step at midpoint
+        const xMid = Math.round((x1 + x2) / 2)
+        // Draw horizontal from (x1, y1) to (xMid, y1)
+        drawLine(canvas, x1, y1, xMid, y1, color)
+        // Draw vertical from (xMid, y1) to (xMid, y2)
+        drawLine(canvas, xMid, y1, xMid, y2, color)
+        // Draw horizontal from (xMid, y2) to (x2, y2)
+        drawLine(canvas, xMid, y2, x2, y2, color)
+      }
+    }
+  }
+}
+
+/**
  * Render geom_area (filled area under line)
  */
 export function renderGeomArea(
@@ -1473,6 +1553,9 @@ export function renderGeom(
       break
     case 'line':
       renderGeomLine(data, geom, aes, scales, canvas)
+      break
+    case 'step':
+      renderGeomStep(data, geom, aes, scales, canvas)
       break
     case 'bar':
     case 'col':
