@@ -137,3 +137,53 @@ export {
   themeClassic,
   themeVoid,
 } from './themes/default'
+
+// Terminal utilities
+export {
+  // Capability detection
+  detectCapabilities,
+  getCapabilities,
+  clearCapabilityCache,
+  detectColorCapability,
+  detectGraphicsProtocol,
+  detectUnicodeSupport,
+  detectTerminalSize,
+  isCI,
+  getTerminalName,
+  getRecommendedRenderer,
+  querySixelSupport,
+  // Color utilities
+  ANSI_16_COLORS,
+  generate256Palette,
+  getPalette256,
+  colorDistance,
+  findClosestPaletteColor,
+  rgbToAnsi256,
+  rgbToAnsi16,
+  fgEscape,
+  bgEscape,
+  quantizeColor,
+  ditherPixels,
+  createOptimizedPalette,
+  getColorEscape,
+  RESET,
+  RESET_FG,
+  RESET_BG,
+  // Renderer chain
+  isRendererAvailable,
+  selectRenderer,
+  selectColorMode,
+  RendererChain,
+  createRendererChain,
+  autoRenderer,
+  getTerminalInfo,
+} from './terminal'
+
+export type {
+  ColorCapability,
+  GraphicsProtocol,
+  TerminalCapabilities,
+  ColorMode,
+  RendererType,
+  RendererConfig,
+} from './terminal'
