@@ -187,3 +187,62 @@ export type {
   RendererType,
   RendererConfig,
 } from './terminal'
+
+// Streaming
+export {
+  StreamingPlot,
+  createStreamingPlot,
+  createTimeSeriesPlot,
+  DataWindow,
+  createDataWindow,
+  DataBuffer,
+  createDataBuffer,
+  RollingAggregator,
+  createRollingAggregator,
+  createMultiAggregator,
+  ExponentialMovingAverage,
+} from './streaming'
+
+export type {
+  StreamingPlotOptions,
+  StreamingPlotState,
+  WindowOptions,
+  WindowStats,
+  BufferOptions,
+  AggregationType,
+  RollingOptions,
+} from './streaming'
+
+// Performance
+export {
+  DataSampler,
+  createSampler,
+  systematicSample,
+  randomSample,
+  reservoirSample,
+  stratifiedSample,
+  lttbSample,
+  autoSample,
+  LevelOfDetail,
+  createLOD,
+  DEFAULT_LOD_LEVELS,
+  Binner,
+  createBinner,
+  hexbin,
+  rectbin,
+  CanvasDiff,
+  createCanvasDiff,
+  quickDiff,
+} from './performance'
+
+export type {
+  SamplingOptions,
+  SamplingMethod,
+  LODLevel,
+  LODOptions,
+  BinOptions,
+  Bin,
+  HexBin,
+  DiffResult,
+  DiffOptions,
+} from './performance'
