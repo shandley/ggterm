@@ -85,6 +85,27 @@ export type {
   AblineOptions,
 } from './geoms'
 
+// Position adjustments
+export {
+  position_identity,
+  position_dodge,
+  position_stack,
+  position_fill,
+  position_jitter,
+  applyPositionAdjustment,
+  isStackPosition,
+  isDodgePosition,
+  getPositionType,
+} from './positions'
+export type {
+  Position,
+  AdjustedPoint,
+  DodgeOptions,
+  JitterOptions,
+  StackOptions,
+  FillOptions,
+} from './positions'
+
 // Statistical transformations
 export {
   stat_bin,

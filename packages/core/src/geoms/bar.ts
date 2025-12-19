@@ -3,11 +3,13 @@
  */
 
 import type { Geom } from '../types'
+import type { Position } from '../positions'
 
 export interface BarOptions {
   stat?: 'count' | 'identity'
   width?: number
-  position?: 'stack' | 'dodge' | 'fill'
+  /** Position adjustment: 'stack' | 'dodge' | 'fill' or use position_*() functions */
+  position?: Position | 'stack' | 'dodge' | 'fill' | 'identity'
   alpha?: number
   color?: string
   fill?: string
@@ -15,6 +17,21 @@ export interface BarOptions {
 
 /**
  * Render vertical bars
+ *
+ * @example
+ * ```ts
+ * // Stacked bar chart (default)
+ * gg(data).geom(geom_bar())
+ *
+ * // Grouped bar chart
+ * gg(data).geom(geom_bar({ position: 'dodge' }))
+ *
+ * // Or with position function for more control
+ * gg(data).geom(geom_bar({ position: position_dodge({ width: 0.7 }) }))
+ *
+ * // 100% stacked bar chart
+ * gg(data).geom(geom_bar({ position: 'fill' }))
+ * ```
  */
 export function geom_bar(options: BarOptions = {}): Geom {
   return {

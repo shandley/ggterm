@@ -8,6 +8,7 @@ import type { TerminalCanvas } from '../canvas/canvas'
 import type { AestheticMapping, DataSource, Geom, RGBA } from '../types'
 import type { ScaleContext, ResolvedColorScale } from './scales'
 import { DEFAULT_POINT_COLOR } from './scales'
+import { applyPositionAdjustment, getPositionType, type AdjustedPoint } from '../positions'
 
 /**
  * Point shapes for scatter plots
@@ -68,18 +69,32 @@ export function renderGeomPoint(
 ): void {
   const defaultShape = getPointShape(geom.params.shape as string | undefined)
 
-  for (const row of data) {
-    const xVal = row[aes.x]
-    const yVal = row[aes.y]
+  // Apply position adjustment (supports jitter, dodge, etc.)
+  const positionType = getPositionType(geom.position)
+  const adjustedData = positionType !== 'identity'
+    ? applyPositionAdjustment(data, aes, geom.position || 'identity')
+    : null
+
+  // Use adjusted data if position was applied, otherwise use original
+  const dataToRender = adjustedData || data.map(row => ({
+    row,
+    x: Number(row[aes.x]) || 0,
+    y: Number(row[aes.y]) || 0,
+    xOriginal: Number(row[aes.x]) || 0,
+    yOriginal: Number(row[aes.y]) || 0,
+  }))
+
+  for (const point of dataToRender) {
+    const { row, x, y } = point
 
     // Skip missing data
-    if (xVal === null || xVal === undefined || yVal === null || yVal === undefined) {
+    if (x === null || x === undefined || y === null || y === undefined) {
       continue
     }
 
     // Map to canvas coordinates
-    const cx = scales.x.map(xVal)
-    const cy = scales.y.map(yVal)
+    const cx = scales.x.map(x)
+    const cy = scales.y.map(y)
 
     // Get color
     const color = getPointColor(row, aes, scales.color)
@@ -305,8 +320,8 @@ export function renderGeomBar(
   const plotBottom = Math.round(scales.y.range[0])
   const plotTop = Math.round(scales.y.range[1])
 
-  // Calculate bar width
-  let barWidth: number
+  // Calculate base bar width
+  let baseBarWidth: number
   const widthParam = geom.params.width as number | undefined
 
   if (scales.x.type === 'discrete') {
@@ -317,41 +332,97 @@ export function renderGeomBar(
 
     if (widthParam !== undefined && widthParam >= 1) {
       // Absolute width specified
-      barWidth = Math.max(1, Math.floor(widthParam))
+      baseBarWidth = Math.max(1, Math.floor(widthParam))
     } else {
       // Proportional width (default 0.9 = 90% of space)
       const proportion = widthParam ?? 0.9
-      barWidth = Math.max(1, Math.floor(spacePerCategory * proportion))
+      baseBarWidth = Math.max(1, Math.floor(spacePerCategory * proportion))
     }
   } else {
     // Continuous scale - use specified width or default to 1
-    barWidth = Math.max(1, Math.floor(widthParam ?? 1))
+    baseBarWidth = Math.max(1, Math.floor(widthParam ?? 1))
   }
 
-  for (const row of data) {
-    const xVal = row[aes.x]
-    const yVal = row[aes.y]
+  // Get position type from geom
+  const positionType = getPositionType(geom.position)
 
-    if (xVal === null || xVal === undefined || yVal === null || yVal === undefined) {
+  // Apply position adjustment
+  const adjustedData = applyPositionAdjustment(
+    data,
+    aes,
+    geom.position || 'stack',
+    widthParam ?? 0.9
+  )
+
+  // For dodge position, calculate per-bar width
+  let actualBarWidth = baseBarWidth
+  if (positionType === 'dodge') {
+    // Find number of groups to divide bar width
+    const groups = new Set<string>()
+    for (const point of adjustedData) {
+      if (point.group) groups.add(point.group)
+    }
+    const nGroups = Math.max(1, groups.size)
+    actualBarWidth = Math.max(1, Math.floor(baseBarWidth / nGroups))
+  }
+
+  for (const point of adjustedData) {
+    const { row, x, y, ymin, ymax } = point
+
+    // Skip missing data
+    if (x === null || x === undefined || y === null || y === undefined) {
       continue
     }
 
-    const cx = Math.round(scales.x.map(xVal))
-    const cy = Math.round(scales.y.map(yVal))
+    // Map to canvas coordinates
+    // For dodge position, x is already adjusted in data space
+    const cx = Math.round(scales.x.map(positionType === 'dodge' ? point.xOriginal : x))
 
-    // Calculate baseline, clamped to plot area
-    let baseline = Math.round(scales.y.map(0))
-    baseline = Math.max(plotTop, Math.min(plotBottom, baseline))
+    // For dodge position, calculate the offset in canvas space
+    let xOffset = 0
+    if (positionType === 'dodge' && point.xOriginal !== x) {
+      // Calculate pixel offset from the adjusted position
+      const originalPx = scales.x.map(point.xOriginal)
+      const adjustedPx = scales.x.map(x)
+      // Scale the data-space offset to pixel-space proportionally
+      // For discrete scales, this approximation works reasonably well
+      const dataRange = (scales.x.domain as any)[1] - (scales.x.domain as any)[0] || 1
+      const pixelRange = scales.x.range[1] - scales.x.range[0]
+      xOffset = Math.round((x - point.xOriginal) * pixelRange / Math.max(1, dataRange))
+    }
+
+    // For stack/fill, use ymin/ymax; otherwise use baseline
+    let top: number
+    let bottom: number
+
+    if (ymin !== undefined && ymax !== undefined) {
+      // Stacked bars: draw from ymin to ymax
+      top = Math.round(scales.y.map(ymax))
+      bottom = Math.round(scales.y.map(ymin))
+      // Clamp to plot area
+      top = Math.max(plotTop, Math.min(plotBottom, top))
+      bottom = Math.max(plotTop, Math.min(plotBottom, bottom))
+    } else {
+      // Regular bars: draw from baseline to value
+      const cy = Math.round(scales.y.map(y))
+      let baseline = Math.round(scales.y.map(0))
+      baseline = Math.max(plotTop, Math.min(plotBottom, baseline))
+      top = Math.max(plotTop, Math.min(cy, baseline))
+      bottom = Math.min(plotBottom, Math.max(cy, baseline))
+    }
 
     const color = getPointColor(row, aes, scales.color)
 
-    // Draw vertical bar from baseline to value, clamped to plot area
-    const top = Math.max(plotTop, Math.min(cy, baseline))
-    const bottom = Math.min(plotBottom, Math.max(cy, baseline))
+    // Use per-point width if available (from dodge), otherwise use calculated width
+    const barWidth = point.width
+      ? Math.max(1, Math.floor(point.width * baseBarWidth / (widthParam ?? 0.9)))
+      : actualBarWidth
 
-    for (let y = top; y <= bottom; y++) {
+    // Draw vertical bar
+    for (let yPos = top; yPos <= bottom; yPos++) {
       for (let dx = 0; dx < barWidth; dx++) {
-        canvas.drawChar(cx + dx - Math.floor(barWidth / 2), y, '█', color)
+        const xPos = cx + xOffset + dx - Math.floor(barWidth / 2)
+        canvas.drawChar(xPos, yPos, '█', color)
       }
     }
   }
