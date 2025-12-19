@@ -37,6 +37,9 @@ import {
   coordFixed,
   facet_wrap,
   facet_grid,
+  label_both,
+  label_parsed,
+  as_labeller,
   themeMinimal,
   themeDark,
   renderToString,
@@ -578,19 +581,48 @@ console.log(renderToString(
   { width: WIDTH, height: 20 }
 ))
 
+subheader('facet_wrap with custom labeller')
+// Use as_labeller for custom label mappings
+const customLabeller = as_labeller({
+  'Linear': '📈 Linear',
+  'Quadratic': '📊 Quadratic',
+  'Sinusoidal': '〰️ Sine Wave',
+})
+console.log(renderToString(
+  gg(facetData)
+    .aes({ x: 'x', y: 'y' })
+    .geom(geom_point())
+    .geom(geom_line())
+    .facet(facet_wrap('panel', { ncol: 3, labeller: customLabeller }))
+    .labs({ title: 'Custom Labeller Example', x: 'X', y: 'Y' })
+    .spec(),
+  { width: WIDTH, height: 20 }
+))
+
 subheader('facet_grid - Grid Layout')
 const gridFacetData = [
-  ...scatterData.slice(0, 10).map(d => ({ ...d, row: 'High', col: d.group })),
-  ...scatterData.slice(10, 20).map(d => ({ ...d, row: 'Low', col: d.group })),
+  ...scatterData.slice(0, 10).map(d => ({ ...d, row: 'high_value', col: d.group })),
+  ...scatterData.slice(10, 20).map(d => ({ ...d, row: 'low_value', col: d.group })),
 ]
 console.log(renderToString(
   gg(gridFacetData)
     .aes({ x: 'x', y: 'y' })
     .geom(geom_point())
-    .facet(facet_grid({ rows: 'row', cols: 'col' }))
-    .labs({ title: 'Facet Grid', x: 'X', y: 'Y' })
+    .facet(facet_grid({ rows: 'row', cols: 'col' }, { labeller: label_parsed }))
+    .labs({ title: 'Facet Grid (label_parsed: _ → space)', x: 'X', y: 'Y' })
     .spec(),
   { width: WIDTH, height: 22 }
+))
+
+subheader('facet_grid with label_both')
+console.log(renderToString(
+  gg(gridFacetData)
+    .aes({ x: 'x', y: 'y' })
+    .geom(geom_point())
+    .facet(facet_grid({ rows: 'row', cols: 'col' }, { labeller: label_both }))
+    .labs({ title: 'Facet Grid (label_both: var: value)', x: 'X', y: 'Y' })
+    .spec(),
+  { width: WIDTH + 10, height: 22 }
 ))
 
 // ============================================================================

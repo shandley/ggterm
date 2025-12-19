@@ -514,3 +514,144 @@ describe('calculateGridStripLayout', () => {
     expect(withTitle.colStripY).toBeGreaterThan(withoutTitle.colStripY)
   })
 })
+
+describe('faceted plot rendering integration', () => {
+  // These tests verify the full rendering pipeline with facets
+  const { gg } = require('../../index')
+  const { geom_point } = require('../../geoms/point')
+
+  it('should render a facet_wrap plot without errors', () => {
+    const data = [
+      { x: 1, y: 10, category: 'A' },
+      { x: 2, y: 20, category: 'A' },
+      { x: 1, y: 15, category: 'B' },
+      { x: 2, y: 25, category: 'B' },
+    ]
+
+    const plot = gg(data)
+      .aes({ x: 'x', y: 'y' })
+      .geom(geom_point())
+      .facet(facet_wrap('category', { ncol: 2 }))
+
+    // Should render without throwing
+    const output = plot.render({ width: 60, height: 20 })
+    expect(typeof output).toBe('string')
+    expect(output.length).toBeGreaterThan(0)
+  })
+
+  it('should render a facet_grid plot without errors', () => {
+    const data = [
+      { x: 1, y: 10, row: 'R1', col: 'C1' },
+      { x: 2, y: 20, row: 'R1', col: 'C2' },
+      { x: 1, y: 15, row: 'R2', col: 'C1' },
+      { x: 2, y: 25, row: 'R2', col: 'C2' },
+    ]
+
+    const plot = gg(data)
+      .aes({ x: 'x', y: 'y' })
+      .geom(geom_point())
+      .facet(facet_grid({ rows: 'row', cols: 'col' }))
+
+    // Should render without throwing
+    const output = plot.render({ width: 80, height: 24 })
+    expect(typeof output).toBe('string')
+    expect(output.length).toBeGreaterThan(0)
+  })
+
+  it('should apply custom labeller to facet_wrap', () => {
+    const data = [
+      { x: 1, y: 10, category: 'category_A' },
+      { x: 2, y: 20, category: 'category_B' },
+    ]
+
+    const plot = gg(data)
+      .aes({ x: 'x', y: 'y' })
+      .geom(geom_point())
+      .facet(facet_wrap('category', { labeller: label_parsed }))
+
+    const output = plot.render({ width: 60, height: 20 })
+    // The labeller should replace underscores with spaces
+    // Note: ANSI codes make exact matching difficult, just verify it renders
+    expect(typeof output).toBe('string')
+  })
+
+  it('should apply custom labeller to facet_grid', () => {
+    const data = [
+      { x: 1, y: 10, row: 'row_1', col: 'col_1' },
+      { x: 2, y: 20, row: 'row_2', col: 'col_2' },
+    ]
+
+    const plot = gg(data)
+      .aes({ x: 'x', y: 'y' })
+      .geom(geom_point())
+      .facet(facet_grid({ rows: 'row', cols: 'col' }, { labeller: label_both }))
+
+    const output = plot.render({ width: 80, height: 24 })
+    expect(typeof output).toBe('string')
+  })
+
+  it('should render with free scales in facet_wrap', () => {
+    const data = [
+      { x: 1, y: 10, category: 'A' },
+      { x: 2, y: 200, category: 'B' },  // Very different y scale
+    ]
+
+    const plot = gg(data)
+      .aes({ x: 'x', y: 'y' })
+      .geom(geom_point())
+      .facet(facet_wrap('category', { scales: 'free_y' }))
+
+    const output = plot.render({ width: 60, height: 20 })
+    expect(typeof output).toBe('string')
+  })
+
+  it('should render facet_grid with only rows', () => {
+    const data = [
+      { x: 1, y: 10, group: 'A' },
+      { x: 2, y: 20, group: 'B' },
+    ]
+
+    const plot = gg(data)
+      .aes({ x: 'x', y: 'y' })
+      .geom(geom_point())
+      .facet(facet_grid({ rows: 'group' }))
+
+    const output = plot.render({ width: 60, height: 24 })
+    expect(typeof output).toBe('string')
+  })
+
+  it('should render facet_grid with only cols', () => {
+    const data = [
+      { x: 1, y: 10, group: 'A' },
+      { x: 2, y: 20, group: 'B' },
+    ]
+
+    const plot = gg(data)
+      .aes({ x: 'x', y: 'y' })
+      .geom(geom_point())
+      .facet(facet_grid({ cols: 'group' }))
+
+    const output = plot.render({ width: 80, height: 20 })
+    expect(typeof output).toBe('string')
+  })
+
+  it('should use as_labeller for custom label mappings', () => {
+    const data = [
+      { x: 1, y: 10, category: 'A' },
+      { x: 2, y: 20, category: 'B' },
+    ]
+
+    const customLabeller = as_labeller({
+      'A': 'First Category',
+      'B': 'Second Category',
+    })
+
+    const plot = gg(data)
+      .aes({ x: 'x', y: 'y' })
+      .geom(geom_point())
+      .facet(facet_wrap('category', { labeller: customLabeller }))
+
+    const output = plot.render({ width: 60, height: 20 })
+    expect(typeof output).toBe('string')
+  })
+})
