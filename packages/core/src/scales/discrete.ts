@@ -1,13 +1,36 @@
 /**
  * Discrete (categorical) scales
+ *
+ * Supports ordering categories through:
+ * - limits: Explicit order of categories
+ * - order: Automatic ordering strategy
+ * - reverse: Reverse the order
  */
 
 import type { Scale } from '../types'
 
+/**
+ * Ordering strategy for discrete scales
+ */
+export type DiscreteOrder =
+  | 'alphabetical'  // Sort alphabetically (default)
+  | 'data'          // Order by first appearance in data
+  | 'frequency'     // Order by frequency (most common first)
+  | 'reverse'       // Reverse alphabetical
+
 export interface DiscreteScaleOptions {
+  /** Explicit order of categories (overrides order option) */
   limits?: string[]
+  /** Custom labels for each category (must match limits length) */
   labels?: string[]
+  /** Whether to drop unused levels (default: true) */
   drop?: boolean
+  /** Ordering strategy when limits not provided */
+  order?: DiscreteOrder
+  /** Reverse the order (applied after order/limits) */
+  reverse?: boolean
+  /** Exclude specific categories */
+  exclude?: string[]
 }
 
 /**
@@ -16,18 +39,41 @@ export interface DiscreteScaleOptions {
 function createDiscreteScale(
   aesthetic: string,
   options: DiscreteScaleOptions = {}
-): Scale {
+): Scale & {
+  orderOptions?: DiscreteScaleOptions
+  labels?: string[]
+} {
   const valueToPosition = new Map<string, number>()
+
+  // Store limits after applying reverse if needed
+  let effectiveLimits = options.limits
+  if (effectiveLimits && options.reverse) {
+    effectiveLimits = [...effectiveLimits].reverse()
+  }
+
+  // Apply exclusions if provided
+  if (effectiveLimits && options.exclude) {
+    const excludeSet = new Set(options.exclude)
+    effectiveLimits = effectiveLimits.filter(v => !excludeSet.has(v))
+  }
 
   return {
     type: 'discrete',
     aesthetic,
-    domain: options.limits,
+    domain: effectiveLimits,
+    labels: options.labels,
+    // Store order options for use in pipeline
+    orderOptions: options,
     map(value: unknown): number {
       const key = String(value)
 
-      if (options.limits) {
-        const idx = options.limits.indexOf(key)
+      // Check exclusions
+      if (options.exclude?.includes(key)) {
+        return -1
+      }
+
+      if (effectiveLimits) {
+        const idx = effectiveLimits.indexOf(key)
         return idx >= 0 ? idx : -1
       }
 
@@ -38,8 +84,8 @@ function createDiscreteScale(
       return valueToPosition.get(key)!
     },
     invert(position: number): string {
-      if (options.limits) {
-        return options.limits[Math.round(position)] ?? ''
+      if (effectiveLimits) {
+        return effectiveLimits[Math.round(position)] ?? ''
       }
 
       for (const [key, pos] of valueToPosition) {

@@ -18,6 +18,7 @@ export {
   scale_x_discrete,
   scale_y_discrete,
   type DiscreteScaleOptions,
+  type DiscreteOrder,
 } from './discrete'
 
 export {

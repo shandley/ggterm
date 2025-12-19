@@ -43,19 +43,106 @@ export function inferContinuousDomain(
 }
 
 /**
- * Infer discrete domain (unique values) for a categorical aesthetic
+ * Ordering strategy for discrete scales
  */
-export function inferDiscreteDomain(data: DataSource, field: string): string[] {
-  const seen = new Set<string>()
+export type DiscreteOrder =
+  | 'alphabetical'  // Sort alphabetically (default)
+  | 'data'          // Order by first appearance in data
+  | 'frequency'     // Order by frequency (most common first)
+  | 'reverse'       // Reverse alphabetical
 
+/**
+ * Options for inferring discrete domain
+ */
+export interface InferDiscreteOptions {
+  /** Explicit order of categories (overrides order option) */
+  limits?: string[]
+  /** Ordering strategy when limits not provided */
+  order?: DiscreteOrder
+  /** Reverse the order (applied after order/limits) */
+  reverse?: boolean
+  /** Exclude specific categories */
+  exclude?: string[]
+  /** Whether to drop categories not in data (default: true) */
+  drop?: boolean
+}
+
+/**
+ * Infer discrete domain (unique values) for a categorical aesthetic
+ * Supports various ordering strategies
+ */
+export function inferDiscreteDomain(
+  data: DataSource,
+  field: string,
+  options: InferDiscreteOptions = {}
+): string[] {
+  const { limits, order = 'alphabetical', reverse = false, exclude, drop = true } = options
+
+  // Track values in order of appearance and frequency
+  const seen = new Map<string, { firstIndex: number; count: number }>()
+
+  let index = 0
   for (const row of data) {
     const value = row[field]
     if (value !== null && value !== undefined) {
-      seen.add(String(value))
+      const key = String(value)
+      if (!seen.has(key)) {
+        seen.set(key, { firstIndex: index, count: 1 })
+      } else {
+        seen.get(key)!.count++
+      }
+    }
+    index++
+  }
+
+  let result: string[]
+
+  // If explicit limits provided, use them
+  if (limits) {
+    if (drop) {
+      // Only include limits that appear in data
+      result = limits.filter(v => seen.has(v))
+    } else {
+      // Include all limits, even if not in data
+      result = [...limits]
+    }
+  } else {
+    // Apply ordering strategy
+    const values = Array.from(seen.keys())
+
+    switch (order) {
+      case 'data':
+        // Sort by first appearance
+        result = values.sort((a, b) => seen.get(a)!.firstIndex - seen.get(b)!.firstIndex)
+        break
+      case 'frequency':
+        // Sort by frequency (descending)
+        result = values.sort((a, b) => seen.get(b)!.count - seen.get(a)!.count)
+        break
+      case 'reverse':
+        // Reverse alphabetical
+        result = values.sort().reverse()
+        break
+      case 'alphabetical':
+      default:
+        // Alphabetical (default)
+        result = values.sort()
+        break
     }
   }
 
-  return Array.from(seen).sort()
+  // Apply exclusions
+  if (exclude && exclude.length > 0) {
+    const excludeSet = new Set(exclude)
+    result = result.filter(v => !excludeSet.has(v))
+  }
+
+  // Apply reverse
+  if (reverse) {
+    result = result.reverse()
+  }
+
+  return result
 }
 
 /**
@@ -477,12 +564,31 @@ export function buildScaleContext(
   // Create x scale
   let x: ResolvedScale
   if (xIsCategorical) {
-    const xDomain = inferDiscreteDomain(data, aes.x)
+    // Extract ordering options from user scale if provided
+    const xOrderOptions: InferDiscreteOptions = {}
+    if (userXScale) {
+      if (userXScale.domain && Array.isArray(userXScale.domain)) {
+        xOrderOptions.limits = userXScale.domain as string[]
+      }
+      // Check for orderOptions on user scale (from scale_x_discrete)
+      const orderOpts = (userXScale as any).orderOptions
+      if (orderOpts) {
+        if (orderOpts.order) xOrderOptions.order = orderOpts.order
+        if (orderOpts.reverse) xOrderOptions.reverse = orderOpts.reverse
+        if (orderOpts.exclude) xOrderOptions.exclude = orderOpts.exclude
+        if (orderOpts.drop !== undefined) xOrderOptions.drop = orderOpts.drop
+      }
+    }
+    const xDomain = inferDiscreteDomain(data, aes.x, xOrderOptions)
     x = createResolvedDiscreteScale(
       'x',
       xDomain,
       [plotArea.x, plotArea.x + plotArea.width - 1]
     )
+    // Apply custom labels if provided
+    if (userXScale?.labels) {
+      x.labels = userXScale.labels as string[]
+    }
   } else {
     // Get transform from user scale
     const xTrans = userXScale?.trans ?? 'identity'
@@ -532,7 +638,22 @@ export function buildScaleContext(
 
   // Handle color aesthetic if present
   if (aes.color) {
-    const colorDomain = inferDiscreteDomain(data, aes.color)
+    // Extract ordering options from user color scale if provided
+    const colorOrderOptions: InferDiscreteOptions = {}
+    if (userColorScale) {
+      if (userColorScale.domain && Array.isArray(userColorScale.domain)) {
+        colorOrderOptions.limits = userColorScale.domain as string[]
+      }
+      // Check for orderOptions on user scale
+      const orderOpts = (userColorScale as any).orderOptions
+      if (orderOpts) {
+        if (orderOpts.order) colorOrderOptions.order = orderOpts.order
+        if (orderOpts.reverse) colorOrderOptions.reverse = orderOpts.reverse
+        if (orderOpts.exclude) colorOrderOptions.exclude = orderOpts.exclude
+        if (orderOpts.drop !== undefined) colorOrderOptions.drop = orderOpts.drop
+      }
+    }
+    const colorDomain = inferDiscreteDomain(data, aes.color, colorOrderOptions)
 
     // Use user-provided color scale if available
     if (userColorScale && userColorScale.map) {

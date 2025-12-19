@@ -182,28 +182,70 @@ export function scale_color_viridis(
   return scale_color_continuous({ ...options, palette: 'viridis' })
 }
 
+/**
+ * Ordering strategy for discrete color scales
+ */
+export type ColorDiscreteOrder =
+  | 'alphabetical'  // Sort alphabetically (default)
+  | 'data'          // Order by first appearance in data
+  | 'frequency'     // Order by frequency (most common first)
+  | 'reverse'       // Reverse alphabetical
+
 export interface ColorDiscreteOptions {
   palette?: keyof typeof PALETTES | string[]
   na_value?: string
+  /** Explicit order of categories */
+  limits?: string[]
+  /** Ordering strategy when limits not provided */
+  order?: ColorDiscreteOrder
+  /** Reverse the order */
+  reverse?: boolean
+  /** Exclude specific categories */
+  exclude?: string[]
 }
 
 /**
- * Discrete color scale
+ * Discrete color scale with ordering support
  */
 export function scale_color_discrete(
   options: ColorDiscreteOptions = {}
-): Scale {
+): Scale & { orderOptions?: ColorDiscreteOptions } {
   const paletteColors = Array.isArray(options.palette)
     ? options.palette
     : PALETTES[options.palette ?? 'category10']
 
   const valueToIndex = new Map<string, number>()
 
+  // Apply limits ordering if provided
+  let effectiveLimits = options.limits
+  if (effectiveLimits && options.reverse) {
+    effectiveLimits = [...effectiveLimits].reverse()
+  }
+
+  // Apply exclusions
+  if (effectiveLimits && options.exclude) {
+    const excludeSet = new Set(options.exclude)
+    effectiveLimits = effectiveLimits.filter(v => !excludeSet.has(v))
+  }
+
+  // Pre-populate valueToIndex with limits order
+  if (effectiveLimits) {
+    effectiveLimits.forEach((v, i) => valueToIndex.set(v, i))
+  }
+
   return {
     type: 'discrete',
     aesthetic: 'color',
+    domain: effectiveLimits,
+    // Store order options for pipeline
+    orderOptions: options,
     map(value: unknown): RGBA {
       const key = String(value)
+
+      // Check exclusions
+      if (options.exclude?.includes(key)) {
+        return hexToRgba(options.na_value ?? '#808080')
+      }
 
       if (!valueToIndex.has(key)) {
         valueToIndex.set(key, valueToIndex.size)
@@ -275,13 +317,21 @@ export interface BrewerOptions {
   palette?: BrewerPalette
   direction?: 1 | -1
   na_value?: string
+  /** Explicit order of categories */
+  limits?: string[]
+  /** Ordering strategy when limits not provided */
+  order?: ColorDiscreteOrder
+  /** Reverse the order */
+  reverse?: boolean
+  /** Exclude specific categories */
+  exclude?: string[]
 }
 
 /**
  * ColorBrewer scale for discrete data (categorical palettes)
- * Use this for categorical/qualitative data
+ * Use this for categorical/qualitative data with ordering support
  */
-export function scale_color_brewer(options: BrewerOptions = {}): Scale {
+export function scale_color_brewer(options: BrewerOptions = {}): Scale & { orderOptions?: BrewerOptions } {
   const paletteName = options.palette ?? 'Set1'
   let paletteColors = PALETTES[paletteName] ?? PALETTES.Set1
 
@@ -291,11 +341,36 @@ export function scale_color_brewer(options: BrewerOptions = {}): Scale {
 
   const valueToIndex = new Map<string, number>()
 
+  // Apply limits ordering if provided
+  let effectiveLimits = options.limits
+  if (effectiveLimits && options.reverse) {
+    effectiveLimits = [...effectiveLimits].reverse()
+  }
+
+  // Apply exclusions
+  if (effectiveLimits && options.exclude) {
+    const excludeSet = new Set(options.exclude)
+    effectiveLimits = effectiveLimits.filter(v => !excludeSet.has(v))
+  }
+
+  // Pre-populate valueToIndex with limits order
+  if (effectiveLimits) {
+    effectiveLimits.forEach((v, i) => valueToIndex.set(v, i))
+  }
+
   return {
     type: 'discrete',
     aesthetic: 'color',
+    domain: effectiveLimits,
+    orderOptions: options,
     map(value: unknown): RGBA {
       const key = String(value)
+
+      // Check exclusions
+      if (options.exclude?.includes(key)) {
+        return hexToRgba(options.na_value ?? '#808080')
+      }
+
       if (!valueToIndex.has(key)) {
         valueToIndex.set(key, valueToIndex.size)
       }
