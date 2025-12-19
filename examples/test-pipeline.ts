@@ -9,7 +9,7 @@
 
 // Direct imports for testing (bypassing package system)
 import { gg } from '../packages/core/src/grammar'
-import { geom_point, geom_line, geom_hline } from '../packages/core/src/geoms'
+import { geom_point, geom_line, geom_hline, geom_histogram, geom_boxplot } from '../packages/core/src/geoms'
 
 // Test 1: Simple scatter plot
 console.log('=== Test 1: Simple Scatter Plot ===\n')
@@ -160,6 +160,52 @@ const combinedPlot = gg(combinedData)
   .labs({ title: 'Color + Size', x: 'X', y: 'Y' })
 
 console.log(combinedPlot.render({ width: 60, height: 15 }))
+console.log('\n')
+
+// Test 8: Histogram
+console.log('=== Test 8: Histogram ===\n')
+
+// Generate some random-ish data for the histogram
+const histogramData: { value: number }[] = []
+// Simulating a normal-ish distribution
+for (let i = 0; i < 100; i++) {
+  // Simple approximation of normal distribution using sum of uniforms
+  const sum = Math.random() + Math.random() + Math.random() + Math.random()
+  histogramData.push({ value: (sum - 2) * 25 + 50 })  // Center around 50
+}
+
+const histPlot = gg(histogramData)
+  .aes({ x: 'value', y: 'value' })  // y is placeholder, stat_bin will replace
+  .geom(geom_histogram({ bins: 15 }))
+  .labs({ title: 'Distribution of Values', x: 'Value', y: 'Count' })
+
+console.log(histPlot.render({ width: 60, height: 15 }))
+console.log('\n')
+
+// Test 9: Boxplot
+console.log('=== Test 9: Boxplot ===\n')
+
+const boxplotData = [
+  // Group A - lower values
+  { group: 'A', value: 10 }, { group: 'A', value: 15 }, { group: 'A', value: 12 },
+  { group: 'A', value: 18 }, { group: 'A', value: 14 }, { group: 'A', value: 16 },
+  { group: 'A', value: 11 }, { group: 'A', value: 13 }, { group: 'A', value: 35 },  // outlier
+  // Group B - medium values
+  { group: 'B', value: 25 }, { group: 'B', value: 30 }, { group: 'B', value: 28 },
+  { group: 'B', value: 32 }, { group: 'B', value: 27 }, { group: 'B', value: 29 },
+  { group: 'B', value: 26 }, { group: 'B', value: 31 }, { group: 'B', value: 5 },  // outlier
+  // Group C - higher values
+  { group: 'C', value: 40 }, { group: 'C', value: 45 }, { group: 'C', value: 42 },
+  { group: 'C', value: 48 }, { group: 'C', value: 44 }, { group: 'C', value: 46 },
+  { group: 'C', value: 41 }, { group: 'C', value: 43 }, { group: 'C', value: 70 },  // outlier
+]
+
+const boxPlot = gg(boxplotData)
+  .aes({ x: 'group', y: 'value' })
+  .geom(geom_boxplot({ width: 5 }))
+  .labs({ title: 'Value Distribution by Group', x: 'Group', y: 'Value' })
+
+console.log(boxPlot.render({ width: 50, height: 18 }))
 console.log('\n')
 
 console.log('=== All tests completed ===')

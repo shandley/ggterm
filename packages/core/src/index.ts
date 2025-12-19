@@ -57,7 +57,18 @@ export {
   geom_label,
   geom_area,
   geom_ribbon,
+  geom_histogram,
+  geom_boxplot,
 } from './geoms'
+
+// Statistical transformations
+export {
+  stat_bin,
+  stat_boxplot,
+  computeBins,
+  computeBoxplotStats,
+} from './stats'
+export type { StatBinParams, BinResult, StatBoxplotParams, BoxplotResult } from './stats'
 
 // Scales
 export {

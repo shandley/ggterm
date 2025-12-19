@@ -4,11 +4,13 @@
  * Orchestrates the full flow from PlotSpec to rendered output.
  */
 
-import type { PlotSpec, RenderOptions } from '../types'
+import type { AestheticMapping, DataSource, PlotSpec, RenderOptions } from '../types'
 import { TerminalCanvas, createCanvas } from '../canvas/canvas'
 import { buildScaleContext } from './scales'
 import { renderGeom } from './render-geoms'
 import { renderAxes, renderTitle, renderLegend, renderGridLines } from './render-axes'
+import { stat_bin } from '../stats/bin'
+import { stat_boxplot } from '../stats/boxplot'
 
 /**
  * Layout configuration for plot elements
@@ -88,6 +90,29 @@ export function calculateLayout(
 }
 
 /**
+ * Apply statistical transformation to data if needed
+ */
+function applyStatTransform(
+  data: DataSource,
+  geom: { stat?: string; params: Record<string, unknown> },
+  aes: AestheticMapping
+): DataSource {
+  if (geom.stat === 'bin') {
+    const binStat = stat_bin({
+      bins: geom.params.bins as number,
+      binwidth: geom.params.binwidth as number,
+    })
+    return binStat.compute(data, aes)
+  } else if (geom.stat === 'boxplot') {
+    const boxStat = stat_boxplot({
+      coef: geom.params.coef as number,
+    })
+    return boxStat.compute(data, aes)
+  }
+  return data
+}
+
+/**
  * Render a plot specification to a canvas
  */
 export function renderToCanvas(
@@ -100,10 +125,41 @@ export function renderToCanvas(
   // Create canvas
   const canvas = createCanvas(layout.width, layout.height)
 
-  // Build scale context
+  // Pre-compute transformed data for geoms with stats to determine proper scales
+  // For histogram/boxplot, we need scales based on transformed data
+  let scaleData = spec.data
+  let scaleAes = spec.aes
+
+  // Check if any geom needs a stat transform that affects scales
+  for (const geom of spec.geoms) {
+    if (geom.stat === 'bin') {
+      scaleData = applyStatTransform(spec.data, geom, spec.aes)
+      // Stats output x and y - histogram uses x for bin center, y for count
+      scaleAes = { ...spec.aes, x: 'x', y: 'y' }
+      break
+    } else if (geom.stat === 'boxplot') {
+      scaleData = applyStatTransform(spec.data, geom, spec.aes)
+      // Boxplot: x stays as group name, y covers the range (use ymin/ymax for full range)
+      // We need to expand the y domain to include outliers
+      const allYValues: { y: number }[] = []
+      for (const row of scaleData) {
+        allYValues.push({ y: row.lower as number })
+        allYValues.push({ y: row.upper as number })
+        const outliers = row.outliers as number[] ?? []
+        for (const o of outliers) {
+          allYValues.push({ y: o })
+        }
+      }
+      scaleData = [...scaleData, ...allYValues]
+      scaleAes = { ...spec.aes, x: 'x', y: 'y' }
+      break
+    }
+  }
+
+  // Build scale context based on (potentially transformed) data
   const scales = buildScaleContext(
-    spec.data,
-    spec.aes,
+    scaleData,
+    scaleAes,
     layout.plotArea,
     spec.scales
   )
@@ -121,7 +177,9 @@ export function renderToCanvas(
 
   // Render each geometry layer
   for (const geom of spec.geoms) {
-    renderGeom(spec.data, geom, spec.aes, scales, canvas)
+    // Apply statistical transformation if needed
+    const geomData = applyStatTransform(spec.data, geom, spec.aes)
+    renderGeom(geomData, geom, spec.aes, scales, canvas)
   }
 
   // Render legend if needed

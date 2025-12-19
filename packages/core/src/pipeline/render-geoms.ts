@@ -310,6 +310,145 @@ export function renderGeomVLine(
 }
 
 /**
+ * Render geom_histogram (binned bar chart)
+ * Data should be pre-transformed by stat_bin
+ */
+export function renderGeomHistogram(
+  data: DataSource,
+  _geom: Geom,
+  _aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  // Get plot area boundaries
+  const plotBottom = Math.round(scales.y.range[0])
+  const plotTop = Math.round(scales.y.range[1])
+
+  // Calculate baseline (y=0), clamped to plot area
+  let baseline = Math.round(scales.y.map(0))
+  baseline = Math.max(plotTop, Math.min(plotBottom, baseline))
+
+  const color = DEFAULT_POINT_COLOR
+
+  for (const row of data) {
+    const xmin = row.xmin as number
+    const xmax = row.xmax as number
+    const count = row.count as number ?? row.y as number
+
+    if (count === 0) continue
+
+    // Map x edges to canvas coordinates
+    const x1 = Math.round(scales.x.map(xmin))
+    const x2 = Math.round(scales.x.map(xmax))
+    const cy = Math.round(scales.y.map(count))
+
+    // Draw bar from baseline to count
+    const top = Math.max(plotTop, Math.min(cy, baseline))
+    const bottom = Math.min(plotBottom, Math.max(cy, baseline))
+
+    for (let y = top; y <= bottom; y++) {
+      for (let x = x1; x < x2; x++) {
+        canvas.drawChar(x, y, '█', color)
+      }
+    }
+  }
+}
+
+/**
+ * Render geom_boxplot
+ * Data should be pre-transformed by stat_boxplot
+ */
+export function renderGeomBoxplot(
+  data: DataSource,
+  geom: Geom,
+  _aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const boxWidth = Math.max(1, Math.floor((geom.params.width as number ?? 3)))
+  const showOutliers = geom.params.outliers !== false
+
+  const boxColor: RGBA = { r: 79, g: 169, b: 238, a: 1 }
+  const whiskerColor: RGBA = { r: 180, g: 180, b: 180, a: 1 }
+  const medianColor: RGBA = { r: 255, g: 200, b: 50, a: 1 }
+  const outlierColor: RGBA = { r: 214, g: 39, b: 40, a: 1 }
+
+  for (const row of data) {
+    const x = row.x
+    const lower = row.lower as number
+    const q1 = row.q1 as number
+    const median = row.median as number
+    const q3 = row.q3 as number
+    const upper = row.upper as number
+    const outliers = row.outliers as number[] ?? []
+
+    // Map x to canvas coordinate
+    const cx = Math.round(scales.x.map(x))
+
+    // Map y values to canvas coordinates
+    const yLower = Math.round(scales.y.map(lower))
+    const yQ1 = Math.round(scales.y.map(q1))
+    const yMedian = Math.round(scales.y.map(median))
+    const yQ3 = Math.round(scales.y.map(q3))
+    const yUpper = Math.round(scales.y.map(upper))
+
+    const halfWidth = Math.floor(boxWidth / 2)
+
+    // Draw lower whisker (vertical line from lower to Q1)
+    for (let y = yQ1; y <= yLower; y++) {
+      canvas.drawChar(cx, y, '│', whiskerColor)
+    }
+    // Lower whisker cap
+    for (let dx = -halfWidth; dx <= halfWidth; dx++) {
+      canvas.drawChar(cx + dx, yLower, '─', whiskerColor)
+    }
+
+    // Draw upper whisker (vertical line from Q3 to upper)
+    for (let y = yUpper; y <= yQ3; y++) {
+      canvas.drawChar(cx, y, '│', whiskerColor)
+    }
+    // Upper whisker cap
+    for (let dx = -halfWidth; dx <= halfWidth; dx++) {
+      canvas.drawChar(cx + dx, yUpper, '─', whiskerColor)
+    }
+
+    // Draw box (from Q1 to Q3)
+    // Top of box (Q3)
+    canvas.drawChar(cx - halfWidth, yQ3, '┌', boxColor)
+    for (let dx = -halfWidth + 1; dx < halfWidth; dx++) {
+      canvas.drawChar(cx + dx, yQ3, '─', boxColor)
+    }
+    canvas.drawChar(cx + halfWidth, yQ3, '┐', boxColor)
+
+    // Sides of box
+    for (let y = yQ3 + 1; y < yQ1; y++) {
+      canvas.drawChar(cx - halfWidth, y, '│', boxColor)
+      canvas.drawChar(cx + halfWidth, y, '│', boxColor)
+    }
+
+    // Bottom of box (Q1)
+    canvas.drawChar(cx - halfWidth, yQ1, '└', boxColor)
+    for (let dx = -halfWidth + 1; dx < halfWidth; dx++) {
+      canvas.drawChar(cx + dx, yQ1, '─', boxColor)
+    }
+    canvas.drawChar(cx + halfWidth, yQ1, '┘', boxColor)
+
+    // Draw median line
+    for (let dx = -halfWidth + 1; dx < halfWidth; dx++) {
+      canvas.drawChar(cx + dx, yMedian, '━', medianColor)
+    }
+
+    // Draw outliers
+    if (showOutliers && outliers.length > 0) {
+      for (const outlier of outliers) {
+        const yOutlier = Math.round(scales.y.map(outlier))
+        canvas.drawChar(cx, yOutlier, '○', outlierColor)
+      }
+    }
+  }
+}
+
+/**
  * Geometry renderer dispatch
  */
 export function renderGeom(
@@ -339,6 +478,12 @@ export function renderGeom(
       break
     case 'vline':
       renderGeomVLine(data, geom, aes, scales, canvas)
+      break
+    case 'histogram':
+      renderGeomHistogram(data, geom, aes, scales, canvas)
+      break
+    case 'boxplot':
+      renderGeomBoxplot(data, geom, aes, scales, canvas)
       break
     default:
       // Unknown geom type, skip
