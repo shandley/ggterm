@@ -61,6 +61,7 @@ export {
   geom_boxplot,
   geom_segment,
   geom_curve,
+  geom_smooth,
   // Phase 7: Extended Grammar
   geom_violin,
   geom_tile,
@@ -77,6 +78,7 @@ export {
   geom_abline,
 } from './geoms'
 export type {
+  SmoothOptions,
   ViolinOptions,
   TileOptions,
   ContourOptions,

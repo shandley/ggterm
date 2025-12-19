@@ -1332,6 +1332,132 @@ export function renderGeomPointrange(
 }
 
 /**
+ * Render geom_smooth (smoothed line with optional confidence band)
+ */
+export function renderGeomSmooth(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  if (data.length < 2) return
+
+  // Sort data by x value for proper rendering
+  const sorted = [...data].sort((a, b) => {
+    const ax = Number(a['x']) || 0
+    const bx = Number(b['x']) || 0
+    return ax - bx
+  })
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Get styling from params
+  const showSE = geom.params.se !== false
+  const alpha = (geom.params.alpha as number) ?? 0.3
+
+  // Get base color - use geom param color or default blue
+  const baseColor: RGBA = geom.params.color
+    ? parseColor(geom.params.color as string)
+    : { r: 51, g: 102, b: 204, a: 1 } // Nice blue default
+
+  // Confidence band color with alpha
+  const bandColor: RGBA = {
+    ...baseColor,
+    a: alpha,
+  }
+
+  // Render confidence band first (behind the line) if SE is enabled
+  if (showSE) {
+    // Check if data has ymin/ymax
+    const hasCI = sorted.some(row => row['ymin'] !== undefined && row['ymax'] !== undefined)
+
+    if (hasCI) {
+      // Fill the confidence band using vertical lines at each x
+      for (const row of sorted) {
+        const xVal = row['x'] as number
+        const ymin = row['ymin'] as number
+        const ymax = row['ymax'] as number
+
+        if (xVal === undefined || ymin === undefined || ymax === undefined) {
+          continue
+        }
+
+        const cx = Math.round(scales.x.map(xVal))
+        const cyMin = Math.round(scales.y.map(ymin))
+        const cyMax = Math.round(scales.y.map(ymax))
+
+        // Draw vertical fill at this x position
+        const top = Math.min(cyMin, cyMax)
+        const bottom = Math.max(cyMin, cyMax)
+
+        for (let y = top; y <= bottom; y++) {
+          if (cx >= plotLeft && cx <= plotRight && y >= plotTop && y <= plotBottom) {
+            // Use a lighter character for the band fill
+            canvas.drawChar(cx, y, '░', bandColor)
+          }
+        }
+      }
+    }
+  }
+
+  // Render the smooth line on top
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const row1 = sorted[i]
+    const row2 = sorted[i + 1]
+
+    const x1Val = row1['x'] as number
+    const y1Val = row1['y'] as number
+    const x2Val = row2['x'] as number
+    const y2Val = row2['y'] as number
+
+    if (x1Val === undefined || y1Val === undefined ||
+        x2Val === undefined || y2Val === undefined) {
+      continue
+    }
+
+    const x1 = Math.round(scales.x.map(x1Val))
+    const y1 = Math.round(scales.y.map(y1Val))
+    const x2 = Math.round(scales.x.map(x2Val))
+    const y2 = Math.round(scales.y.map(y2Val))
+
+    // Draw line segment
+    drawLine(canvas, x1, y1, x2, y2, baseColor)
+  }
+}
+
+/**
+ * Parse a color string to RGBA
+ */
+function parseColor(color: string): RGBA {
+  // Handle hex colors
+  if (color.startsWith('#')) {
+    const hex = color.slice(1)
+    if (hex.length === 3) {
+      return {
+        r: parseInt(hex[0] + hex[0], 16),
+        g: parseInt(hex[1] + hex[1], 16),
+        b: parseInt(hex[2] + hex[2], 16),
+        a: 1,
+      }
+    } else if (hex.length === 6) {
+      return {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16),
+        a: 1,
+      }
+    }
+  }
+  // Default to gray if parsing fails
+  return { r: 128, g: 128, b: 128, a: 1 }
+}
+
+/**
  * Geometry renderer dispatch
  */
 export function renderGeom(
@@ -1401,6 +1527,9 @@ export function renderGeom(
       break
     case 'pointrange':
       renderGeomPointrange(data, geom, aes, scales, canvas)
+      break
+    case 'smooth':
+      renderGeomSmooth(data, geom, aes, scales, canvas)
       break
     default:
       // Unknown geom type, skip
