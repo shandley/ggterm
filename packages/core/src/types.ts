@@ -31,6 +31,9 @@ export interface RGBA {
 export type Domain = [number, number] | string[]
 export type Range = [number, number] | string[] | RGBA[]
 
+// Scale transform type
+export type ScaleTransform = 'identity' | 'log10' | 'sqrt' | 'reverse'
+
 // Scale interface
 export interface Scale {
   type: 'continuous' | 'discrete' | 'identity'
@@ -41,6 +44,8 @@ export interface Scale {
   breaks?: number[]
   /** Custom tick labels (must match breaks length if both provided) */
   labels?: string[]
+  /** Scale transformation */
+  trans?: ScaleTransform
   map(value: unknown): number | string | RGBA
   invert?(position: number): unknown
 }

@@ -2,7 +2,7 @@
  * Continuous scales
  */
 
-import type { Scale } from '../types'
+import type { Scale, ScaleTransform } from '../types'
 
 export interface ContinuousScaleOptions {
   limits?: [number, number]
@@ -40,6 +40,7 @@ function createContinuousScale(
     domain: options.limits,
     breaks: options.breaks,
     labels: options.labels,
+    trans: trans as ScaleTransform,
     map(value: unknown): number {
       const num = Number(value)
       if (isNaN(num)) return 0

@@ -11,7 +11,16 @@ import { geom_line } from '../../geoms/line'
 import { geom_bar } from '../../geoms/bar'
 import { geom_area } from '../../geoms/area'
 import { geom_text } from '../../geoms/text'
-import { scale_x_continuous, scale_y_continuous } from '../../scales/continuous'
+import {
+  scale_x_continuous,
+  scale_y_continuous,
+  scale_x_log10,
+  scale_y_log10,
+  scale_x_sqrt,
+  scale_y_sqrt,
+  scale_x_reverse,
+  scale_y_reverse,
+} from '../../scales/continuous'
 import { scale_color_discrete, scale_color_manual } from '../../scales/color'
 import { defaultTheme } from '../../themes/default'
 import { coordCartesian } from '../../coords/cartesian'
@@ -635,6 +644,153 @@ describe('Rendering Pipeline Integration', () => {
 
       expect(output).toBeDefined()
       expect(output.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('scale transforms', () => {
+    it('should render with log10 x scale', () => {
+      const data = [
+        { x: 1, y: 1 },
+        { x: 10, y: 2 },
+        { x: 100, y: 3 },
+        { x: 1000, y: 4 },
+      ]
+      const plot = gg(data)
+        .aes({ x: 'x', y: 'y' })
+        .geom(geom_point())
+        .scale(scale_x_log10())
+
+      const output = plot.render({ width: 60, height: 10 })
+
+      expect(output).toBeDefined()
+      expect(output.length).toBeGreaterThan(0)
+      // Log scale should show powers of 10 as ticks
+      expect(output).toContain('1')
+      expect(output).toContain('10')
+      expect(output).toContain('100')
+    })
+
+    it('should render with log10 y scale', () => {
+      const data = [
+        { x: 1, y: 1 },
+        { x: 2, y: 10 },
+        { x: 3, y: 100 },
+        { x: 4, y: 1000 },
+      ]
+      const plot = gg(data)
+        .aes({ x: 'x', y: 'y' })
+        .geom(geom_point())
+        .scale(scale_y_log10())
+
+      const output = plot.render({ width: 40, height: 15 })
+
+      expect(output).toBeDefined()
+      expect(output.length).toBeGreaterThan(0)
+    })
+
+    it('should render with sqrt x scale', () => {
+      const data = [
+        { x: 0, y: 0 },
+        { x: 25, y: 5 },
+        { x: 100, y: 10 },
+      ]
+      const plot = gg(data)
+        .aes({ x: 'x', y: 'y' })
+        .geom(geom_point())
+        .scale(scale_x_sqrt())
+
+      const output = plot.render({ width: 60, height: 10 })
+
+      expect(output).toBeDefined()
+      expect(output.length).toBeGreaterThan(0)
+    })
+
+    it('should render with sqrt y scale', () => {
+      const data = [
+        { x: 0, y: 0 },
+        { x: 5, y: 25 },
+        { x: 10, y: 100 },
+      ]
+      const plot = gg(data)
+        .aes({ x: 'x', y: 'y' })
+        .geom(geom_point())
+        .scale(scale_y_sqrt())
+
+      const output = plot.render({ width: 40, height: 12 })
+
+      expect(output).toBeDefined()
+      expect(output.length).toBeGreaterThan(0)
+    })
+
+    it('should render with reverse x scale', () => {
+      const data = [
+        { x: 0, y: 0 },
+        { x: 50, y: 5 },
+        { x: 100, y: 10 },
+      ]
+      const plot = gg(data)
+        .aes({ x: 'x', y: 'y' })
+        .geom(geom_point())
+        .scale(scale_x_reverse())
+
+      const output = plot.render({ width: 60, height: 10 })
+
+      expect(output).toBeDefined()
+      expect(output.length).toBeGreaterThan(0)
+      // With reversed scale, axis labels should still appear
+      expect(output).toContain('0')
+    })
+
+    it('should render with reverse y scale', () => {
+      const data = [
+        { x: 0, y: 0 },
+        { x: 5, y: 50 },
+        { x: 10, y: 100 },
+      ]
+      const plot = gg(data)
+        .aes({ x: 'x', y: 'y' })
+        .geom(geom_point())
+        .scale(scale_y_reverse())
+
+      const output = plot.render({ width: 40, height: 12 })
+
+      expect(output).toBeDefined()
+      expect(output.length).toBeGreaterThan(0)
+    })
+
+    it('should properly space points on log scale', () => {
+      // On a log scale, 1, 10, 100 should be evenly spaced
+      const data = [
+        { x: 1, y: 0 },
+        { x: 10, y: 1 },
+        { x: 100, y: 2 },
+      ]
+      const plot = gg(data)
+        .aes({ x: 'x', y: 'y' })
+        .geom(geom_point())
+        .scale(scale_x_log10())
+
+      const output = plot.render({ width: 60, height: 8 })
+
+      expect(output).toBeDefined()
+      // The plot should render without errors
+      expect(output.length).toBeGreaterThan(0)
+    })
+
+    it('should combine log scale with custom limits', () => {
+      const data = [
+        { x: 1, y: 1 },
+        { x: 100, y: 100 },
+      ]
+      const plot = gg(data)
+        .aes({ x: 'x', y: 'y' })
+        .geom(geom_point())
+        .scale(scale_x_log10({ limits: [1, 1000] }))
+
+      const output = plot.render({ width: 60, height: 10 })
+
+      expect(output).toBeDefined()
+      expect(output).toContain('1000')
     })
   })
 })

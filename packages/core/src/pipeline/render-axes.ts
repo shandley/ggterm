@@ -18,14 +18,94 @@ export interface AxisConfig {
 
 /**
  * Calculate nice tick values for a continuous scale
+ *
+ * For transformed scales (log10, sqrt, reverse), ticks are calculated
+ * in the transformed space and then inverted back to data space.
  */
 export function calculateTicks(
   domain: [number, number],
-  targetTicks: number = 5
+  targetTicks: number = 5,
+  transform?: (v: number) => number,
+  invert?: (v: number) => number
 ): number[] {
   const [min, max] = domain
-  const range = max - min
 
+  // For log10 scale, use special tick calculation
+  if (transform && invert) {
+    const transMin = transform(min)
+    const transMax = transform(max)
+
+    // Check if this looks like a log scale (transform of 10 is 1, transform of 100 is 2)
+    const isLogScale = Math.abs(transform(10) - 1) < 0.001 && Math.abs(transform(100) - 2) < 0.001
+
+    if (isLogScale && min > 0) {
+      // For log scales, use powers of 10
+      const ticks: number[] = []
+      const minPow = Math.floor(transMin)
+      const maxPow = Math.ceil(transMax)
+
+      for (let pow = minPow; pow <= maxPow; pow++) {
+        const tick = invert(pow)
+        if (tick >= min * 0.999 && tick <= max * 1.001) {
+          ticks.push(tick)
+        }
+      }
+
+      // If we have too few ticks, add intermediate values
+      if (ticks.length < 3 && ticks.length > 0) {
+        const newTicks: number[] = []
+        for (const tick of ticks) {
+          newTicks.push(tick)
+          const nextTick = tick * 10
+          if (nextTick <= max) {
+            // Add 2 and 5 as intermediate ticks
+            for (const mult of [2, 5]) {
+              const interTick = tick * mult
+              if (interTick >= min && interTick <= max && !ticks.includes(interTick)) {
+                newTicks.push(interTick)
+              }
+            }
+          }
+        }
+        return newTicks.sort((a, b) => a - b)
+      }
+
+      return ticks.length > 0 ? ticks : [min, max]
+    }
+
+    // For other transforms (sqrt, reverse), calculate in transformed space
+    const transRange = transMax - transMin
+    if (transRange === 0) return [min]
+
+    const rawStep = transRange / Math.max(1, targetTicks - 1)
+    const magnitude = Math.pow(10, Math.floor(Math.log10(Math.abs(rawStep))))
+    const normalized = rawStep / magnitude
+
+    let niceStep: number
+    if (normalized <= 1.5) niceStep = 1
+    else if (normalized <= 3) niceStep = 2
+    else if (normalized <= 7) niceStep = 5
+    else niceStep = 10
+
+    niceStep *= magnitude
+
+    const ticks: number[] = []
+    const start = Math.floor(transMin / niceStep) * niceStep
+
+    for (let transTick = start; transTick <= transMax + niceStep * 0.001; transTick += niceStep) {
+      if (transTick >= transMin - niceStep * 0.001 && transTick <= transMax + niceStep * 0.001) {
+        const tick = invert(Math.round(transTick * 1e10) / 1e10)
+        if (tick >= min * 0.999 && tick <= max * 1.001) {
+          ticks.push(tick)
+        }
+      }
+    }
+
+    return ticks.length > 0 ? ticks : [min, max]
+  }
+
+  // Standard linear tick calculation
+  const range = max - min
   if (range === 0) return [min]
 
   // Calculate a nice step size
@@ -112,7 +192,8 @@ export function renderBottomAxis(
     const ticks = scale.breaks ?? (() => {
       // Request more ticks - aim for one every ~8 characters
       const targetTicks = Math.max(3, Math.floor((xEnd - xStart) / 8))
-      return calculateTicks(domain, targetTicks)
+      // Pass transform functions for proper tick calculation on transformed scales
+      return calculateTicks(domain, targetTicks, scale.transform, scale.invert)
     })()
 
     for (let i = 0; i < ticks.length; i++) {
@@ -189,7 +270,8 @@ export function renderLeftAxis(
     const ticks = scale.breaks ?? (() => {
       // Request more ticks - aim for one every ~3 rows
       const targetTicks = Math.max(3, Math.floor((bottom - top) / 3))
-      return calculateTicks(domain, targetTicks)
+      // Pass transform functions for proper tick calculation on transformed scales
+      return calculateTicks(domain, targetTicks, scale.transform, scale.invert)
     })()
 
     for (let i = 0; i < ticks.length; i++) {

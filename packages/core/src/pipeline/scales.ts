@@ -9,6 +9,7 @@ import type {
   DataSource,
   RGBA,
   Scale,
+  ScaleTransform,
 } from '../types'
 
 /**
@@ -132,6 +133,15 @@ export interface ResolvedScale {
   /** Custom tick labels (if specified by user) */
   labels?: string[]
 
+  /** Scale transformation type */
+  trans?: ScaleTransform
+
+  /** Transform function (data space -> transformed space) */
+  transform?: (value: number) => number
+
+  /** Inverse transform function (transformed space -> data space) */
+  invert?: (value: number) => number
+
   /** Map data value to normalized 0-1 position */
   normalize(value: unknown): number
 
@@ -143,23 +153,69 @@ export interface ResolvedScale {
 }
 
 /**
+ * Transform configuration
+ */
+export interface TransformConfig {
+  type: ScaleTransform
+  transform: (v: number) => number
+  invert: (v: number) => number
+}
+
+/**
+ * Get transform functions for a given transform type
+ */
+export function getTransformFunctions(trans: ScaleTransform = 'identity'): TransformConfig {
+  switch (trans) {
+    case 'log10':
+      return {
+        type: 'log10',
+        transform: (v: number) => v > 0 ? Math.log10(v) : -Infinity,
+        invert: (v: number) => Math.pow(10, v),
+      }
+    case 'sqrt':
+      return {
+        type: 'sqrt',
+        transform: (v: number) => v >= 0 ? Math.sqrt(v) : 0,
+        invert: (v: number) => v * v,
+      }
+    case 'reverse':
+      return {
+        type: 'reverse',
+        transform: (v: number) => -v,
+        invert: (v: number) => -v,
+      }
+    default:
+      return {
+        type: 'identity',
+        transform: (v: number) => v,
+        invert: (v: number) => v,
+      }
+  }
+}
+
+/**
  * Create a resolved continuous scale
  */
 export function createResolvedContinuousScale(
   aesthetic: string,
   domain: [number, number],
   range: [number, number],
-  transform: (v: number) => number = (v) => v
+  trans: ScaleTransform = 'identity'
 ): ResolvedScale {
   const [domainMin, domainMax] = domain
   const [rangeMin, rangeMax] = range
   const rangeSpan = rangeMax - rangeMin
+
+  const { transform, invert } = getTransformFunctions(trans)
 
   return {
     aesthetic,
     type: 'continuous',
     domain,
     range,
+    trans,
+    transform,
+    invert,
 
     normalize(value: unknown): number {
       const num = Number(value)
@@ -167,6 +223,7 @@ export function createResolvedContinuousScale(
       const transformed = transform(num)
       const transformedMin = transform(domainMin)
       const transformedMax = transform(domainMax)
+      if (transformedMax === transformedMin) return 0.5
       return (transformed - transformedMin) / (transformedMax - transformedMin)
     },
 
@@ -368,6 +425,36 @@ export interface CoordLimits {
 }
 
 /**
+ * Compute domain for a scale, handling transforms appropriately
+ * For log scales, uses the raw data range without nice expansion to 0
+ */
+function computeDomain(
+  data: DataSource,
+  field: string,
+  trans: ScaleTransform = 'identity'
+): [number, number] {
+  const rawDomain = inferContinuousDomain(data, field)
+
+  // For log scales, don't use niceDomain since it might expand to 0
+  // Instead, use nice values that stay within the positive range
+  if (trans === 'log10') {
+    const [min, max] = rawDomain
+    // Ensure minimum is positive for log scale
+    const safeMin = min > 0 ? min : 0.001
+    const safeMax = max > 0 ? max : 1
+
+    // Find nice powers of 10 that bound the data
+    const minPow = Math.floor(Math.log10(safeMin))
+    const maxPow = Math.ceil(Math.log10(safeMax))
+
+    return [Math.pow(10, minPow), Math.pow(10, maxPow)]
+  }
+
+  // For other transforms, use niceDomain
+  return niceDomain(rawDomain)
+}
+
+/**
  * Build scale context from data and aesthetic mapping
  */
 export function buildScaleContext(
@@ -397,14 +484,17 @@ export function buildScaleContext(
       [plotArea.x, plotArea.x + plotArea.width - 1]
     )
   } else {
-    // Priority: coord xlim > user scale domain > inferred from data
+    // Get transform from user scale
+    const xTrans = userXScale?.trans ?? 'identity'
+    // Priority: coord xlim > user scale domain > computed from data
     const xDomain = coordLimits?.xlim ??
       userXScale?.domain as [number, number] | undefined ??
-      niceDomain(inferContinuousDomain(data, aes.x))
+      computeDomain(data, aes.x, xTrans)
     x = createResolvedContinuousScale(
       'x',
       xDomain,
-      [plotArea.x, plotArea.x + plotArea.width - 1]
+      [plotArea.x, plotArea.x + plotArea.width - 1],
+      xTrans
     )
     // Apply user-provided breaks and labels
     if (userXScale?.breaks) {
@@ -416,16 +506,19 @@ export function buildScaleContext(
   }
 
   // Infer y domain (always continuous for now)
-  // Priority: coord ylim > user scale domain > inferred from data
+  // Get transform from user scale
+  const yTrans = userYScale?.trans ?? 'identity'
+  // Priority: coord ylim > user scale domain > computed from data
   const yDomain = coordLimits?.ylim ??
     userYScale?.domain as [number, number] | undefined ??
-    niceDomain(inferContinuousDomain(data, aes.y))
+    computeDomain(data, aes.y, yTrans)
 
   // Create y scale (maps to vertical canvas range, inverted because y=0 is top)
   const y = createResolvedContinuousScale(
     'y',
     yDomain,
-    [plotArea.y + plotArea.height - 1, plotArea.y] // Inverted!
+    [plotArea.y + plotArea.height - 1, plotArea.y], // Inverted!
+    yTrans
   )
   // Apply user-provided breaks and labels
   if (userYScale?.breaks) {
