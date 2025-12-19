@@ -156,6 +156,46 @@ function applyStatTransform(
 }
 
 /**
+ * Apply coordinate transformation to data
+ *
+ * This transforms x/y values based on the coordinate system:
+ * - coordFlip: swaps x and y
+ * - coordPolar: converts (angle, radius) to (x, y) cartesian
+ * - coordTrans: applies log10/sqrt/reverse transforms
+ * - coordCartesian/Fixed/Equal: identity (no change)
+ */
+function applyCoordTransform(
+  data: DataSource,
+  aes: AestheticMapping,
+  coord: { type: string; transform: (x: number, y: number) => { x: number; y: number } }
+): DataSource {
+  // Skip for identity transforms (cartesian, fixed)
+  if (coord.type === 'cartesian' || coord.type === 'fixed') {
+    return data
+  }
+
+  return data.map(row => {
+    const xVal = row[aes.x]
+    const yVal = row[aes.y]
+
+    // Skip if x or y is not a number
+    if (typeof xVal !== 'number' || typeof yVal !== 'number') {
+      return row
+    }
+
+    // Apply coordinate transform
+    const transformed = coord.transform(xVal, yVal)
+
+    // Return new row with transformed coordinates
+    return {
+      ...row,
+      [aes.x]: transformed.x,
+      [aes.y]: transformed.y,
+    }
+  })
+}
+
+/**
  * Render a plot specification to a canvas
  */
 export function renderToCanvas(
@@ -204,6 +244,10 @@ export function renderToCanvas(
     }
   }
 
+  // Apply coordinate transformation to scale data
+  // This ensures scales are built on transformed coordinates (e.g., polar -> cartesian)
+  scaleData = applyCoordTransform(scaleData, scaleAes, spec.coord)
+
   // Build scale context based on (potentially transformed) data
   // Pass coord limits for zooming/clipping
   const coordLimits = spec.coord.xlim || spec.coord.ylim
@@ -232,7 +276,9 @@ export function renderToCanvas(
   // Render each geometry layer
   for (const geom of spec.geoms) {
     // Apply statistical transformation if needed
-    const geomData = applyStatTransform(spec.data, geom, spec.aes)
+    let geomData = applyStatTransform(spec.data, geom, spec.aes)
+    // Apply coordinate transformation (flip, polar, trans, etc.)
+    geomData = applyCoordTransform(geomData, spec.aes, spec.coord)
     renderGeom(geomData, geom, spec.aes, scales, canvas)
   }
 
@@ -579,6 +625,9 @@ function renderPanel(
     }
   }
 
+  // Apply coordinate transformation to scale data
+  scaleData = applyCoordTransform(scaleData, scaleAes, spec.coord)
+
   // Build scale context
   const scales = buildScaleContext(
     scalesMode === 'fixed' || scalesMode === 'free_y'
@@ -603,7 +652,9 @@ function renderPanel(
 
   // Render geometry layers
   for (const geom of spec.geoms) {
-    const geomData = applyStatTransform(panel.data, geom, spec.aes)
+    let geomData = applyStatTransform(panel.data, geom, spec.aes)
+    // Apply coordinate transformation
+    geomData = applyCoordTransform(geomData, spec.aes, spec.coord)
     renderGeom(geomData, geom, spec.aes, scales, canvas)
   }
 }

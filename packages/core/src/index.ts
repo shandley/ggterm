@@ -177,7 +177,20 @@ export type {
 } from './scales'
 
 // Coordinates
-export { coordCartesian, coordFlip, coordPolar } from './coords/cartesian'
+export {
+  coordCartesian,
+  coordFlip,
+  coordPolar,
+  coordFixed,
+  coordEqual,
+  coordTrans,
+  coordFlipWithLimits,
+} from './coords/cartesian'
+export type {
+  CartesianOptions,
+  FixedOptions,
+  TransOptions,
+} from './coords/cartesian'
 
 // Facets
 export {
