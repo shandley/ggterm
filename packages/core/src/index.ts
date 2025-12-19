@@ -166,6 +166,21 @@ export {
   scale_fill_viridis,
   scale_fill_discrete,
   scale_fill_manual,
+  // ColorBrewer scales
+  scale_color_brewer,
+  scale_fill_brewer,
+  scale_color_distiller,
+  scale_fill_distiller,
+  // Gradient scales
+  scale_color_gradient,
+  scale_fill_gradient,
+  scale_color_gradient2,
+  scale_fill_gradient2,
+  scale_color_gradientn,
+  scale_fill_gradientn,
+  // Palette utilities
+  getAvailablePalettes,
+  getPaletteColors,
   // Phase 7: Advanced Scales
   scale_size_continuous,
   scale_size_area,
@@ -208,6 +223,14 @@ export type {
   DateTimeScaleOptions,
   TimeScaleOptions,
   DurationScaleOptions,
+  // ColorBrewer types
+  BrewerPalette,
+  BrewerOptions,
+  DistillerOptions,
+  GradientOptions,
+  Gradient2Options,
+  GradientNOptions,
+  PaletteName,
 } from './scales'
 
 // Coordinates

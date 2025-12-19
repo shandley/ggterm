@@ -30,6 +30,10 @@ import {
   scale_color_viridis,
   scale_fill_viridis,
   scale_color_discrete,
+  scale_color_brewer,
+  scale_fill_brewer,
+  scale_color_distiller,
+  scale_color_gradient2,
   scale_x_log10,
   scale_y_log10,
   scale_x_date,
@@ -593,6 +597,61 @@ console.log(renderToString(
   { width: WIDTH, height: HEIGHT }
 ))
 
+subheader('scale_color_brewer - ColorBrewer Discrete')
+console.log(renderToString(
+  gg(scatterData)
+    .aes({ x: 'x', y: 'y', color: 'group' })
+    .geom(geom_point())
+    .scale(scale_color_brewer({ palette: 'Set1' }))
+    .labs({ title: 'ColorBrewer Set1 Palette', x: 'X', y: 'Y', color: 'Group' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('scale_color_brewer - Dark2 Palette')
+console.log(renderToString(
+  gg(scatterData)
+    .aes({ x: 'x', y: 'y', color: 'group' })
+    .geom(geom_point())
+    .scale(scale_color_brewer({ palette: 'Dark2' }))
+    .labs({ title: 'ColorBrewer Dark2 Palette', x: 'X', y: 'Y', color: 'Group' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('scale_color_distiller - ColorBrewer Continuous')
+console.log(renderToString(
+  gg(scatterData)
+    .aes({ x: 'x', y: 'y', color: 'size' })
+    .geom(geom_point())
+    .scale(scale_color_distiller({ palette: 'Blues' }))
+    .labs({ title: 'ColorBrewer Blues (Continuous)', x: 'X', y: 'Y', color: 'Size' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('scale_color_gradient2 - Diverging Gradient')
+console.log(renderToString(
+  gg(scatterData)
+    .aes({ x: 'x', y: 'y', color: 'size' })
+    .geom(geom_point())
+    .scale(scale_color_gradient2({ low: 'blue', mid: 'white', high: 'red', midpoint: 5 }))
+    .labs({ title: 'Diverging Gradient (Blue-White-Red)', x: 'X', y: 'Y', color: 'Size' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
+subheader('scale_fill_brewer - Filled Bars')
+console.log(renderToString(
+  gg(categoryData.filter(d => d.group === 'X'))
+    .aes({ x: 'category', y: 'value', fill: 'category' })
+    .geom(geom_bar())
+    .scale(scale_fill_brewer({ palette: 'Pastel1' }))
+    .labs({ title: 'Bar Chart with Pastel1 Fill', x: 'Category', y: 'Value' })
+    .spec(),
+  { width: WIDTH, height: HEIGHT }
+))
+
 subheader('coord_fixed - Fixed Aspect Ratio')
 const circleData = Array.from({ length: 50 }, (_, i) => {
   const angle = (i / 50) * 2 * Math.PI
@@ -851,6 +910,8 @@ Features demonstrated:
   • Secondary y-axis (y2)
   • Log scales (scale_x_log10, scale_y_log10)
   • Date scales (scale_x_date)
+  • ColorBrewer palettes (scale_color_brewer, scale_color_distiller)
+  • Gradient scales (scale_color_gradient2)
   • Position adjustments (position_jitter)
   • Coordinate transformations (flip, fixed)
   • Faceting (wrap and grid with custom labellers)
