@@ -48,7 +48,15 @@ ggterm is a TypeScript implementation of the Grammar of Graphics for terminal in
   - core, render-braille, render-block, render-sixel, opentui, svelte: ✅
   - solid: ⚠️ tsconfig rootDir issue (tests pass)
   - vue: ⚠️ vue-tsc compatibility issue (tests pass)
-- [ ] Test `npm publish --dry-run` for each package
+- [x] Test `npm publish --dry-run` for @ggterm/core
+- [x] Optimize @ggterm/core package (414KB → 134KB, 68% reduction)
+
+### 1.4 npm Publication
+- [ ] **NEXT**: Publish @ggterm/core to npm (requires npm token with 2FA bypass)
+  - Create granular access token at https://www.npmjs.com/settings/tokens
+  - Enable "Bypass two-factor authentication for automation"
+  - Run: `npm publish --access public` in packages/core
+- [ ] Publish remaining packages after core is live
 
 ## Phase 2: Documentation Enhancement (Priority: Medium)
 

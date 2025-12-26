@@ -64,3 +64,19 @@ bun test packages/solid       # Solid primitives
 Version: 0.2.0 (beta)
 Maturity: 7.5/10
 See `docs/PUBLISHING-PLAN.md` for roadmap.
+
+## Next Session TODO
+
+**Immediate**: Publish @ggterm/core to npm
+1. Create npm granular access token with "Bypass 2FA" at https://www.npmjs.com/settings/tokens
+2. Run in packages/core: `npm publish --access public`
+3. Verify at https://www.npmjs.com/package/@ggterm/core
+
+**Package optimizations done**:
+- Added `.npmignore` to exclude tests
+- Changed `files` field to only include `dist/`
+- Package size: 134KB (was 414KB)
+
+**After core is published**:
+- Publish remaining 7 packages
+- Add npm badges to README
