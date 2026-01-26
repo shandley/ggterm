@@ -6,9 +6,25 @@ allowed-tools: Bash(bun:*), Read
 
 # Terminal Plotting with ggterm
 
-Create plots using the CLI tool. Just run a single command.
+Create plots using the CLI tool. Start by inspecting the data, then plot.
 
-## Usage
+## Step 1: Inspect Data (Recommended)
+
+```bash
+bun packages/core/src/cli-plot.ts inspect <data.csv>
+```
+
+Shows column names, types (numeric/categorical/date), unique counts, and sample values.
+
+## Step 2: Get Suggestions (Optional)
+
+```bash
+bun packages/core/src/cli-plot.ts suggest <data.csv>
+```
+
+Returns ready-to-run plot commands based on column types.
+
+## Step 3: Create Plot
 
 ```bash
 bun packages/core/src/cli-plot.ts <data.csv> <x> <y> [color] [title] [geom]
@@ -47,9 +63,10 @@ bun packages/core/src/cli-plot.ts examples/data/experiment.csv treatment respons
 ## Workflow
 
 1. Identify the data file from $ARGUMENTS or ask user
-2. Determine x, y, and optional color columns
-3. Run the CLI command
-4. Briefly describe what the plot shows
+2. Run `inspect` to see column names and types
+3. Run `suggest` to get recommended visualizations (or choose based on user request)
+4. Run the plot command
+5. Briefly describe what the plot shows
 
 $ARGUMENTS
 

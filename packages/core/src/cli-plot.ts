@@ -1,7 +1,11 @@
 #!/usr/bin/env bun
 /**
- * Simple CLI for creating plots
- * Usage: bun cli-plot.ts <data.csv> <x> <y> [color] [title] [geom]
+ * CLI for creating plots and inspecting data
+ *
+ * Commands:
+ *   inspect <file>     - Show column types and statistics
+ *   suggest <file>     - Suggest visualizations with ready-to-run commands
+ *   <file> <x> <y> ... - Create a plot (original behavior)
  */
 
 import {
@@ -35,133 +39,445 @@ const GEOM_TYPES = [
   'tile', 'text', 'contour', 'qq'
 ]
 
-const args = process.argv.slice(2)
-
-if (args.length < 3) {
-  console.error('Usage: bun cli-plot.ts <data.csv> <x> <y> [color] [title] [geom]')
-  console.error(`  geom: ${GEOM_TYPES.join(', ')}`)
-  console.error('  (default: point)')
-  process.exit(1)
-}
-
-const [dataFile, x, y, color, title, geomType = 'point'] = args
-
-// Load CSV
-const text = readFileSync(dataFile, 'utf-8')
-const lines = text.trim().split('\n')
-const headers = lines[0].split(',')
-
 // Date pattern: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
 const datePattern = /^\d{4}-\d{2}-\d{2}/
 
-const data = lines.slice(1).map(line => {
-  const values = line.split(',')
-  const row: Record<string, any> = {}
-  headers.forEach((h, i) => {
-    const val = values[i]
-    // Check for date format first
-    if (datePattern.test(val)) {
-      row[h] = new Date(val).getTime()
+interface ColumnInfo {
+  name: string
+  type: 'numeric' | 'categorical' | 'date' | 'mixed'
+  uniqueCount: number
+  sampleValues: string[]
+  min?: number
+  max?: number
+  nullCount: number
+}
+
+/**
+ * Load and parse CSV file
+ */
+function loadCSV(dataFile: string): { headers: string[]; data: Record<string, any>[] } {
+  const text = readFileSync(dataFile, 'utf-8')
+  const lines = text.trim().split('\n')
+  const headers = lines[0].split(',').map(h => h.trim())
+
+  const data = lines.slice(1).map(line => {
+    const values = line.split(',')
+    const row: Record<string, any> = {}
+    headers.forEach((h, i) => {
+      const val = values[i]?.trim()
+      if (val === '' || val === undefined) {
+        row[h] = null
+      } else if (datePattern.test(val)) {
+        row[h] = new Date(val).getTime()
+      } else {
+        const num = Number(val)
+        row[h] = isNaN(num) ? val : num
+      }
+    })
+    return row
+  })
+
+  return { headers, data }
+}
+
+/**
+ * Analyze column types and statistics
+ */
+function analyzeColumns(headers: string[], data: Record<string, any>[]): ColumnInfo[] {
+  return headers.map(name => {
+    const values = data.map(row => row[name])
+    const nonNullValues = values.filter(v => v !== null && v !== undefined)
+    const uniqueValues = [...new Set(nonNullValues)]
+
+    // Determine type
+    let numericCount = 0
+    let dateCount = 0
+    let stringCount = 0
+
+    for (const val of nonNullValues) {
+      if (typeof val === 'number') {
+        // Check if it looks like a timestamp (large number from date parsing)
+        if (val > 946684800000 && val < 4102444800000) { // 2000-2100 range in ms
+          dateCount++
+        } else {
+          numericCount++
+        }
+      } else if (typeof val === 'string') {
+        stringCount++
+      }
+    }
+
+    let type: ColumnInfo['type']
+    if (dateCount > nonNullValues.length * 0.8) {
+      type = 'date'
+    } else if (numericCount > nonNullValues.length * 0.8) {
+      type = 'numeric'
+    } else if (stringCount > nonNullValues.length * 0.8) {
+      type = 'categorical'
     } else {
-      const num = Number(val)
-      row[h] = isNaN(num) ? val : num
+      type = 'mixed'
+    }
+
+    // Get sample values (as strings for display)
+    const sampleValues = uniqueValues.slice(0, 4).map(v => {
+      if (type === 'date' && typeof v === 'number') {
+        return new Date(v).toISOString().split('T')[0]
+      }
+      return String(v)
+    })
+
+    // Calculate min/max for numeric
+    let min: number | undefined
+    let max: number | undefined
+    if (type === 'numeric') {
+      const nums = nonNullValues.filter(v => typeof v === 'number') as number[]
+      if (nums.length > 0) {
+        min = Math.min(...nums)
+        max = Math.max(...nums)
+      }
+    }
+
+    return {
+      name,
+      type,
+      uniqueCount: uniqueValues.length,
+      sampleValues,
+      min,
+      max,
+      nullCount: values.length - nonNullValues.length,
     }
   })
-  return row
-})
-
-// Build plot
-const aes: Record<string, string> = { x }
-if (y && y !== '-') aes.y = y
-if (color && color !== '-') aes.color = color
-
-let plot = gg(data).aes(aes)
-
-// Add geom
-switch (geomType) {
-  case 'line':
-    plot = plot.geom(geom_line())
-    break
-  case 'path':
-    plot = plot.geom(geom_path())
-    break
-  case 'step':
-    plot = plot.geom(geom_step())
-    break
-  case 'histogram':
-    plot = plot.geom(geom_histogram({ bins: 20 }))
-    break
-  case 'freqpoly':
-    plot = plot.geom(geom_freqpoly({ bins: 20 }))
-    break
-  case 'boxplot':
-    plot = plot.geom(geom_boxplot())
-    break
-  case 'violin':
-    plot = plot.geom(geom_violin())
-    break
-  case 'bar':
-    plot = plot.geom(geom_bar())
-    break
-  case 'area':
-    plot = plot.geom(geom_area())
-    break
-  case 'rug':
-    plot = plot.geom(geom_rug())
-    break
-  case 'errorbar':
-    plot = plot.geom(geom_errorbar())
-    break
-  case 'smooth':
-    plot = plot.geom(geom_smooth())
-    break
-  case 'segment':
-    plot = plot.geom(geom_segment())
-    break
-  case 'rect':
-    plot = plot.geom(geom_rect())
-    break
-  case 'tile':
-    plot = plot.geom(geom_tile())
-    break
-  case 'text':
-    plot = plot.geom(geom_text())
-    break
-  case 'contour':
-    plot = plot.geom(geom_contour())
-    break
-  case 'qq':
-    plot = plot.geom(geom_qq())
-    plot = plot.geom(geom_qq_line())
-    break
-  case 'point':
-  default:
-    plot = plot.geom(geom_point())
 }
 
-// Determine y-axis label
-let yLabel: string | undefined = y !== '-' ? y : undefined
-// Histograms, bar charts, and freqpoly show counts by default
-if ((geomType === 'histogram' || geomType === 'bar' || geomType === 'freqpoly') && !yLabel) {
-  yLabel = 'count'
-}
-// Q-Q plots have specific labels
-if (geomType === 'qq') {
-  yLabel = 'Sample Quantiles'
+/**
+ * Handle 'inspect' command
+ */
+function handleInspect(dataFile: string): void {
+  const { headers, data } = loadCSV(dataFile)
+  const columns = analyzeColumns(headers, data)
+
+  console.log(`\n${dataFile}: ${data.length} rows × ${headers.length} columns\n`)
+
+  // Calculate column widths
+  const nameWidth = Math.max(12, ...columns.map(c => c.name.length))
+  const typeWidth = 12
+  const uniqueWidth = 8
+  const rangeWidth = 20
+  const sampleWidth = 35
+
+  // Header
+  const header = [
+    'Column'.padEnd(nameWidth),
+    'Type'.padEnd(typeWidth),
+    'Unique'.padStart(uniqueWidth),
+    'Range/Stats'.padEnd(rangeWidth),
+    'Sample Values',
+  ].join('  ')
+
+  const separator = '─'.repeat(header.length)
+
+  console.log(header)
+  console.log(separator)
+
+  // Rows
+  for (const col of columns) {
+    let rangeStr = ''
+    if (col.type === 'numeric' && col.min !== undefined && col.max !== undefined) {
+      rangeStr = `${col.min.toFixed(1)} – ${col.max.toFixed(1)}`
+    } else if (col.type === 'categorical') {
+      rangeStr = `${col.uniqueCount} categories`
+    } else if (col.type === 'date') {
+      rangeStr = 'date range'
+    }
+
+    const row = [
+      col.name.padEnd(nameWidth),
+      col.type.padEnd(typeWidth),
+      String(col.uniqueCount).padStart(uniqueWidth),
+      rangeStr.padEnd(rangeWidth),
+      col.sampleValues.join(', ').slice(0, sampleWidth),
+    ].join('  ')
+
+    console.log(row)
+  }
+
+  if (columns.some(c => c.nullCount > 0)) {
+    console.log(`\nNote: Some columns have null values`)
+  }
+  console.log('')
 }
 
-// Determine x-axis label
-let xLabel: string = x
-// Q-Q plots have specific labels
-if (geomType === 'qq') {
-  xLabel = 'Theoretical Quantiles'
+/**
+ * Generate plot suggestions based on column types
+ */
+function generateSuggestions(
+  dataFile: string,
+  columns: ColumnInfo[]
+): Array<{ description: string; command: string }> {
+  const suggestions: Array<{ description: string; command: string }> = []
+
+  const numeric = columns.filter(c => c.type === 'numeric')
+  const categorical = columns.filter(c => c.type === 'categorical')
+  const dates = columns.filter(c => c.type === 'date')
+
+  const cliBase = `bun packages/core/src/cli-plot.ts ${dataFile}`
+
+  // 1. If we have dates and numeric, suggest time series
+  if (dates.length > 0 && numeric.length > 0) {
+    const dateCol = dates[0].name
+    const numCol = numeric[0].name
+    suggestions.push({
+      description: `Time series: ${numCol} over ${dateCol}`,
+      command: `${cliBase} ${dateCol} ${numCol} - - line`,
+    })
+  }
+
+  // 2. If we have 2+ numeric columns, suggest scatter
+  if (numeric.length >= 2) {
+    const [x, y] = numeric
+    const colorCol = categorical.length > 0 ? categorical[0].name : '-'
+    suggestions.push({
+      description: `Scatter: ${x.name} vs ${y.name}${colorCol !== '-' ? ` (by ${colorCol})` : ''}`,
+      command: `${cliBase} ${x.name} ${y.name} ${colorCol} - point`,
+    })
+  }
+
+  // 3. Distribution of numeric columns
+  if (numeric.length > 0) {
+    const col = numeric[0].name
+    if (categorical.length > 0) {
+      // Grouped histogram using freqpoly
+      suggestions.push({
+        description: `Distribution: ${col} by ${categorical[0].name}`,
+        command: `${cliBase} ${col} - ${categorical[0].name} - freqpoly`,
+      })
+    } else {
+      suggestions.push({
+        description: `Distribution: ${col}`,
+        command: `${cliBase} ${col} - - - histogram`,
+      })
+    }
+  }
+
+  // 4. Box plot for numeric by categorical
+  if (numeric.length > 0 && categorical.length > 0) {
+    const cat = categorical[0]
+    const num = numeric[0]
+    if (cat.uniqueCount <= 10) {
+      suggestions.push({
+        description: `Box plot: ${num.name} by ${cat.name}`,
+        command: `${cliBase} ${cat.name} ${num.name} - - boxplot`,
+      })
+    }
+  }
+
+  // 5. Bar chart for categorical
+  if (categorical.length > 0) {
+    const cat = categorical[0]
+    if (cat.uniqueCount <= 15) {
+      suggestions.push({
+        description: `Bar chart: counts of ${cat.name}`,
+        command: `${cliBase} ${cat.name} - - - bar`,
+      })
+    }
+  }
+
+  // 6. Q-Q plot for normality check
+  if (numeric.length > 0) {
+    const col = numeric[0].name
+    suggestions.push({
+      description: `Q-Q plot: check ${col} normality`,
+      command: `${cliBase} ${col} - - - qq`,
+    })
+  }
+
+  // 7. If multiple numeric, suggest correlation exploration
+  if (numeric.length >= 3) {
+    const [a, b, c] = numeric
+    suggestions.push({
+      description: `Scatter: ${a.name} vs ${c.name} (alternative pairing)`,
+      command: `${cliBase} ${a.name} ${c.name} - - point`,
+    })
+  }
+
+  return suggestions
 }
 
-// Add labels
-if (title && title !== '-') {
-  plot = plot.labs({ title, x: xLabel, y: yLabel })
+/**
+ * Handle 'suggest' command
+ */
+function handleSuggest(dataFile: string): void {
+  const { headers, data } = loadCSV(dataFile)
+  const columns = analyzeColumns(headers, data)
+  const suggestions = generateSuggestions(dataFile, columns)
+
+  console.log(`\nSuggested visualizations for ${dataFile}:\n`)
+
+  if (suggestions.length === 0) {
+    console.log('No suggestions available. Check that the file has plottable columns.')
+    return
+  }
+
+  suggestions.forEach((s, i) => {
+    console.log(`${i + 1}. ${s.description}`)
+    console.log(`   ${s.command}`)
+    console.log('')
+  })
+}
+
+/**
+ * Handle plot command (original behavior)
+ */
+function handlePlot(args: string[]): void {
+  if (args.length < 3) {
+    printUsage()
+    process.exit(1)
+  }
+
+  const [dataFile, x, y, color, title, geomType = 'point'] = args
+  const { data } = loadCSV(dataFile)
+
+  // Build plot
+  const aes: Record<string, string> = { x }
+  if (y && y !== '-') aes.y = y
+  if (color && color !== '-') aes.color = color
+
+  let plot = gg(data).aes(aes)
+
+  // Add geom
+  switch (geomType) {
+    case 'line':
+      plot = plot.geom(geom_line())
+      break
+    case 'path':
+      plot = plot.geom(geom_path())
+      break
+    case 'step':
+      plot = plot.geom(geom_step())
+      break
+    case 'histogram':
+      plot = plot.geom(geom_histogram({ bins: 20 }))
+      break
+    case 'freqpoly':
+      plot = plot.geom(geom_freqpoly({ bins: 20 }))
+      break
+    case 'boxplot':
+      plot = plot.geom(geom_boxplot())
+      break
+    case 'violin':
+      plot = plot.geom(geom_violin())
+      break
+    case 'bar':
+      plot = plot.geom(geom_bar())
+      break
+    case 'area':
+      plot = plot.geom(geom_area())
+      break
+    case 'rug':
+      plot = plot.geom(geom_rug())
+      break
+    case 'errorbar':
+      plot = plot.geom(geom_errorbar())
+      break
+    case 'smooth':
+      plot = plot.geom(geom_smooth())
+      break
+    case 'segment':
+      plot = plot.geom(geom_segment())
+      break
+    case 'rect':
+      plot = plot.geom(geom_rect())
+      break
+    case 'tile':
+      plot = plot.geom(geom_tile())
+      break
+    case 'text':
+      plot = plot.geom(geom_text())
+      break
+    case 'contour':
+      plot = plot.geom(geom_contour())
+      break
+    case 'qq':
+      plot = plot.geom(geom_qq())
+      plot = plot.geom(geom_qq_line())
+      break
+    case 'point':
+    default:
+      plot = plot.geom(geom_point())
+  }
+
+  // Determine y-axis label
+  let yLabel: string | undefined = y !== '-' ? y : undefined
+  if ((geomType === 'histogram' || geomType === 'bar' || geomType === 'freqpoly') && !yLabel) {
+    yLabel = 'count'
+  }
+  if (geomType === 'qq') {
+    yLabel = 'Sample Quantiles'
+  }
+
+  // Determine x-axis label
+  let xLabel: string = x
+  if (geomType === 'qq') {
+    xLabel = 'Theoretical Quantiles'
+  }
+
+  // Add labels
+  if (title && title !== '-') {
+    plot = plot.labs({ title, x: xLabel, y: yLabel })
+  } else {
+    plot = plot.labs({ x: xLabel, y: yLabel })
+  }
+
+  console.log(plot.render({ width: 70, height: 20, colorMode: 'truecolor' }))
+}
+
+/**
+ * Print usage information
+ */
+function printUsage(): void {
+  console.error(`
+ggterm CLI - Terminal plotting tool
+
+Commands:
+  inspect <file>                    Show column types and statistics
+  suggest <file>                    Suggest visualizations with commands
+  <file> <x> <y> [color] [title] [geom]   Create a plot
+
+Geom types: ${GEOM_TYPES.join(', ')}
+
+Examples:
+  bun cli-plot.ts inspect data.csv
+  bun cli-plot.ts suggest data.csv
+  bun cli-plot.ts data.csv x y color "Title" point
+  bun cli-plot.ts data.csv value - - - histogram
+`)
+}
+
+// Main
+const args = process.argv.slice(2)
+
+if (args.length === 0) {
+  printUsage()
+  process.exit(1)
+}
+
+const command = args[0]
+
+if (command === 'inspect') {
+  if (args.length < 2) {
+    console.error('Usage: bun cli-plot.ts inspect <file>')
+    process.exit(1)
+  }
+  handleInspect(args[1])
+} else if (command === 'suggest') {
+  if (args.length < 2) {
+    console.error('Usage: bun cli-plot.ts suggest <file>')
+    process.exit(1)
+  }
+  handleSuggest(args[1])
+} else if (command === 'help' || command === '--help' || command === '-h') {
+  printUsage()
 } else {
-  plot = plot.labs({ x: xLabel, y: yLabel })
+  // Assume it's a plot command (original behavior)
+  handlePlot(args)
 }
-
-console.log(plot.render({ width: 70, height: 20, colorMode: 'truecolor' }))
