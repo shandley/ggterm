@@ -804,6 +804,72 @@ export function renderGeomHistogram(
 }
 
 /**
+ * Render geom_freqpoly (frequency polygon)
+ * Like histogram but connects bin midpoints with lines
+ * Data should be pre-transformed by stat_bin
+ */
+export function renderGeomFreqpoly(
+  data: DataSource,
+  _geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  if (data.length < 2) return
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Group by color aesthetic if present
+  const groups = new Map<string, DataSource[number][]>()
+  const groupField = aes.group || aes.color
+
+  if (groupField) {
+    for (const row of data) {
+      const key = String(row[groupField] ?? 'default')
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(row)
+    }
+  } else {
+    groups.set('default', data as DataSource[number][])
+  }
+
+  // Draw lines for each group
+  for (const [groupKey, groupData] of groups) {
+    if (groupData.length < 2) continue
+
+    // Sort by x (bin center)
+    const sorted = [...groupData].sort((a, b) => {
+      const ax = Number(a.x) || 0
+      const bx = Number(b.x) || 0
+      return ax - bx
+    })
+
+    const color = scales.color?.map(groupKey) ?? DEFAULT_POINT_COLOR
+
+    // Draw line segments between consecutive bin centers
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const row1 = sorted[i]
+      const row2 = sorted[i + 1]
+
+      const x1 = Math.round(scales.x.map(row1.x as number))
+      const y1 = Math.round(scales.y.map(row1.y as number ?? row1.count as number))
+      const x2 = Math.round(scales.x.map(row2.x as number))
+      const y2 = Math.round(scales.y.map(row2.y as number ?? row2.count as number))
+
+      // Clip line to plot area
+      if (x1 >= plotLeft && x1 <= plotRight && x2 >= plotLeft && x2 <= plotRight &&
+          y1 >= plotTop && y1 <= plotBottom && y2 >= plotTop && y2 <= plotBottom) {
+        drawLine(canvas, x1, y1, x2, y2, color)
+      }
+    }
+  }
+}
+
+/**
  * Render geom_boxplot
  * Data should be pre-transformed by stat_boxplot
  */
@@ -957,6 +1023,23 @@ export function renderGeomSegment(
       lineChar = '─'
   }
 
+  // Get default color from geom.params if specified (for stats like qq_line)
+  const paramColor = geom.params.color
+  let defaultColor: RGBA = DEFAULT_POINT_COLOR
+  if (typeof paramColor === 'string') {
+    // Convert named color to RGBA
+    const namedColors: Record<string, RGBA> = {
+      'gray': { r: 128, g: 128, b: 128, a: 1 },
+      'grey': { r: 128, g: 128, b: 128, a: 1 },
+      'red': { r: 255, g: 0, b: 0, a: 1 },
+      'blue': { r: 0, g: 0, b: 255, a: 1 },
+      'black': { r: 0, g: 0, b: 0, a: 1 },
+    }
+    defaultColor = namedColors[paramColor] ?? DEFAULT_POINT_COLOR
+  } else if (paramColor && typeof paramColor === 'object') {
+    defaultColor = paramColor as RGBA
+  }
+
   for (const row of data) {
     const xVal = row[aes.x]
     const yVal = row[aes.y]
@@ -973,8 +1056,8 @@ export function renderGeomSegment(
     const x2 = Math.round(scales.x.map(xendVal))
     const y2 = Math.round(scales.y.map(yendVal))
 
-    // Get color
-    const color = getPointColor(row, aes, scales.color)
+    // Get color - use scale if available, otherwise use param color
+    const color = (aes.color && scales.color) ? getPointColor(row, aes, scales.color) : defaultColor
 
     // Draw the line segment with clipping
     drawLineClipped(canvas, x1, y1, x2, y2, color, lineChar, plotLeft, plotRight, plotTop, plotBottom)
@@ -1782,6 +1865,9 @@ export function renderGeom(
       break
     case 'histogram':
       renderGeomHistogram(data, geom, aes, scales, canvas)
+      break
+    case 'freqpoly':
+      renderGeomFreqpoly(data, geom, aes, scales, canvas)
       break
     case 'boxplot':
       renderGeomBoxplot(data, geom, aes, scales, canvas)

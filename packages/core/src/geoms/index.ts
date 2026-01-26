@@ -8,7 +8,7 @@ export { geom_path, type PathOptions } from './path'
 export { geom_bar, geom_col, type BarOptions } from './bar'
 export { geom_text, geom_label, type TextOptions } from './text'
 export { geom_area, geom_ribbon, type AreaOptions } from './area'
-export { geom_histogram, type HistogramOptions } from './histogram'
+export { geom_histogram, geom_freqpoly, type HistogramOptions, type FreqpolyOptions } from './histogram'
 export { geom_boxplot, type BoxplotOptions } from './boxplot'
 export { geom_segment, geom_curve, type SegmentOptions } from './segment'
 export { geom_smooth, type SmoothOptions } from './smooth'
@@ -28,3 +28,4 @@ export {
   type ErrorbarOptions,
 } from './errorbar'
 export { geom_rect, geom_abline, type RectOptions, type AblineOptions } from './rect'
+export { geom_qq, geom_qq_line, type QQOptions, type QQLineOptions } from './qq'

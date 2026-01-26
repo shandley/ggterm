@@ -12,6 +12,7 @@ import {
   geom_step,
   geom_bar,
   geom_histogram,
+  geom_freqpoly,
   geom_boxplot,
   geom_violin,
   geom_area,
@@ -23,13 +24,15 @@ import {
   geom_tile,
   geom_text,
   geom_contour,
+  geom_qq,
+  geom_qq_line,
 } from './index'
 import { readFileSync } from 'fs'
 
 const GEOM_TYPES = [
-  'point', 'line', 'path', 'step', 'bar', 'histogram', 'boxplot',
+  'point', 'line', 'path', 'step', 'bar', 'histogram', 'freqpoly', 'boxplot',
   'violin', 'area', 'rug', 'errorbar', 'smooth', 'segment', 'rect',
-  'tile', 'text', 'contour'
+  'tile', 'text', 'contour', 'qq'
 ]
 
 const args = process.argv.slice(2)
@@ -88,6 +91,9 @@ switch (geomType) {
   case 'histogram':
     plot = plot.geom(geom_histogram({ bins: 20 }))
     break
+  case 'freqpoly':
+    plot = plot.geom(geom_freqpoly({ bins: 20 }))
+    break
   case 'boxplot':
     plot = plot.geom(geom_boxplot())
     break
@@ -124,6 +130,10 @@ switch (geomType) {
   case 'contour':
     plot = plot.geom(geom_contour())
     break
+  case 'qq':
+    plot = plot.geom(geom_qq())
+    plot = plot.geom(geom_qq_line())
+    break
   case 'point':
   default:
     plot = plot.geom(geom_point())
@@ -131,16 +141,27 @@ switch (geomType) {
 
 // Determine y-axis label
 let yLabel: string | undefined = y !== '-' ? y : undefined
-// Histograms and bar charts show counts by default
-if ((geomType === 'histogram' || geomType === 'bar') && !yLabel) {
+// Histograms, bar charts, and freqpoly show counts by default
+if ((geomType === 'histogram' || geomType === 'bar' || geomType === 'freqpoly') && !yLabel) {
   yLabel = 'count'
+}
+// Q-Q plots have specific labels
+if (geomType === 'qq') {
+  yLabel = 'Sample Quantiles'
+}
+
+// Determine x-axis label
+let xLabel: string = x
+// Q-Q plots have specific labels
+if (geomType === 'qq') {
+  xLabel = 'Theoretical Quantiles'
 }
 
 // Add labels
 if (title && title !== '-') {
-  plot = plot.labs({ title, x, y: yLabel })
+  plot = plot.labs({ title, x: xLabel, y: yLabel })
 } else {
-  plot = plot.labs({ x, y: yLabel })
+  plot = plot.labs({ x: xLabel, y: yLabel })
 }
 
 console.log(plot.render({ width: 70, height: 20, colorMode: 'truecolor' }))

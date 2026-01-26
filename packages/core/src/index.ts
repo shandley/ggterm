@@ -79,6 +79,11 @@ export {
   geom_pointrange,
   geom_rect,
   geom_abline,
+  // Q-Q plots
+  geom_qq,
+  geom_qq_line,
+  // Frequency polygon
+  geom_freqpoly,
 } from './geoms'
 export type {
   PathOptions,
@@ -91,6 +96,9 @@ export type {
   ErrorbarOptions,
   RectOptions,
   AblineOptions,
+  QQOptions,
+  QQLineOptions,
+  FreqpolyOptions,
 } from './geoms'
 
 // Position adjustments
@@ -121,11 +129,15 @@ export {
   stat_density,
   stat_smooth,
   stat_summary,
+  stat_qq,
+  stat_qq_line,
   computeBins,
   computeBoxplotStats,
   computeDensity,
   computeSmooth,
   computeSummary,
+  computeQQ,
+  computeQQLine,
 } from './stats'
 export type {
   StatBinParams,
@@ -139,6 +151,8 @@ export type {
   StatSummaryParams,
   SummaryResult,
   SummaryFun,
+  StatQQParams,
+  QQResult,
 } from './stats'
 
 // Scales

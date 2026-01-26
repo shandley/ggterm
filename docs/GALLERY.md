@@ -8,6 +8,8 @@ A visual guide to all plot types available in ggterm.
 - [Line Charts](#line-charts)
 - [Bar Charts](#bar-charts)
 - [Histograms](#histograms)
+- [Frequency Polygons](#frequency-polygons)
+- [Q-Q Plots](#q-q-plots)
 - [Area Charts](#area-charts)
 - [Box Plots](#box-plots)
 - [Heatmaps](#heatmaps)
@@ -264,6 +266,87 @@ const plot = gg(data)
   .labs({ title: 'Overlapping Distributions' })
 
 console.log(plot.render({ width: 60, height: 15 }))
+```
+
+---
+
+## Frequency Polygons
+
+Line-based alternative to histograms, ideal for comparing multiple distributions.
+
+### Basic Frequency Polygon
+
+```typescript
+import { gg, geom_freqpoly } from '@ggterm/core'
+
+const data = Array.from({ length: 100 }, () => ({
+  value: Math.random() * 100
+}))
+
+const plot = gg(data)
+  .aes({ x: 'value' })
+  .geom(geom_freqpoly({ bins: 20 }))
+  .labs({ title: 'Frequency Polygon', x: 'Value', y: 'Count' })
+
+console.log(plot.render({ width: 60, height: 15 }))
+```
+
+### Comparing Distributions
+
+```typescript
+import { gg, geom_freqpoly } from '@ggterm/core'
+
+const data = [
+  ...Array.from({ length: 50 }, () => ({ value: Math.random() * 50, group: 'A' })),
+  ...Array.from({ length: 50 }, () => ({ value: Math.random() * 50 + 25, group: 'B' })),
+]
+
+const plot = gg(data)
+  .aes({ x: 'value', color: 'group' })
+  .geom(geom_freqpoly({ bins: 15 }))
+  .labs({ title: 'Distribution Comparison' })
+
+console.log(plot.render({ width: 60, height: 15 }))
+```
+
+---
+
+## Q-Q Plots
+
+Quantile-quantile plots for assessing whether data follows a theoretical distribution.
+
+### Basic Q-Q Plot
+
+```typescript
+import { gg, geom_qq, geom_qq_line } from '@ggterm/core'
+
+// Generate sample data
+const data = Array.from({ length: 50 }, () => ({
+  value: (Math.random() + Math.random() + Math.random() - 1.5) * 2
+}))
+
+const plot = gg(data)
+  .aes({ x: 'value', y: 'value' })
+  .geom(geom_qq())
+  .geom(geom_qq_line())
+  .labs({
+    title: 'Q-Q Plot',
+    x: 'Theoretical Quantiles',
+    y: 'Sample Quantiles'
+  })
+
+console.log(plot.render({ width: 60, height: 15 }))
+```
+
+**Interpretation**: Points falling along the diagonal line indicate normality. Deviations suggest non-normal distributions:
+- S-shaped curve: heavy or light tails
+- Curved away at ends: skewness
+- Steps: discrete or rounded data
+
+### Q-Q Plot via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts data.csv value - - "Normality Check" qq
 ```
 
 ---

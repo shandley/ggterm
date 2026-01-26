@@ -116,6 +116,40 @@ export function stat_bin(params: StatBinParams = {}): Stat {
   return {
     type: 'bin',
     compute(data: DataSource, aes: AestheticMapping): DataSource {
+      // Check if there's a grouping aesthetic (color, fill, or group)
+      const groupField = aes.color || aes.fill || aes.group
+
+      if (groupField) {
+        // Group data by the grouping variable
+        const groups = new Map<string, DataSource>()
+        for (const row of data) {
+          const groupVal = String(row[groupField] ?? 'default')
+          if (!groups.has(groupVal)) {
+            groups.set(groupVal, [])
+          }
+          groups.get(groupVal)!.push(row)
+        }
+
+        // Compute bins for each group
+        const results: DataSource = []
+        for (const [groupVal, groupData] of groups) {
+          const { bins } = computeBins(groupData, aes.x, params)
+          for (const bin of bins) {
+            results.push({
+              x: bin.x,
+              xmin: bin.xmin,
+              xmax: bin.xmax,
+              y: bin.count,
+              count: bin.count,
+              density: bin.density,
+              [groupField]: groupVal,  // Preserve the group value
+            })
+          }
+        }
+        return results
+      }
+
+      // No grouping - bin all data together
       const { bins } = computeBins(data, aes.x, params)
 
       // Return binned data with y as count

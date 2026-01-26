@@ -20,7 +20,7 @@ Arguments:
 - `y` - Column name for y-axis (use `-` for histogram)
 - `color` - Column name for color (optional, use `-` to skip)
 - `title` - Plot title (optional, use `-` to skip)
-- `geom` - Geometry type: `point` (default), `line`, `histogram`, `boxplot`, `bar`
+- `geom` - Geometry type: `point` (default), `line`, `path`, `step`, `bar`, `histogram`, `freqpoly`, `boxplot`, `violin`, `area`, `rug`, `errorbar`, `smooth`, `segment`, `rect`, `tile`, `text`, `contour`, `qq`
 
 ## Examples
 
@@ -68,6 +68,8 @@ $ARGUMENTS
 | 2D density | `geom_density_2d()` | Contour density |
 | Filled region | `geom_area()` | Cumulative or stacked |
 | Error ranges | `geom_errorbar()` | Confidence intervals |
+| Normality check | `geom_qq()` | Q-Q plot |
+| Multi-distribution comparison | `geom_freqpoly()` | Overlaid frequency lines |
 
 ## Common Plot Types
 
@@ -227,8 +229,8 @@ For detailed examples, see [examples/basic-plots.md](examples/basic-plots.md).
 ### All Available Geoms
 
 Point/line: `geom_point`, `geom_line`, `geom_path`, `geom_step`
-Bar: `geom_bar`, `geom_col`, `geom_histogram`
-Distribution: `geom_boxplot`, `geom_violin`, `geom_density_2d`
+Bar: `geom_bar`, `geom_col`, `geom_histogram`, `geom_freqpoly`
+Distribution: `geom_boxplot`, `geom_violin`, `geom_density_2d`, `geom_qq`, `geom_qq_line`
 Area: `geom_area`, `geom_ribbon`
 Reference: `geom_hline`, `geom_vline`, `geom_abline`, `geom_segment`
 Text: `geom_text`, `geom_label`

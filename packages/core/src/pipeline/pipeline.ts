@@ -17,6 +17,7 @@ import { stat_count } from '../stats/count'
 import { stat_density, stat_ydensity } from '../stats/density'
 import { stat_smooth } from '../stats/smooth'
 import { stat_summary } from '../stats/summary'
+import { stat_qq, stat_qq_line } from '../stats/qq'
 import { computeFacetPanels, calculatePanelLayouts, calculateGridStripLayout, label_value } from '../facets'
 import type { FacetPanel, PanelLayout, GridStripLayout, Labeller } from '../facets'
 
@@ -176,6 +177,18 @@ function applyStatTransform(
     const counts = countStat.compute(data, aes)
     // Map count results to y field for bar rendering
     return counts.map(c => ({ x: c.x, y: c.count, count: c.count }))
+  } else if (geom.stat === 'qq') {
+    const qqStat = stat_qq({
+      distribution: geom.params.distribution as 'norm' | 'uniform' | 'exp',
+      dparams: geom.params.dparams as { mean?: number; sd?: number; rate?: number },
+    })
+    return qqStat.compute(data, aes)
+  } else if (geom.stat === 'qq_line') {
+    const qqLineStat = stat_qq_line({
+      distribution: geom.params.distribution as 'norm' | 'uniform' | 'exp',
+      dparams: geom.params.dparams as { mean?: number; sd?: number; rate?: number },
+    })
+    return qqLineStat.compute(data, aes)
   }
   return data
 }
@@ -273,6 +286,20 @@ export function renderToCanvas(
       scaleData = [...scaleData, { x: scaleData[0]?.x ?? '', y: 0 }]
       scaleAes = { ...spec.aes, x: 'x', y: 'y' }
       break
+    } else if (geom.stat === 'qq') {
+      // Q-Q plot: x = theoretical quantiles, y = sample quantiles
+      scaleData = applyStatTransform(spec.data, geom, spec.aes)
+      scaleAes = { ...spec.aes, x: 'x', y: 'y' }
+      break
+    } else if (geom.stat === 'qq_line') {
+      // Q-Q line uses the same data range as Q-Q points
+      // Get the qq data for scale determination
+      const qqGeom = spec.geoms.find(g => g.stat === 'qq')
+      if (qqGeom) {
+        scaleData = applyStatTransform(spec.data, qqGeom, spec.aes)
+        scaleAes = { ...spec.aes, x: 'x', y: 'y' }
+      }
+      break
     }
   }
 
@@ -332,8 +359,11 @@ export function renderToCanvas(
       geomData = applyStatTransform(spec.data, geom, spec.aes)
 
       // Update geomAes for stat-transformed data that uses different field names
-      if (geom.stat === 'bin' || geom.stat === 'boxplot' || geom.stat === 'count') {
+      if (geom.stat === 'bin' || geom.stat === 'boxplot' || geom.stat === 'count' || geom.stat === 'qq') {
         geomAes = { ...spec.aes, x: 'x', y: 'y' }
+      } else if (geom.stat === 'qq_line') {
+        // Q-Q line uses segment format with endpoints
+        geomAes = { ...spec.aes, x: 'x', y: 'y', xend: 'xend', yend: 'yend' }
       }
 
       // Apply coordinate transformation (flip, polar, trans, etc.)

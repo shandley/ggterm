@@ -19,3 +19,6 @@ export type { StatSmoothParams, SmoothResult } from './smooth'
 
 export { stat_summary, computeSummary } from './summary'
 export type { StatSummaryParams, SummaryResult, SummaryFun } from './summary'
+
+export { stat_qq, stat_qq_line, computeQQ, computeQQLine } from './qq'
+export type { StatQQParams, QQResult } from './qq'

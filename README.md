@@ -87,6 +87,7 @@ ggterm> gg(data).aes({x: "x", y: "y", color: "group"}).geom(geom_point())
 
 - **Interactive REPL**: Build plots interactively with `npx ggterm`
 - **Multiple Renderers**: Braille (high-res), Block (compatible), Sixel/Kitty (pixel-perfect)
+- **20+ Geometries**: Points, lines, bars, histograms, boxplots, Q-Q plots, frequency polygons, and more
 - **Grammar Layers**: Data, Aesthetics, Geometries, Statistics, Scales, Coordinates, Facets, Themes
 - **Streaming Data**: Real-time updates with `plot.push(newData)`
 - **Terminal Detection**: Automatic color capability detection and graceful degradation

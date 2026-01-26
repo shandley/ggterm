@@ -17,7 +17,7 @@ bun run packages/core/src/demo.ts  # Run demo
 
 | Package | Purpose |
 |---------|---------|
-| core | Grammar engine, 18+ geoms, 50+ scales, pipeline, CLI |
+| core | Grammar engine, 20+ geoms, 50+ scales, pipeline, CLI |
 | render-braille | 2x4 dot Braille characters |
 | render-block | Half-block Unicode rendering |
 | render-sixel | Sixel/Kitty/iTerm2 pixel protocols |
@@ -52,7 +52,7 @@ console.log(renderToString(plot, { width: 80, height: 24 }))
 ## Testing
 
 ```bash
-bun test packages/core        # Core tests (~160 tests)
+bun test packages/core        # Core tests (~1170 tests)
 bun test packages/opentui     # React hooks (~100 tests)
 bun test packages/vue         # Vue composables
 bun test packages/svelte      # Svelte stores
@@ -71,6 +71,12 @@ See `docs/PUBLISHING-PLAN.md` for roadmap.
 1. Create npm granular access token with "Bypass 2FA" at https://www.npmjs.com/settings/tokens
 2. Run in packages/core: `npm publish --access public`
 3. Verify at https://www.npmjs.com/package/@ggterm/core
+
+**Recent additions**:
+- Added `geom_qq`, `geom_qq_line` for Q-Q plots (normality assessment)
+- Added `geom_freqpoly` for frequency polygons (multi-distribution comparison)
+- CLI now exposes 19 geom types
+- 1168 tests passing
 
 **Package optimizations done**:
 - Added `.npmignore` to exclude tests

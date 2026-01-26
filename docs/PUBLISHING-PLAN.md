@@ -9,7 +9,7 @@ ggterm is a TypeScript implementation of the Grammar of Graphics for terminal in
 | Library | Language | Stars | Approach | ggterm Advantage |
 |---------|----------|-------|----------|------------------|
 | plotext | Python | 3.3k | Imperative API | Declarative, composable layers |
-| asciichart | JS | 2k | Line charts only | Full geometry set (18+ types) |
+| asciichart | JS | 2k | Line charts only | Full geometry set (20+ types) |
 | termgraph | Python | 3k | Bar charts only | Multi-geometry, faceting |
 | uniplot | Python | 2.1k | Scatter/line only | Stats, transformations |
 
@@ -43,7 +43,7 @@ ggterm is a TypeScript implementation of the Grammar of Graphics for terminal in
 - [ ] Add npm badge to README
 
 ### 1.3 Quality Verification
-- [x] Run full test suite (1696 tests pass)
+- [x] Run full test suite (1168 core tests pass)
 - [x] Verify builds for all 8 packages
   - core, render-braille, render-block, render-sixel, opentui, svelte: ✅
   - solid: ⚠️ tsconfig rootDir issue (tests pass)
