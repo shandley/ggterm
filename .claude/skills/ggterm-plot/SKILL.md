@@ -1,33 +1,57 @@
 ---
 name: ggterm-plot
 description: Create terminal data visualizations using Grammar of Graphics. Use when plotting data, creating charts, graphing, visualizing distributions, or when the user mentions plot, chart, graph, histogram, scatter, boxplot, or visualize.
-allowed-tools: Bash(bun:*), Bash(npx:*), Read, Write
+allowed-tools: Bash(bun:*), Read
 ---
 
 # Terminal Plotting with ggterm
 
-Create publication-quality terminal visualizations using the Grammar of Graphics.
+Create plots using the CLI tool. Just run a single command.
 
-## Installation
+## Usage
 
 ```bash
-bun add @ggterm/core
-# or
-npm install @ggterm/core
+bun packages/core/src/cli-plot.ts <data.csv> <x> <y> [color] [title] [geom]
 ```
 
-## Basic Pattern
+Arguments:
+- `data.csv` - Path to CSV file (use absolute path or relative to ggterm dir)
+- `x` - Column name for x-axis
+- `y` - Column name for y-axis (use `-` for histogram)
+- `color` - Column name for color (optional, use `-` to skip)
+- `title` - Plot title (optional, use `-` to skip)
+- `geom` - Geometry type: `point` (default), `line`, `histogram`, `boxplot`, `bar`
 
-```typescript
-import { gg, geom_point, geom_line } from '@ggterm/core'
+## Examples
 
-const plot = gg(data)
-  .aes({ x: 'time', y: 'value' })       // Map data to aesthetics
-  .geom(geom_point())                    // Add geometry layer
-  .labs({ title: 'My Plot', x: 'Time', y: 'Value' })
-
-console.log(plot.render({ width: 80, height: 24 }))
+Scatter plot:
+```bash
+bun packages/core/src/cli-plot.ts examples/data/iris.csv sepal_length sepal_width species "Iris Dataset" point
 ```
+
+Line chart:
+```bash
+bun packages/core/src/cli-plot.ts examples/data/stocks.csv date price symbol "Stock Prices" line
+```
+
+Histogram:
+```bash
+bun packages/core/src/cli-plot.ts examples/data/iris.csv sepal_width - - "Sepal Width Distribution" histogram
+```
+
+Box plot:
+```bash
+bun packages/core/src/cli-plot.ts examples/data/experiment.csv treatment response_time - "Response by Treatment" boxplot
+```
+
+## Workflow
+
+1. Identify the data file from $ARGUMENTS or ask user
+2. Determine x, y, and optional color columns
+3. Run the CLI command
+4. Briefly describe what the plot shows
+
+$ARGUMENTS
 
 ## Geom Selection Guide
 
@@ -192,7 +216,7 @@ plot.render({
   width: 80,           // Characters wide
   height: 24,          // Lines tall
   renderer: 'auto',    // 'braille' | 'block' | 'sixel' | 'auto'
-  colorMode: 'auto'    // 'none' | '16' | '256' | 'truecolor' | 'auto'
+  colorMode: 'truecolor'  // Use 'truecolor' for full color support
 })
 ```
 
