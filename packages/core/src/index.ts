@@ -420,3 +420,7 @@ export type {
 // REPL (Phase 8)
 export { GGTermREPL, startREPL } from './repl'
 export type { REPLOptions, REPLState } from './repl'
+
+// Export (Publication-quality output)
+export { plotSpecToVegaLite, exportToVegaLiteJSON } from './export'
+export type { VegaLiteSpec, ExportOptions } from './export'

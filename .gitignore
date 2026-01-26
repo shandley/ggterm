@@ -51,3 +51,4 @@ bun-debug.log*
 tmp/
 temp/
 *.tmp
+.ggterm/

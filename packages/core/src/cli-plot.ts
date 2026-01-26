@@ -30,8 +30,10 @@ import {
   geom_contour,
   geom_qq,
   geom_qq_line,
+  exportToVegaLiteJSON,
 } from './index'
-import { readFileSync } from 'fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
+import { join, dirname } from 'path'
 
 const GEOM_TYPES = [
   'point', 'line', 'path', 'step', 'bar', 'histogram', 'freqpoly', 'boxplot',
@@ -429,6 +431,16 @@ function handlePlot(args: string[]): void {
   }
 
   console.log(plot.render({ width: 70, height: 20, colorMode: 'truecolor' }))
+
+  // Save PlotSpec and Vega-Lite spec for publication export
+  const ggTermDir = join(process.cwd(), '.ggterm')
+  if (!existsSync(ggTermDir)) {
+    mkdirSync(ggTermDir, { recursive: true })
+  }
+
+  const spec = plot.spec()
+  writeFileSync(join(ggTermDir, 'last-plot.json'), JSON.stringify(spec, null, 2))
+  writeFileSync(join(ggTermDir, 'last-plot-vegalite.json'), exportToVegaLiteJSON(spec))
 }
 
 /**
