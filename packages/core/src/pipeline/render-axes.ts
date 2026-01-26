@@ -150,6 +150,16 @@ export function calculateTicks(
  * Format a tick value for display
  */
 export function formatTick(value: number): string {
+  // Detect timestamps (milliseconds since epoch, roughly 1970-2100)
+  // Timestamps are typically 1e12 to 5e12 range
+  if (value >= 1e11 && value <= 1e14) {
+    const date = new Date(value)
+    // Format as MM/DD or MM-DD depending on range
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    return `${month}/${day}`
+  }
+
   // Handle very small or very large numbers with scientific notation
   if (Math.abs(value) >= 1e6 || (Math.abs(value) < 1e-3 && value !== 0)) {
     return value.toExponential(1)
@@ -212,6 +222,13 @@ export function renderBottomAxis(
   } else if (scale.type === 'discrete') {
     // Discrete scale - show category labels
     const domain = scale.domain as string[]
+    // Calculate spacing between categories
+    const spacing = domain.length > 1
+      ? Math.floor((xEnd - xStart) / (domain.length - 1))
+      : (xEnd - xStart)
+    // Allow labels up to 80% of spacing, minimum 8 chars
+    const maxLen = Math.max(8, Math.floor(spacing * 0.8))
+
     for (const category of domain) {
       const x = Math.round(scale.map(category))
       if (x >= xStart && x <= xEnd) {
@@ -219,7 +236,6 @@ export function renderBottomAxis(
         canvas.drawChar(x, y, '┬', axisColor)
 
         // Category label (truncate with ellipsis if needed)
-        const maxLen = Math.floor((xEnd - xStart) / domain.length) - 1
         let tickLabel: string
         if (category.length > maxLen) {
           // Truncate and add ellipsis if there's room
@@ -231,8 +247,17 @@ export function renderBottomAxis(
         } else {
           tickLabel = category
         }
-        const labelX = x - Math.floor(tickLabel.length / 2)
-        canvas.drawString(Math.max(xStart, labelX), y + 1, tickLabel, axisColor)
+        // Center label, but clip to canvas bounds
+        let labelX = x - Math.floor(tickLabel.length / 2)
+        labelX = Math.max(xStart, labelX)
+        // Truncate if label extends past right edge
+        const availableWidth = xEnd - labelX + 1
+        if (tickLabel.length > availableWidth && availableWidth >= 2) {
+          tickLabel = tickLabel.substring(0, availableWidth - 1) + '…'
+        } else if (tickLabel.length > availableWidth) {
+          tickLabel = tickLabel.substring(0, Math.max(1, availableWidth))
+        }
+        canvas.drawString(labelX, y + 1, tickLabel, axisColor)
       }
     }
   }
@@ -289,16 +314,20 @@ export function renderLeftAxis(
     }
   }
 
-  // Draw axis label horizontally in the left margin
+  // Draw axis label vertically in the left margin
   if (label) {
-    // Truncate label if too long for margin
-    const maxLabelLen = x - 1
+    const plotHeight = bottom - top
+    // Truncate label if too tall for plot area
+    const maxLabelLen = plotHeight
     const displayLabel = label.length > maxLabelLen
       ? label.substring(0, maxLabelLen)
       : label
     // Center vertically
-    const labelY = top + Math.floor((bottom - top) / 2)
-    canvas.drawString(0, labelY, displayLabel, axisColor)
+    const startY = top + Math.floor((plotHeight - displayLabel.length) / 2)
+    // Draw each character vertically
+    for (let i = 0; i < displayLabel.length; i++) {
+      canvas.drawChar(0, startY + i, displayLabel[i], axisColor)
+    }
   }
 }
 

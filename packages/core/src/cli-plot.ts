@@ -21,12 +21,22 @@ const [dataFile, x, y, color, title, geomType = 'point'] = args
 const text = readFileSync(dataFile, 'utf-8')
 const lines = text.trim().split('\n')
 const headers = lines[0].split(',')
+
+// Date pattern: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
+const datePattern = /^\d{4}-\d{2}-\d{2}/
+
 const data = lines.slice(1).map(line => {
   const values = line.split(',')
   const row: Record<string, any> = {}
   headers.forEach((h, i) => {
-    const num = Number(values[i])
-    row[h] = isNaN(num) ? values[i] : num
+    const val = values[i]
+    // Check for date format first
+    if (datePattern.test(val)) {
+      row[h] = new Date(val).getTime()
+    } else {
+      const num = Number(val)
+      row[h] = isNaN(num) ? val : num
+    }
   })
   return row
 })
@@ -56,11 +66,18 @@ switch (geomType) {
     plot = plot.geom(geom_point())
 }
 
-// Add title if provided
+// Determine y-axis label
+let yLabel: string | undefined = y !== '-' ? y : undefined
+// Histograms and bar charts show counts by default
+if ((geomType === 'histogram' || geomType === 'bar') && !yLabel) {
+  yLabel = 'count'
+}
+
+// Add labels
 if (title && title !== '-') {
-  plot = plot.labs({ title, x, y: y !== '-' ? y : undefined })
+  plot = plot.labs({ title, x, y: yLabel })
 } else {
-  plot = plot.labs({ x, y: y !== '-' ? y : undefined })
+  plot = plot.labs({ x, y: yLabel })
 }
 
 console.log(plot.render({ width: 70, height: 20, colorMode: 'truecolor' }))
