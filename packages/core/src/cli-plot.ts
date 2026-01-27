@@ -5,6 +5,9 @@
  * Commands:
  *   inspect <file>     - Show column types and statistics
  *   suggest <file>     - Suggest visualizations with ready-to-run commands
+ *   history            - List all plots in history
+ *   show <id>          - Re-render a plot from history
+ *   export [id] [file] - Export plot to HTML (latest or by ID)
  *   <file> <x> <y> ... - Create a plot (original behavior)
  */
 
@@ -30,10 +33,17 @@ import {
   geom_contour,
   geom_qq,
   geom_qq_line,
-  exportToVegaLiteJSON,
 } from './index'
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
-import { join, dirname } from 'path'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { join } from 'path'
+import {
+  savePlotToHistory,
+  loadPlotFromHistory,
+  getHistory,
+  searchHistory,
+  getLatestPlotId,
+  getGGTermDir,
+} from './history'
 
 const GEOM_TYPES = [
   'point', 'line', 'path', 'step', 'bar', 'histogram', 'freqpoly', 'boxplot',
@@ -432,38 +442,138 @@ function handlePlot(args: string[]): void {
 
   console.log(plot.render({ width: 70, height: 20, colorMode: 'truecolor' }))
 
-  // Save PlotSpec and Vega-Lite spec for publication export
-  const ggTermDir = join(process.cwd(), '.ggterm')
-  if (!existsSync(ggTermDir)) {
-    mkdirSync(ggTermDir, { recursive: true })
+  // Save to history with provenance
+  const spec = plot.spec()
+  const commandStr = `cli-plot.ts ${args.join(' ')}`
+  const plotId = savePlotToHistory(spec, {
+    dataFile,
+    command: commandStr,
+  })
+
+  console.log(`\n[Saved as ${plotId}]`)
+}
+
+/**
+ * Handle 'history' command - list all plots
+ */
+function handleHistory(searchQuery?: string): void {
+  const entries = searchQuery ? searchHistory(searchQuery) : getHistory()
+
+  if (entries.length === 0) {
+    if (searchQuery) {
+      console.log(`No plots found matching "${searchQuery}"`)
+    } else {
+      console.log('No plots in history. Create a plot first.')
+    }
+    return
   }
 
-  const spec = plot.spec()
-  writeFileSync(join(ggTermDir, 'last-plot.json'), JSON.stringify(spec, null, 2))
-  writeFileSync(join(ggTermDir, 'last-plot-vegalite.json'), exportToVegaLiteJSON(spec))
+  console.log(`\nPlot History${searchQuery ? ` (matching "${searchQuery}")` : ''}:\n`)
+
+  // Table header
+  const idWidth = 16
+  const dateWidth = 12
+  const descWidth = 45
+
+  console.log(
+    'ID'.padEnd(idWidth) +
+    'Date'.padEnd(dateWidth) +
+    'Description'
+  )
+  console.log('─'.repeat(idWidth + dateWidth + descWidth))
+
+  for (const entry of entries) {
+    const date = entry.timestamp.split('T')[0]
+    const desc = entry.description.length > descWidth
+      ? entry.description.slice(0, descWidth - 3) + '...'
+      : entry.description
+
+    console.log(
+      entry.id.padEnd(idWidth) +
+      date.padEnd(dateWidth) +
+      desc
+    )
+  }
+
+  console.log(`\nTotal: ${entries.length} plot(s)`)
+  console.log('Use "show <id>" to re-render or "export <id>" to export')
+}
+
+/**
+ * Handle 'show' command - re-render a plot from history
+ */
+function handleShow(plotId: string): void {
+  const historical = loadPlotFromHistory(plotId)
+
+  if (!historical) {
+    console.error(`Plot "${plotId}" not found in history.`)
+    console.error('Use "history" to see available plots.')
+    process.exit(1)
+  }
+
+  const spec = historical.spec
+  const plot = gg(spec.data)
+    .aes(spec.aes)
+
+  // Rebuild the plot from spec
+  // For now, just render the stored spec directly using renderToString
+  const { renderToString } = require('./index')
+  console.log(renderToString(spec, { width: 70, height: 20, colorMode: 'truecolor' }))
+
+  console.log(`\n[${plotId}] ${historical._provenance.description}`)
 }
 
 /**
  * Handle 'export' command - create HTML file for publication export
  */
-function handleExport(outputFile?: string): void {
-  const ggTermDir = join(process.cwd(), '.ggterm')
-  const plotSpecPath = join(ggTermDir, 'last-plot.json')
+function handleExport(idOrFile?: string, outputFile?: string): void {
+  let plotSpec: any
+  let plotId: string | null = null
 
-  if (!existsSync(plotSpecPath)) {
-    console.error('No plot found. Create a plot first using the CLI.')
+  // Determine if first arg is an ID or output file
+  if (idOrFile && idOrFile.match(/^\d{4}-\d{2}-\d{2}-\d{3}$/)) {
+    // It's a plot ID
+    plotId = idOrFile
+    const historical = loadPlotFromHistory(plotId)
+    if (!historical) {
+      console.error(`Plot "${plotId}" not found in history.`)
+      process.exit(1)
+    }
+    plotSpec = historical.spec
+  } else if (idOrFile) {
+    // It's an output filename, use latest plot
+    outputFile = idOrFile
+    plotId = getLatestPlotId()
+    if (!plotId) {
+      console.error('No plot found. Create a plot first using the CLI.')
+      process.exit(1)
+    }
+    const historical = loadPlotFromHistory(plotId)
+    plotSpec = historical?.spec
+  } else {
+    // No args, use latest plot
+    plotId = getLatestPlotId()
+    if (!plotId) {
+      console.error('No plot found. Create a plot first using the CLI.')
+      process.exit(1)
+    }
+    const historical = loadPlotFromHistory(plotId)
+    plotSpec = historical?.spec
+  }
+
+  if (!plotSpec) {
+    console.error('Could not load plot spec.')
     process.exit(1)
   }
 
-  // Read PlotSpec and convert to Vega-Lite with interactivity enabled
+  // Convert to Vega-Lite with interactivity enabled
   const { plotSpecToVegaLite } = require('./export')
-  const plotSpec = JSON.parse(readFileSync(plotSpecPath, 'utf-8'))
   const spec = plotSpecToVegaLite(plotSpec, {
-    interactive: true, // Enable tooltips, hover, legend filter
+    interactive: true,
   })
 
   const title = typeof spec.title === 'string' ? spec.title : spec.title?.text || 'Plot'
-  const output = outputFile || 'plot-export.html'
+  const output = outputFile || `${plotId}.html`
 
   const html = `<!DOCTYPE html>
 <html>
@@ -534,7 +644,9 @@ ggterm CLI - Terminal plotting tool
 Commands:
   inspect <file>                    Show column types and statistics
   suggest <file>                    Suggest visualizations with commands
-  export [output.html]              Export last plot to HTML for PNG/SVG download
+  history [search]                  List all plots (optionally filter by search)
+  show <id>                         Re-render a plot from history
+  export [id] [output.html]         Export plot to HTML (latest or by ID)
   <file> <x> <y> [color] [title] [geom]   Create a plot
 
 Geom types: ${GEOM_TYPES.join(', ')}
@@ -544,6 +656,10 @@ Examples:
   bun cli-plot.ts suggest data.csv
   bun cli-plot.ts data.csv x y color "Title" point
   bun cli-plot.ts data.csv value - - - histogram
+  bun cli-plot.ts history
+  bun cli-plot.ts history scatter
+  bun cli-plot.ts show 2024-01-26-001
+  bun cli-plot.ts export 2024-01-26-001 figure.html
 `)
 }
 
@@ -569,8 +685,16 @@ if (command === 'inspect') {
     process.exit(1)
   }
   handleSuggest(args[1])
+} else if (command === 'history') {
+  handleHistory(args[1]) // Optional search query
+} else if (command === 'show') {
+  if (args.length < 2) {
+    console.error('Usage: bun cli-plot.ts show <plot-id>')
+    process.exit(1)
+  }
+  handleShow(args[1])
 } else if (command === 'export') {
-  handleExport(args[1])
+  handleExport(args[1], args[2])
 } else if (command === 'help' || command === '--help' || command === '-h') {
   printUsage()
 } else {
