@@ -86,9 +86,13 @@ ggterm> gg(data).aes({x: "x", y: "y", color: "group"}).geom(geom_point())
 ## Features
 
 - **Interactive REPL**: Build plots interactively with `npx ggterm`
+- **CLI Tool**: Quick plotting from CSV/JSON files with `bun cli-plot.ts`
 - **Multiple Renderers**: Braille (high-res), Block (compatible), Sixel/Kitty (pixel-perfect)
-- **20+ Geometries**: Points, lines, bars, histograms, boxplots, Q-Q plots, frequency polygons, and more
+- **30+ Geometries**: Points, lines, bars, histograms, boxplots, Q-Q plots, density, contours, and more
 - **Grammar Layers**: Data, Aesthetics, Geometries, Statistics, Scales, Coordinates, Facets, Themes
+- **Faceting**: Small multiples with `facet_wrap()` and `facet_grid()`
+- **Export to HTML**: Interactive Vega-Lite exports with PNG/SVG download
+- **Plot History**: Automatic provenance tracking with search and retrieval
 - **Streaming Data**: Real-time updates with `plot.push(newData)`
 - **Terminal Detection**: Automatic color capability detection and graceful degradation
 - **Framework Support**: React, Solid.js, Svelte, Vue 3 components and composables
@@ -110,6 +114,60 @@ ggterm> gg(data).aes({x: "x", y: "y", color: "group"}).geom(geom_point())
 
 ```bash
 bun add @ggterm/core @ggterm/opentui
+```
+
+## CLI Quick Start
+
+Plot directly from CSV files without writing code:
+
+```bash
+# Basic scatter plot
+bun packages/core/src/cli-plot.ts data.csv x y
+
+# With color mapping and title
+bun packages/core/src/cli-plot.ts data.csv x y category "My Plot"
+
+# Different geometry types
+bun packages/core/src/cli-plot.ts data.csv x y - "Title" histogram
+bun packages/core/src/cli-plot.ts data.csv x y - "Title" boxplot
+
+# Faceted plot (small multiples)
+bun packages/core/src/cli-plot.ts data.csv x y color "Title" point facet_var
+```
+
+**29 CLI-exposed geoms**: point, line, path, step, bar, col, histogram, freqpoly, boxplot, violin, area, ribbon, rug, errorbar, errorbarh, crossbar, linerange, pointrange, smooth, segment, rect, raster, tile, text, label, contour, contour_filled, density_2d, qq
+
+## Export to HTML
+
+Create interactive, publication-ready visualizations:
+
+```bash
+# Export last plot to HTML with Vega-Lite
+bun packages/core/src/cli-plot.ts export output.html
+
+# Export includes:
+# - Interactive pan/zoom
+# - PNG/SVG download buttons
+# - Full Vega-Lite spec for further editing
+```
+
+## Plot History
+
+All plots are automatically saved with provenance metadata:
+
+```bash
+# List all plots
+bun packages/core/src/cli-plot.ts history
+
+# Search for specific plots
+bun packages/core/src/cli-plot.ts history scatter
+bun packages/core/src/cli-plot.ts history sales
+
+# Re-display a plot
+bun packages/core/src/cli-plot.ts show 2024-01-26-001
+
+# Export a historical plot
+bun packages/core/src/cli-plot.ts export 2024-01-26-001 output.html
 ```
 
 ## Documentation

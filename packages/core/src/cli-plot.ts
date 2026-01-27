@@ -18,38 +18,48 @@ import {
   geom_path,
   geom_step,
   geom_bar,
+  geom_col,
   geom_histogram,
   geom_freqpoly,
   geom_boxplot,
   geom_violin,
   geom_area,
+  geom_ribbon,
   geom_rug,
   geom_errorbar,
+  geom_errorbarh,
+  geom_crossbar,
+  geom_linerange,
+  geom_pointrange,
   geom_smooth,
   geom_segment,
   geom_rect,
+  geom_raster,
   geom_tile,
   geom_text,
+  geom_label,
   geom_contour,
+  geom_contour_filled,
+  geom_density_2d,
   geom_qq,
   geom_qq_line,
   facet_wrap,
 } from './index'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { join } from 'path'
+import { readFileSync, writeFileSync } from 'fs'
 import {
   savePlotToHistory,
   loadPlotFromHistory,
   getHistory,
   searchHistory,
   getLatestPlotId,
-  getGGTermDir,
 } from './history'
 
 const GEOM_TYPES = [
-  'point', 'line', 'path', 'step', 'bar', 'histogram', 'freqpoly', 'boxplot',
-  'violin', 'area', 'rug', 'errorbar', 'smooth', 'segment', 'rect',
-  'tile', 'text', 'contour', 'qq'
+  'point', 'line', 'path', 'step', 'bar', 'col', 'histogram', 'freqpoly',
+  'boxplot', 'violin', 'area', 'ribbon', 'rug', 'errorbar', 'errorbarh',
+  'crossbar', 'linerange', 'pointrange', 'smooth', 'segment', 'rect',
+  'raster', 'tile', 'text', 'label', 'contour', 'contour_filled',
+  'density_2d', 'qq'
 ]
 
 // Date pattern: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
@@ -306,7 +316,7 @@ function generateSuggestions(
 
   // 7. If multiple numeric, suggest correlation exploration
   if (numeric.length >= 3) {
-    const [a, b, c] = numeric
+    const [a, , c] = numeric
     suggestions.push({
       description: `Scatter: ${a.name} vs ${c.name} (alternative pairing)`,
       command: `${cliBase} ${a.name} ${c.name} - - point`,
@@ -351,11 +361,12 @@ function handlePlot(args: string[]): void {
   const { data } = loadCSV(dataFile)
 
   // Build plot
+  // Note: y may be absent for histograms (stat computes it)
   const aes: Record<string, string> = { x }
   if (y && y !== '-') aes.y = y
   if (color && color !== '-') aes.color = color
 
-  let plot = gg(data).aes(aes)
+  let plot = gg(data).aes(aes as any)
 
   // Add geom
   switch (geomType) {
@@ -383,14 +394,32 @@ function handlePlot(args: string[]): void {
     case 'bar':
       plot = plot.geom(geom_bar())
       break
+    case 'col':
+      plot = plot.geom(geom_col())
+      break
     case 'area':
       plot = plot.geom(geom_area())
+      break
+    case 'ribbon':
+      plot = plot.geom(geom_ribbon())
       break
     case 'rug':
       plot = plot.geom(geom_rug())
       break
     case 'errorbar':
       plot = plot.geom(geom_errorbar())
+      break
+    case 'errorbarh':
+      plot = plot.geom(geom_errorbarh())
+      break
+    case 'crossbar':
+      plot = plot.geom(geom_crossbar())
+      break
+    case 'linerange':
+      plot = plot.geom(geom_linerange())
+      break
+    case 'pointrange':
+      plot = plot.geom(geom_pointrange())
       break
     case 'smooth':
       plot = plot.geom(geom_smooth())
@@ -401,14 +430,26 @@ function handlePlot(args: string[]): void {
     case 'rect':
       plot = plot.geom(geom_rect())
       break
+    case 'raster':
+      plot = plot.geom(geom_raster())
+      break
     case 'tile':
       plot = plot.geom(geom_tile())
       break
     case 'text':
       plot = plot.geom(geom_text())
       break
+    case 'label':
+      plot = plot.geom(geom_label())
+      break
     case 'contour':
       plot = plot.geom(geom_contour())
+      break
+    case 'contour_filled':
+      plot = plot.geom(geom_contour_filled())
+      break
+    case 'density_2d':
+      plot = plot.geom(geom_density_2d())
       break
     case 'qq':
       plot = plot.geom(geom_qq())
@@ -518,11 +559,8 @@ function handleShow(plotId: string): void {
   }
 
   const spec = historical.spec
-  const plot = gg(spec.data)
-    .aes(spec.aes)
 
-  // Rebuild the plot from spec
-  // For now, just render the stored spec directly using renderToString
+  // Render the stored spec directly using renderToString
   const { renderToString } = require('./index')
   console.log(renderToString(spec, { width: 70, height: 20, colorMode: 'truecolor' }))
 

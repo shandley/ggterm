@@ -307,6 +307,65 @@ const output = plot.render({
 })
 ```
 
+## CLI Tool
+
+Plot directly from CSV files without writing code:
+
+```bash
+# Basic usage
+bun packages/core/src/cli-plot.ts <file> <x> <y> [color] [title] [geom] [facet]
+
+# Scatter plot from CSV
+bun packages/core/src/cli-plot.ts data.csv x y
+
+# With color mapping
+bun packages/core/src/cli-plot.ts data.csv x y category "Sales by Region"
+
+# Histogram (use '-' to skip color)
+bun packages/core/src/cli-plot.ts data.csv value - "Distribution" histogram
+
+# Faceted plot (small multiples)
+bun packages/core/src/cli-plot.ts data.csv x y color "Title" point region
+```
+
+**Available geoms** (29 types): point, line, path, step, bar, col, histogram, freqpoly, boxplot, violin, area, ribbon, rug, errorbar, errorbarh, crossbar, linerange, pointrange, smooth, segment, rect, raster, tile, text, label, contour, contour_filled, density_2d, qq
+
+## Exporting to HTML
+
+Create interactive, publication-ready visualizations:
+
+```bash
+# After creating a plot, export to HTML
+bun packages/core/src/cli-plot.ts export output.html
+
+# Export includes:
+# - Interactive Vega-Lite chart
+# - PNG download button
+# - SVG download button
+# - Zoom and pan controls
+```
+
+The HTML export uses Vega-Lite, so you can further customize it in the Vega Editor.
+
+## Plot History
+
+All plots are automatically saved with provenance metadata:
+
+```bash
+# List all historical plots
+bun packages/core/src/cli-plot.ts history
+
+# Search history
+bun packages/core/src/cli-plot.ts history scatter
+bun packages/core/src/cli-plot.ts history sales
+
+# Show a specific plot again
+bun packages/core/src/cli-plot.ts show 2024-01-26-001
+
+# Export a historical plot
+bun packages/core/src/cli-plot.ts export 2024-01-26-001 output.html
+```
+
 ## Next Steps
 
 - [Gallery](./GALLERY.md) - See all plot types

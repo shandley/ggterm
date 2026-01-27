@@ -35,7 +35,7 @@ export function geom_text(options: TextOptions = {}): Geom {
 /**
  * Add text labels with background (for better readability)
  */
-export function geom_label(options: TextOptions & { fill?: string }): Geom {
+export function geom_label(options: TextOptions & { fill?: string } = {}): Geom {
   return {
     type: 'label',
     stat: 'identity',

@@ -113,7 +113,7 @@ export function position_dodge(options: DodgeOptions = {}): Position {
  * gg(data).geom(geom_bar({ position: position_stack() }))
  * ```
  */
-export function position_stack(options: StackOptions = {}): Position {
+export function position_stack(_options: StackOptions = {}): Position {
   return {
     type: 'stack',
   }
@@ -128,7 +128,7 @@ export function position_stack(options: StackOptions = {}): Position {
  * gg(data).geom(geom_bar({ position: position_fill() }))
  * ```
  */
-export function position_fill(options: FillOptions = {}): Position {
+export function position_fill(_options: FillOptions = {}): Position {
   return {
     type: 'fill',
   }
@@ -271,7 +271,7 @@ function applyDodge(
   aes: AestheticMapping,
   dodgeWidth: number,
   barWidth: number,
-  groupField?: string
+  _groupField?: string
 ): AdjustedPoint[] {
   const result: AdjustedPoint[] = []
   const xGroups = groupByX(data, aes)
@@ -328,7 +328,7 @@ function applyDodge(
 function applyStack(
   data: DataSource,
   aes: AestheticMapping,
-  groupField?: string,
+  _groupField?: string,
   normalize: boolean = false
 ): AdjustedPoint[] {
   const result: AdjustedPoint[] = []

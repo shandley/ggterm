@@ -8,7 +8,7 @@ import type { TerminalCanvas } from '../canvas/canvas'
 import type { AestheticMapping, DataSource, Geom, RGBA } from '../types'
 import type { ScaleContext, ResolvedColorScale } from './scales'
 import { DEFAULT_POINT_COLOR } from './scales'
-import { applyPositionAdjustment, getPositionType, type AdjustedPoint } from '../positions'
+import { applyPositionAdjustment, getPositionType } from '../positions'
 
 /**
  * Point shapes for scatter plots
@@ -615,14 +615,11 @@ export function renderGeomBar(
     // For dodge position, calculate the offset in canvas space
     let xOffset = 0
     if (positionType === 'dodge' && point.xOriginal !== x) {
-      // Calculate pixel offset from the adjusted position
-      const originalPx = scales.x.map(point.xOriginal)
-      const adjustedPx = scales.x.map(x)
       // Scale the data-space offset to pixel-space proportionally
       // For discrete scales, this approximation works reasonably well
       const dataRange = (scales.x.domain as any)[1] - (scales.x.domain as any)[0] || 1
       const pixelRange = scales.x.range[1] - scales.x.range[0]
-      xOffset = Math.round((x - point.xOriginal) * pixelRange / Math.max(1, dataRange))
+      xOffset = Math.round((Number(x) - Number(point.xOriginal)) * pixelRange / Math.max(1, dataRange))
     }
 
     // For stack/fill, use ymin/ymax; otherwise use baseline
@@ -1702,7 +1699,7 @@ export function renderGeomPointrange(
 export function renderGeomSmooth(
   data: DataSource,
   geom: Geom,
-  aes: AestheticMapping,
+  _aes: AestheticMapping,
   scales: ScaleContext,
   canvas: TerminalCanvas
 ): void {

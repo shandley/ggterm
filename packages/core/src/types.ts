@@ -12,6 +12,18 @@ export interface AestheticMapping {
   y: string
   /** Secondary y-axis data field */
   y2?: string
+  /** End x coordinate for segments/annotations */
+  xend?: string
+  /** End y coordinate for segments/annotations */
+  yend?: string
+  /** Min x for rect/area annotations */
+  xmin?: string
+  /** Max x for rect/area annotations */
+  xmax?: string
+  /** Min y for rect/area annotations */
+  ymin?: string
+  /** Max y for rect/area annotations */
+  ymax?: string
   color?: string
   fill?: string
   size?: string
@@ -64,11 +76,19 @@ export interface Coord {
   clip?: boolean
 }
 
+// Position type for geometry positioning (simplified inline to avoid circular deps)
+export interface PositionSpec {
+  type: 'identity' | 'dodge' | 'stack' | 'fill' | 'jitter'
+  width?: number
+  height?: number
+  preserve?: 'total' | 'single'
+}
+
 // Geometry interface
 export interface Geom {
   type: string
   stat?: string
-  position?: string
+  position?: string | PositionSpec
   params: Record<string, unknown>
 }
 

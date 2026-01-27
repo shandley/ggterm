@@ -28,7 +28,7 @@ export function stat_count(_params: StatCountParams = {}) {
       const counts = new Map<string | number, number>()
 
       for (const row of data) {
-        const xValue = row[xField]
+        const xValue = row[xField] as string | number
         if (xValue !== undefined && xValue !== null) {
           counts.set(xValue, (counts.get(xValue) ?? 0) + 1)
         }
@@ -57,5 +57,5 @@ export function stat_count(_params: StatCountParams = {}) {
  * Compute counts directly (utility function)
  */
 export function computeCount(data: DataSource, xField: string): CountResult[] {
-  return stat_count().compute(data, { x: xField })
+  return stat_count().compute(data, { x: xField, y: 'count' })
 }

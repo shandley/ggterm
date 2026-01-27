@@ -176,7 +176,7 @@ function buildMark(geom: Geom): string | { type: string; [key: string]: unknown 
 
   // Add geom params
   if (geom.params) {
-    if (geom.params.size) markProps.size = geom.params.size * 20 // Scale up for publication
+    if (geom.params.size) markProps.size = Number(geom.params.size) * 20 // Scale up for publication
     if (geom.params.alpha) markProps.opacity = geom.params.alpha
     if (geom.params.color) markProps.color = geom.params.color
     if (geom.params.fill) markProps.fill = geom.params.fill
@@ -198,7 +198,7 @@ function buildMark(geom: Geom): string | { type: string; [key: string]: unknown 
     return markType
   }
 
-  return markProps
+  return markProps as { type: string; [key: string]: unknown }
 }
 
 /**
@@ -316,11 +316,13 @@ function buildInteractivity(
   const params: VegaLiteParam[] = []
   const encodingMods: Record<string, unknown> = {}
 
-  // Normalize options
+  // Normalize options - if false, use empty options (no interactivity)
   const opts: InteractiveOptions =
     options === true
       ? { tooltip: true, hover: true, zoom: false, brush: false, legendFilter: true }
-      : options
+      : options === false
+        ? {}
+        : options
 
   // Hover highlight
   if (opts.hover) {

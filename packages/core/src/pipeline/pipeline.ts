@@ -9,7 +9,7 @@ import { TerminalCanvas, createCanvas } from '../canvas/canvas'
 import { buildScaleContext, inferContinuousDomain, niceDomain } from './scales'
 import type { ScaleContext } from './scales'
 import { renderGeom } from './render-geoms'
-import { renderAxes, renderTitle, renderLegend, renderMultiLegend, renderGridLines, calculateTicks, formatTick } from './render-axes'
+import { renderAxes, renderTitle, renderMultiLegend, renderGridLines, calculateTicks, formatTick } from './render-axes'
 import type { LegendEntry } from './render-axes'
 import { stat_bin } from '../stats/bin'
 import { stat_boxplot } from '../stats/boxplot'
@@ -19,7 +19,7 @@ import { stat_smooth } from '../stats/smooth'
 import { stat_summary } from '../stats/summary'
 import { stat_qq, stat_qq_line } from '../stats/qq'
 import { computeFacetPanels, calculatePanelLayouts, calculateGridStripLayout, label_value } from '../facets'
-import type { FacetPanel, PanelLayout, GridStripLayout, Labeller } from '../facets'
+import type { FacetPanel, PanelLayout, Labeller } from '../facets'
 
 /**
  * Layout configuration for plot elements
@@ -803,7 +803,7 @@ function renderPanelAxes(
   row: number,
   col: number,
   nrow: number,
-  ncol: number,
+  _ncol: number,
   _theme: any
 ): void {
   const axisColor: RGBA = { r: 180, g: 180, b: 180, a: 1 }

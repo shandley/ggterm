@@ -17,7 +17,7 @@ bun run packages/core/src/demo.ts  # Run demo
 
 | Package | Purpose |
 |---------|---------|
-| core | Grammar engine, 20+ geoms, 50+ scales, pipeline, CLI |
+| core | Grammar engine, 30+ geoms, 50+ scales, pipeline, CLI |
 | render-braille | 2x4 dot Braille characters |
 | render-block | Half-block Unicode rendering |
 | render-sixel | Sixel/Kitty/iTerm2 pixel protocols |
@@ -52,7 +52,7 @@ console.log(renderToString(plot, { width: 80, height: 24 }))
 ## Testing
 
 ```bash
-bun test packages/core        # Core tests (~1170 tests)
+bun test packages/core        # Core tests (~1220 tests)
 bun test packages/opentui     # React hooks (~100 tests)
 bun test packages/vue         # Vue composables
 bun test packages/svelte      # Svelte stores
@@ -65,27 +65,21 @@ Version: 0.2.0 (beta)
 Maturity: 7.5/10
 See `docs/PUBLISHING-PLAN.md` for roadmap.
 
-## Next Session TODO
+## Recent Changes
 
-**Immediate**: Publish @ggterm/core to npm
+**Latest features**:
+- Faceting support in CLI and Vega-Lite export (`facet_wrap`, `facet_grid`)
+- CLI now exposes 29 geom types (added col, ribbon, errorbarh, crossbar, linerange, pointrange, raster, label, contour_filled, density_2d)
+- Interactive HTML export with Vega-Lite (PNG/SVG download buttons)
+- Plot history with provenance tracking
+- 1221+ tests passing
+
+**CLI geom types**: point, line, path, step, bar, col, histogram, freqpoly, boxplot, violin, area, ribbon, rug, errorbar, errorbarh, crossbar, linerange, pointrange, smooth, segment, rect, raster, tile, text, label, contour, contour_filled, density_2d, qq
+
+**Publishing**: Ready for npm publish
 1. Create npm granular access token with "Bypass 2FA" at https://www.npmjs.com/settings/tokens
 2. Run in packages/core: `npm publish --access public`
 3. Verify at https://www.npmjs.com/package/@ggterm/core
-
-**Recent additions**:
-- Added `geom_qq`, `geom_qq_line` for Q-Q plots (normality assessment)
-- Added `geom_freqpoly` for frequency polygons (multi-distribution comparison)
-- CLI now exposes 19 geom types
-- 1168 tests passing
-
-**Package optimizations done**:
-- Added `.npmignore` to exclude tests
-- Changed `files` field to only include `dist/`
-- Package size: 134KB (was 414KB)
-
-**After core is published**:
-- Publish remaining 7 packages
-- Add npm badges to README
 
 ## Claude Code Skills
 
