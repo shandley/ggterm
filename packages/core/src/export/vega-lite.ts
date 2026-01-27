@@ -18,6 +18,19 @@ export interface VegaLiteSpec {
   layer?: VegaLiteLayer[]
   params?: VegaLiteParam[]
   config?: Record<string, unknown>
+  // Faceting support
+  facet?: {
+    field?: string
+    type?: string
+    columns?: number
+    row?: { field: string; type?: string }
+    column?: { field: string; type?: string }
+  }
+  spec?: {
+    mark?: string | { type: string; [key: string]: unknown }
+    encoding?: Record<string, unknown>
+    layer?: VegaLiteLayer[]
+  }
 }
 
 interface VegaLiteParam {
@@ -502,6 +515,57 @@ export function plotSpecToVegaLite(
           if (layer.encoding) {
             Object.assign(layer.encoding, encodingMods)
           }
+        }
+      }
+    }
+  }
+
+  // Handle faceting - restructure spec to use Vega-Lite facet format
+  if (spec.facet) {
+    const innerSpec: VegaLiteSpec['spec'] = {}
+
+    // Move mark/encoding/layer to inner spec
+    if (vlSpec.mark) {
+      innerSpec.mark = vlSpec.mark
+      delete vlSpec.mark
+    }
+    if (vlSpec.encoding) {
+      innerSpec.encoding = vlSpec.encoding
+      delete vlSpec.encoding
+    }
+    if (vlSpec.layer) {
+      innerSpec.layer = vlSpec.layer
+      delete vlSpec.layer
+    }
+
+    vlSpec.spec = innerSpec
+
+    if (spec.facet.type === 'wrap') {
+      // facet_wrap: single variable
+      const facetVar = spec.facet.vars as string
+      vlSpec.facet = {
+        field: facetVar,
+        type: inferFieldType(spec.data as Record<string, unknown>[], facetVar),
+      }
+      // Add columns if specified
+      if (spec.facet.ncol) {
+        vlSpec.facet.columns = spec.facet.ncol
+      }
+    } else if (spec.facet.type === 'grid') {
+      // facet_grid: row and/or column variables
+      const vars = spec.facet.vars as { rows?: string; cols?: string }
+      vlSpec.facet = {}
+
+      if (vars.rows) {
+        vlSpec.facet.row = {
+          field: vars.rows,
+          type: inferFieldType(spec.data as Record<string, unknown>[], vars.rows),
+        }
+      }
+      if (vars.cols) {
+        vlSpec.facet.column = {
+          field: vars.cols,
+          type: inferFieldType(spec.data as Record<string, unknown>[], vars.cols),
         }
       }
     }

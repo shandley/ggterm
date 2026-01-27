@@ -239,4 +239,132 @@ describe('Vega-Lite export', () => {
       expect((vl.encoding?.x as any).type).toBe('temporal')
     })
   })
+
+  describe('faceting', () => {
+    const facetData = [
+      { x: 1, y: 10, cat: 'A', group: 'X' },
+      { x: 2, y: 20, cat: 'A', group: 'Y' },
+      { x: 3, y: 15, cat: 'B', group: 'X' },
+      { x: 4, y: 25, cat: 'B', group: 'Y' },
+    ]
+
+    it('exports facet_wrap as Vega-Lite facet', () => {
+      const facetSpec: PlotSpec = {
+        ...simpleSpec,
+        data: facetData,
+        facet: {
+          type: 'wrap',
+          vars: 'cat',
+          scales: 'fixed',
+        },
+      }
+      const vl = plotSpecToVegaLite(facetSpec)
+
+      // Should have facet at top level
+      expect(vl.facet).toBeDefined()
+      expect(vl.facet?.field).toBe('cat')
+      expect(vl.facet?.type).toBe('nominal')
+
+      // Mark/encoding should be in inner spec
+      expect(vl.spec).toBeDefined()
+      expect(vl.spec?.mark).toBe('point')
+      expect(vl.spec?.encoding).toBeDefined()
+
+      // Top-level mark/encoding should be removed
+      expect(vl.mark).toBeUndefined()
+      expect(vl.encoding).toBeUndefined()
+    })
+
+    it('exports facet_wrap with columns', () => {
+      const facetSpec: PlotSpec = {
+        ...simpleSpec,
+        data: facetData,
+        facet: {
+          type: 'wrap',
+          vars: 'cat',
+          ncol: 3,
+          scales: 'fixed',
+        },
+      }
+      const vl = plotSpecToVegaLite(facetSpec)
+
+      expect(vl.facet?.columns).toBe(3)
+    })
+
+    it('exports facet_grid with row variable', () => {
+      const facetSpec: PlotSpec = {
+        ...simpleSpec,
+        data: facetData,
+        facet: {
+          type: 'grid',
+          vars: { rows: 'cat' },
+          scales: 'fixed',
+        },
+      }
+      const vl = plotSpecToVegaLite(facetSpec)
+
+      expect(vl.facet).toBeDefined()
+      expect(vl.facet?.row).toEqual({ field: 'cat', type: 'nominal' })
+      expect(vl.facet?.column).toBeUndefined()
+      expect(vl.spec).toBeDefined()
+    })
+
+    it('exports facet_grid with column variable', () => {
+      const facetSpec: PlotSpec = {
+        ...simpleSpec,
+        data: facetData,
+        facet: {
+          type: 'grid',
+          vars: { cols: 'group' },
+          scales: 'fixed',
+        },
+      }
+      const vl = plotSpecToVegaLite(facetSpec)
+
+      expect(vl.facet).toBeDefined()
+      expect(vl.facet?.column).toEqual({ field: 'group', type: 'nominal' })
+      expect(vl.facet?.row).toBeUndefined()
+    })
+
+    it('exports facet_grid with both row and column', () => {
+      const facetSpec: PlotSpec = {
+        ...simpleSpec,
+        data: facetData,
+        facet: {
+          type: 'grid',
+          vars: { rows: 'cat', cols: 'group' },
+          scales: 'fixed',
+        },
+      }
+      const vl = plotSpecToVegaLite(facetSpec)
+
+      expect(vl.facet).toBeDefined()
+      expect(vl.facet?.row).toEqual({ field: 'cat', type: 'nominal' })
+      expect(vl.facet?.column).toEqual({ field: 'group', type: 'nominal' })
+      expect(vl.spec).toBeDefined()
+      expect(vl.spec?.mark).toBe('point')
+    })
+
+    it('handles multiple geoms (layers) with faceting', () => {
+      const facetSpec: PlotSpec = {
+        ...simpleSpec,
+        data: facetData,
+        geoms: [
+          { type: 'point', params: {} },
+          { type: 'line', params: {} },
+        ],
+        facet: {
+          type: 'wrap',
+          vars: 'cat',
+          scales: 'fixed',
+        },
+      }
+      const vl = plotSpecToVegaLite(facetSpec)
+
+      expect(vl.facet).toBeDefined()
+      expect(vl.spec).toBeDefined()
+      expect(vl.spec?.layer).toHaveLength(2)
+      expect(vl.layer).toBeUndefined()
+    })
+  })
 })

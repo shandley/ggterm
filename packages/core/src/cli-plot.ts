@@ -33,6 +33,7 @@ import {
   geom_contour,
   geom_qq,
   geom_qq_line,
+  facet_wrap,
 } from './index'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
@@ -346,7 +347,7 @@ function handlePlot(args: string[]): void {
     process.exit(1)
   }
 
-  const [dataFile, x, y, color, title, geomType = 'point'] = args
+  const [dataFile, x, y, color, title, geomType = 'point', facetVar] = args
   const { data } = loadCSV(dataFile)
 
   // Build plot
@@ -438,6 +439,11 @@ function handlePlot(args: string[]): void {
     plot = plot.labs({ title, x: xLabel, y: yLabel })
   } else {
     plot = plot.labs({ x: xLabel, y: yLabel })
+  }
+
+  // Add faceting if specified
+  if (facetVar && facetVar !== '-') {
+    plot = plot.facet(facet_wrap(facetVar))
   }
 
   console.log(plot.render({ width: 70, height: 20, colorMode: 'truecolor' }))
@@ -642,12 +648,12 @@ function printUsage(): void {
 ggterm CLI - Terminal plotting tool
 
 Commands:
-  inspect <file>                    Show column types and statistics
-  suggest <file>                    Suggest visualizations with commands
-  history [search]                  List all plots (optionally filter by search)
-  show <id>                         Re-render a plot from history
-  export [id] [output.html]         Export plot to HTML (latest or by ID)
-  <file> <x> <y> [color] [title] [geom]   Create a plot
+  inspect <file>                              Show column types and statistics
+  suggest <file>                              Suggest visualizations with commands
+  history [search]                            List all plots (optionally filter by search)
+  show <id>                                   Re-render a plot from history
+  export [id] [output.html]                   Export plot to HTML (latest or by ID)
+  <file> <x> <y> [color] [title] [geom] [facet]   Create a plot
 
 Geom types: ${GEOM_TYPES.join(', ')}
 
@@ -656,6 +662,7 @@ Examples:
   bun cli-plot.ts suggest data.csv
   bun cli-plot.ts data.csv x y color "Title" point
   bun cli-plot.ts data.csv value - - - histogram
+  bun cli-plot.ts data.csv x y color "Faceted" point category
   bun cli-plot.ts history
   bun cli-plot.ts history scatter
   bun cli-plot.ts show 2024-01-26-001
