@@ -89,16 +89,19 @@ See `docs/PUBLISHING-PLAN.md` for roadmap.
 
 ## Claude Code Skills
 
-Five skills are available in `.claude/skills/` for AI-assisted data analysis:
+Six skills are available in `.claude/skills/` for AI-assisted data analysis:
 
 | Skill | Purpose | Invoke |
 |-------|---------|--------|
 | `data-load` | Load CSV, JSON, JSONL data | Auto or `/data-load` |
 | `ggterm-plot` | Create terminal visualizations | Auto or `/ggterm-plot` |
+| `ggterm-history` | Search and retrieve historical plots | Auto or `/ggterm-history` |
 | `ggterm-markdown` | Generate reports with plots | Auto or `/ggterm-markdown` |
 | `ggterm-publish` | Export plots to PNG/SVG/PDF/HTML | Auto or `/ggterm-publish` |
 | `ggterm-customize` | Natural language plot customization | Auto or `/ggterm-customize` |
 
-**Publication workflow**: Terminal plots auto-save PlotSpec to `.ggterm/last-plot.json` and Vega-Lite to `.ggterm/last-plot-vegalite.json`. Use `/ggterm-customize` for natural language edits, then `/ggterm-publish` for export.
+**History**: All plots are saved to `.ggterm/plots/` with provenance metadata. Use `history`, `show <id>`, and `export <id>` commands to retrieve past plots.
+
+**Publication workflow**: Use `/ggterm-customize` for natural language edits, then `/ggterm-publish` for export.
 
 Skills enable deterministic visualization workflows for AI agents. See `docs/PAPER-STRATEGY.md` for academic publication plans.
