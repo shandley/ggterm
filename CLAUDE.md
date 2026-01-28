@@ -77,9 +77,13 @@ See `docs/PUBLISHING-PLAN.md` for roadmap.
 **CLI geom types**: point, line, path, step, bar, col, histogram, freqpoly, boxplot, violin, area, ribbon, rug, errorbar, errorbarh, crossbar, linerange, pointrange, smooth, segment, rect, raster, tile, text, label, contour, contour_filled, density_2d, qq
 
 **Publishing**: Ready for npm publish
-1. Create npm granular access token with "Bypass 2FA" at https://www.npmjs.com/settings/tokens
+1. Create granular access token via CLI: `npm token create` or at https://www.npmjs.com/settings/~/tokens
+   - Enable "Bypass 2FA" for CI/CD workflows
+   - Note: Tokens with write permissions are limited to 90-day max lifetime
 2. Run in packages/core: `npm publish --access public`
 3. Verify at https://www.npmjs.com/package/@ggterm/core
+
+Alternative: Use [OIDC trusted publishing](https://docs.npmjs.com/generating-provenance-statements) for GitHub Actions (no token needed)
 
 ## Claude Code Skills
 
