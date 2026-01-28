@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "bun run --filter '*' build",
+    "build": "bun run --filter '@ggterm/core' build && bun run --filter '@ggterm/render-*' build && bun run --filter '!@ggterm/core' --filter '!@ggterm/render-*' build",
     "test": "bun test packages/core && bun test packages/solid && bun test packages/svelte && bun test packages/vue",
     "test:core": "bun test packages/core",
     "test:solid": "bun test packages/solid",

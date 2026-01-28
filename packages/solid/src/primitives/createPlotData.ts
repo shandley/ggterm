@@ -94,7 +94,7 @@ export function createPlotData(options: PlotDataOptions = {}): CreatePlotDataRet
     // Apply time window
     if (timeWindowMs && timeWindowMs > 0) {
       const cutoff = Date.now() - timeWindowMs
-      result = result.filter((record) => {
+      result = result.filter((record: DataSource[number]) => {
         const timestamp = record[timeField]
         if (typeof timestamp === 'number') {
           return timestamp >= cutoff
@@ -153,7 +153,7 @@ export function createPlotData(options: PlotDataOptions = {}): CreatePlotDataRet
 
   const removeWhere = (predicate: (record: DataSource[number]) => boolean) => {
     batch(() => {
-      setDataSignal((prev) => prev.filter((record) => !predicate(record)))
+      setDataSignal((prev) => prev.filter((record: DataSource[number]) => !predicate(record)))
       setIsDirty(true)
     })
   }
@@ -174,7 +174,7 @@ export function createPlotData(options: PlotDataOptions = {}): CreatePlotDataRet
 
     const cutoff = Date.now() - timeWindowMs
     setDataSignal((prev) =>
-      prev.filter((record) => {
+      prev.filter((record: DataSource[number]) => {
         const timestamp = record[timeField]
         if (typeof timestamp === 'number') {
           return timestamp >= cutoff

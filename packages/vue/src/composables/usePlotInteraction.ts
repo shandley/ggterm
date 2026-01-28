@@ -259,7 +259,7 @@ export function usePlotInteraction(
     }
 
     const indices: number[] = []
-    data.forEach((record, index) => {
+    data.forEach((record: DataSource[number], index: number) => {
       const x = Number(record[xField])
       const y = Number(record[yField])
       if (!isNaN(x) && !isNaN(y)) {

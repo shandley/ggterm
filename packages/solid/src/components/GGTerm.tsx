@@ -242,7 +242,7 @@ export function GGTerm(props: GGTermProps): JSX.Element {
   const getVisiblePoints = (): number[] => {
     const data = resolvedData()
     if (!data) return []
-    return data.map((_, i) => i)
+    return data.map((_: unknown, i: number) => i)
   }
 
   // Create handle for ref

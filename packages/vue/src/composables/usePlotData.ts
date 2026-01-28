@@ -92,7 +92,7 @@ export function usePlotData(options: UsePlotDataOptions = {}): UsePlotDataReturn
     // Apply time window
     if (timeWindowMs && timeWindowMs > 0) {
       const cutoff = Date.now() - timeWindowMs
-      result = result.filter((record) => {
+      result = result.filter((record: DataSource[number]) => {
         const timestamp = record[timeField]
         if (typeof timestamp === 'number') {
           return timestamp >= cutoff
@@ -141,7 +141,7 @@ export function usePlotData(options: UsePlotDataOptions = {}): UsePlotDataReturn
   }
 
   const removeWhere = (predicate: (record: DataSource[number]) => boolean) => {
-    data.value = data.value.filter((record) => !predicate(record))
+    data.value = data.value.filter((record: DataSource[number]) => !predicate(record))
     isDirty.value = true
   }
 
@@ -158,7 +158,7 @@ export function usePlotData(options: UsePlotDataOptions = {}): UsePlotDataReturn
     if (!timeWindowMs) return
 
     const cutoff = Date.now() - timeWindowMs
-    data.value = data.value.filter((record) => {
+    data.value = data.value.filter((record: DataSource[number]) => {
       const timestamp = record[timeField]
       if (typeof timestamp === 'number') {
         return timestamp >= cutoff
