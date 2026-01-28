@@ -1,5 +1,9 @@
 # ggterm
 
+[![npm version](https://img.shields.io/npm/v/@ggterm/core.svg)](https://www.npmjs.com/package/@ggterm/core)
+[![npm downloads](https://img.shields.io/npm/dm/@ggterm/core.svg)](https://www.npmjs.com/package/@ggterm/core)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A Grammar of Graphics for Terminal User Interfaces.
 
 **ggterm** is a TypeScript library implementing Leland Wilkinson's Grammar of Graphics for terminal-based rendering. Designed to integrate with [OpenTUI](https://github.com/sst/opentui), it enables declarative, publication-aware data visualization directly in the terminal.
