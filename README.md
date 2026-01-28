@@ -66,6 +66,17 @@ ggterm> gg(data).aes({x: "x", y: "y", color: "group"}).geom(geom_point())
       0    5    10   15   20   25   30
 ```
 
+## AI-Forward Examples
+
+ggterm is designed for natural language interaction with AI assistants. See our [example vignettes](./examples/) for prompt-driven workflows:
+
+| Example | Description |
+|---------|-------------|
+| [Exploratory Analysis](./examples/01-exploratory-analysis.md) | Explore unfamiliar datasets through conversation |
+| [Publication Figures](./examples/02-publication-figures.md) | Iteratively refine figures for publication |
+| [Streaming Dashboard](./examples/03-streaming-dashboard.md) | Build real-time monitoring dashboards |
+| [Comparative Analysis](./examples/04-comparative-analysis.md) | Compare distributions and A/B test results |
+
 ## Features
 
 - **Interactive REPL**: Build plots interactively with `npx ggterm`
