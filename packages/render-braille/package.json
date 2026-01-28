@@ -1,6 +1,6 @@
 {
   "name": "@ggterm/render-braille",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Braille dot matrix renderer for ggterm",
   "type": "module",
   "main": "./dist/index.js",

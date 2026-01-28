@@ -1,6 +1,6 @@
 {
   "name": "@ggterm/render-block",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Block character renderer for ggterm (universal compatibility)",
   "type": "module",
   "main": "./dist/index.js",
