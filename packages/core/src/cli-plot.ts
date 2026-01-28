@@ -43,6 +43,9 @@ import {
   geom_density_2d,
   geom_qq,
   geom_qq_line,
+  geom_hline,
+  geom_vline,
+  geom_abline,
   facet_wrap,
 } from './index'
 import { readFileSync, writeFileSync } from 'fs'
@@ -90,24 +93,7 @@ function fileExists(path: string): boolean {
 /**
  * Load and parse CSV file with friendly error messages
  */
-function loadCSV(dataFile: string): { headers: string[]; data: Record<string, any>[] } {
-  // Check file exists
-  if (!fileExists(dataFile)) {
-    console.error(`\nError: File not found: ${dataFile}`)
-    console.error(`\nMake sure the file path is correct and the file exists.`)
-    console.error(`Current directory: ${process.cwd()}`)
-    process.exit(1)
-  }
-
-  let text: string
-  try {
-    text = readFileSync(dataFile, 'utf-8')
-  } catch (err: any) {
-    console.error(`\nError: Cannot read file: ${dataFile}`)
-    console.error(`Reason: ${err.message}`)
-    process.exit(1)
-  }
-
+function loadCSV(dataFile: string, text: string): { headers: string[]; data: Record<string, any>[] } {
   const lines = text.trim().split('\n')
 
   if (lines.length === 0) {
@@ -147,6 +133,146 @@ function loadCSV(dataFile: string): { headers: string[]; data: Record<string, an
   })
 
   return { headers, data }
+}
+
+/**
+ * Load and parse JSON file
+ */
+function loadJSON(dataFile: string, text: string): { headers: string[]; data: Record<string, any>[] } {
+  let parsed: any
+  try {
+    parsed = JSON.parse(text)
+  } catch (err: any) {
+    console.error(`\nError: Invalid JSON in ${dataFile}`)
+    console.error(`Reason: ${err.message}`)
+    process.exit(1)
+  }
+
+  // Handle array of objects
+  if (Array.isArray(parsed)) {
+    if (parsed.length === 0) {
+      console.error(`\nError: JSON array is empty: ${dataFile}`)
+      process.exit(1)
+    }
+
+    // Extract headers from first object
+    const headers = Object.keys(parsed[0])
+    if (headers.length === 0) {
+      console.error(`\nError: JSON objects have no properties`)
+      process.exit(1)
+    }
+
+    // Convert values (dates, numbers)
+    const data = parsed.map((row: any) => {
+      const converted: Record<string, any> = {}
+      for (const key of headers) {
+        const val = row[key]
+        if (val === null || val === undefined) {
+          converted[key] = null
+        } else if (typeof val === 'string' && datePattern.test(val)) {
+          converted[key] = new Date(val).getTime()
+        } else {
+          converted[key] = val
+        }
+      }
+      return converted
+    })
+
+    return { headers, data }
+  }
+
+  // Handle object with "data" array
+  if (parsed.data && Array.isArray(parsed.data)) {
+    return loadJSON(dataFile, JSON.stringify(parsed.data))
+  }
+
+  console.error(`\nError: Expected JSON array or object with "data" array`)
+  console.error(`Got: ${typeof parsed}`)
+  process.exit(1)
+}
+
+/**
+ * Load and parse JSONL (JSON Lines) file
+ */
+function loadJSONL(dataFile: string, text: string): { headers: string[]; data: Record<string, any>[] } {
+  const lines = text.trim().split('\n').filter(line => line.trim())
+
+  if (lines.length === 0) {
+    console.error(`\nError: JSONL file is empty: ${dataFile}`)
+    process.exit(1)
+  }
+
+  const data: Record<string, any>[] = []
+  let headers: string[] = []
+
+  for (let i = 0; i < lines.length; i++) {
+    try {
+      const obj = JSON.parse(lines[i])
+      if (i === 0) {
+        headers = Object.keys(obj)
+      }
+
+      // Convert values
+      const converted: Record<string, any> = {}
+      for (const key of headers) {
+        const val = obj[key]
+        if (val === null || val === undefined) {
+          converted[key] = null
+        } else if (typeof val === 'string' && datePattern.test(val)) {
+          converted[key] = new Date(val).getTime()
+        } else {
+          converted[key] = val
+        }
+      }
+      data.push(converted)
+    } catch (err: any) {
+      console.error(`\nError: Invalid JSON on line ${i + 1} of ${dataFile}`)
+      console.error(`Reason: ${err.message}`)
+      console.error(`Line: ${lines[i].slice(0, 50)}...`)
+      process.exit(1)
+    }
+  }
+
+  if (headers.length === 0) {
+    console.error(`\nError: JSONL objects have no properties`)
+    process.exit(1)
+  }
+
+  return { headers, data }
+}
+
+/**
+ * Detect file type and load data
+ */
+function loadData(dataFile: string): { headers: string[]; data: Record<string, any>[] } {
+  // Check file exists
+  if (!fileExists(dataFile)) {
+    console.error(`\nError: File not found: ${dataFile}`)
+    console.error(`\nMake sure the file path is correct and the file exists.`)
+    console.error(`Current directory: ${process.cwd()}`)
+    process.exit(1)
+  }
+
+  let text: string
+  try {
+    text = readFileSync(dataFile, 'utf-8')
+  } catch (err: any) {
+    console.error(`\nError: Cannot read file: ${dataFile}`)
+    console.error(`Reason: ${err.message}`)
+    process.exit(1)
+  }
+
+  // Detect file type by extension
+  const ext = dataFile.toLowerCase().split('.').pop()
+
+  if (ext === 'json') {
+    return loadJSON(dataFile, text)
+  } else if (ext === 'jsonl' || ext === 'ndjson') {
+    return loadJSONL(dataFile, text)
+  } else {
+    // Default to CSV (includes .csv, .tsv, .txt, etc.)
+    return loadCSV(dataFile, text)
+  }
 }
 
 /**
@@ -222,7 +348,7 @@ function analyzeColumns(headers: string[], data: Record<string, any>[]): ColumnI
  * Handle 'inspect' command
  */
 function handleInspect(dataFile: string): void {
-  const { headers, data } = loadCSV(dataFile)
+  const { headers, data } = loadData(dataFile)
   const columns = analyzeColumns(headers, data)
 
   console.log(`\n${dataFile}: ${data.length} rows × ${headers.length} columns\n`)
@@ -376,7 +502,7 @@ function generateSuggestions(
  * Handle 'suggest' command
  */
 function handleSuggest(dataFile: string): void {
-  const { headers, data } = loadCSV(dataFile)
+  const { headers, data } = loadData(dataFile)
   const columns = analyzeColumns(headers, data)
   const suggestions = generateSuggestions(dataFile, columns)
 
@@ -408,7 +534,7 @@ function validateColumn(colName: string, headers: string[], argName: string): vo
 }
 
 /**
- * Validate geom type
+ * Validate geom type (base type, not including reference lines)
  */
 function validateGeomType(geomType: string): void {
   if (!GEOM_TYPES.includes(geomType)) {
@@ -422,8 +548,72 @@ function validateGeomType(geomType: string): void {
     console.error(`  2D:           tile, rect, raster, contour, contour_filled`)
     console.error(`  Text:         text, label`)
     console.error(`  Other:        rug`)
+    console.error(`\nReference lines (add with +):`)
+    console.error(`  hline@<y>           - horizontal line at y value`)
+    console.error(`  vline@<x>           - vertical line at x value`)
+    console.error(`  abline@<slope>,<intercept> - line with slope and intercept`)
+    console.error(`\nExample: point+hline@50+vline@2.5`)
     process.exit(1)
   }
+}
+
+interface RefLine {
+  type: 'hline' | 'vline' | 'abline'
+  value: number
+  slope?: number // for abline
+}
+
+/**
+ * Parse geom specification with optional reference lines
+ * Format: "point+hline@50+vline@2" => { baseGeom: 'point', refLines: [...] }
+ */
+function parseGeomSpec(geomSpec: string): { baseGeom: string; refLines: RefLine[] } {
+  const parts = geomSpec.split('+')
+  const baseGeom = parts[0]
+  const refLines: RefLine[] = []
+
+  for (let i = 1; i < parts.length; i++) {
+    const part = parts[i]
+
+    if (part.startsWith('hline@')) {
+      const value = parseFloat(part.slice(6))
+      if (isNaN(value)) {
+        console.error(`\nError: Invalid hline value: "${part}"`)
+        console.error(`Expected format: hline@<number> (e.g., hline@50)`)
+        process.exit(1)
+      }
+      refLines.push({ type: 'hline', value })
+    } else if (part.startsWith('vline@')) {
+      const value = parseFloat(part.slice(6))
+      if (isNaN(value)) {
+        console.error(`\nError: Invalid vline value: "${part}"`)
+        console.error(`Expected format: vline@<number> (e.g., vline@2.5)`)
+        process.exit(1)
+      }
+      refLines.push({ type: 'vline', value })
+    } else if (part.startsWith('abline@')) {
+      const params = part.slice(7).split(',')
+      if (params.length !== 2) {
+        console.error(`\nError: Invalid abline format: "${part}"`)
+        console.error(`Expected format: abline@<slope>,<intercept> (e.g., abline@1,0)`)
+        process.exit(1)
+      }
+      const slope = parseFloat(params[0])
+      const intercept = parseFloat(params[1])
+      if (isNaN(slope) || isNaN(intercept)) {
+        console.error(`\nError: Invalid abline values: "${part}"`)
+        console.error(`Expected format: abline@<slope>,<intercept> (e.g., abline@1,0)`)
+        process.exit(1)
+      }
+      refLines.push({ type: 'abline', value: intercept, slope })
+    } else {
+      console.error(`\nError: Unknown reference line type: "${part}"`)
+      console.error(`Valid types: hline@<y>, vline@<x>, abline@<slope>,<intercept>`)
+      process.exit(1)
+    }
+  }
+
+  return { baseGeom, refLines }
 }
 
 /**
@@ -452,8 +642,11 @@ function handlePlot(args: string[]): void {
     process.exit(1)
   }
 
-  const [dataFile, x, y, color, title, geomType = 'point', facetVar] = args
-  const { headers, data } = loadCSV(dataFile)
+  const [dataFile, x, y, color, title, geomSpec = 'point', facetVar] = args
+  const { headers, data } = loadData(dataFile)
+
+  // Parse geom specification (may include reference lines like point+hline@50)
+  const { baseGeom: geomType, refLines } = parseGeomSpec(geomSpec)
 
   // Validate geom type first
   validateGeomType(geomType)
@@ -571,6 +764,17 @@ function handlePlot(args: string[]): void {
     case 'point':
     default:
       plot = plot.geom(geom_point())
+  }
+
+  // Add reference lines
+  for (const refLine of refLines) {
+    if (refLine.type === 'hline') {
+      plot = plot.geom(geom_hline({ yintercept: refLine.value, linetype: 'dashed', color: '#888888' }))
+    } else if (refLine.type === 'vline') {
+      plot = plot.geom(geom_vline({ xintercept: refLine.value, linetype: 'dashed', color: '#888888' }))
+    } else if (refLine.type === 'abline') {
+      plot = plot.geom(geom_abline({ slope: refLine.slope!, intercept: refLine.value, linetype: 'dashed', color: '#888888' }))
+    }
   }
 
   // Determine y-axis label
@@ -806,16 +1010,25 @@ Commands:
   export [id] [output.html]                   Export plot to HTML (latest or by ID)
   <file> <x> <y> [color] [title] [geom] [facet]   Create a plot
 
+Supported formats: CSV, JSON, JSONL (auto-detected by extension)
+
 Geom types: ${GEOM_TYPES.join(', ')}
+
+Reference lines (append to geom with +):
+  hline@<y>              Horizontal line at y value
+  vline@<x>              Vertical line at x value
+  abline@<slope>,<int>   Line with slope and intercept
 
 Examples:
   bun cli-plot.ts inspect data.csv
-  bun cli-plot.ts suggest data.csv
+  bun cli-plot.ts data.json x y                    # JSON array of objects
+  bun cli-plot.ts data.jsonl x y color             # JSON Lines format
   bun cli-plot.ts data.csv x y color "Title" point
   bun cli-plot.ts data.csv value - - - histogram
-  bun cli-plot.ts data.csv x y color "Faceted" point category
+  bun cli-plot.ts data.csv x y - - point+hline@50  # With reference line
+  bun cli-plot.ts data.csv x y - - line+vline@2.5+hline@100
+  bun cli-plot.ts data.csv x y - - point+abline@1,0  # y = x line
   bun cli-plot.ts history
-  bun cli-plot.ts history scatter
   bun cli-plot.ts show 2024-01-26-001
   bun cli-plot.ts export 2024-01-26-001 figure.html
 `)
