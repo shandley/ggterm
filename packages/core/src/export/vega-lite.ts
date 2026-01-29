@@ -47,28 +47,64 @@ interface VegaLiteLayer {
 
 /**
  * Map ggterm geom types to Vega-Lite mark types
+ *
+ * Notes on mappings:
+ * - Some geoms require special handling beyond mark type (see buildMark and special handlers)
+ * - Composite geoms (pointrange, crossbar) are handled as layers
+ * - Reference lines (hline, vline, abline) need special encoding
  */
 const GEOM_TO_MARK: Record<string, string> = {
+  // Basic geoms
   point: 'point',
   line: 'line',
   bar: 'bar',
+  col: 'bar',           // Same as bar, values determine height
   area: 'area',
-  boxplot: 'boxplot',
   rect: 'rect',
   text: 'text',
+  label: 'text',        // Same as text
   rule: 'rule',
-  // Heatmap geoms
-  tile: 'rect',
-  raster: 'rect',
-  // These need special handling
+
+  // Statistical geoms
+  boxplot: 'boxplot',
   histogram: 'bar',
   freqpoly: 'line',
-  violin: 'area', // Approximate
+  violin: 'area',       // Approximate as area
+
+  // Heatmap/2D geoms
+  tile: 'rect',
+  raster: 'rect',
+  bin2d: 'rect',        // 2D histogram as heatmap
+  density_2d: 'rect',   // 2D density as heatmap
+  contour: 'line',      // Contour lines (approximate)
+  contour_filled: 'area', // Filled contours (approximate)
+
+  // Line variants
   step: 'line',
   path: 'line',
-  segment: 'rule',
   smooth: 'line',
+  curve: 'line',        // Curved connection
+
+  // Range/error geoms
+  segment: 'rule',
+  linerange: 'rule',    // Vertical line from ymin to ymax
+  pointrange: 'rule',   // Rule + point (needs special handling)
   errorbar: 'errorbar',
+  errorbarh: 'rule',    // Horizontal error bar (rule)
+  crossbar: 'rule',     // Needs special handling (rule + rect)
+  ribbon: 'area',       // Area with y and y2
+
+  // Reference lines
+  hline: 'rule',        // Horizontal reference line
+  vline: 'rule',        // Vertical reference line
+  abline: 'line',       // Line with slope and intercept
+
+  // Q-Q plot geoms
+  qq: 'point',          // Q-Q plot points
+  qq_line: 'line',      // Q-Q reference line
+
+  // Marginal geom
+  rug: 'tick',          // Tick marks along axis
 }
 
 /**
@@ -182,6 +218,15 @@ function buildEncoding(
 }
 
 /**
+ * Geoms that need special handling beyond simple mark mapping
+ */
+const SPECIAL_GEOMS = new Set([
+  'histogram', 'boxplot', 'hline', 'vline', 'abline',
+  'linerange', 'pointrange', 'crossbar', 'errorbarh',
+  'ribbon', 'rug', 'bin2d',
+])
+
+/**
  * Build mark specification from geom
  */
 function buildMark(geom: Geom): string | { type: string; [key: string]: unknown } {
@@ -195,22 +240,41 @@ function buildMark(geom: Geom): string | { type: string; [key: string]: unknown 
     if (geom.params.alpha) markProps.opacity = geom.params.alpha
     if (geom.params.color) markProps.color = geom.params.color
     if (geom.params.fill) markProps.fill = geom.params.fill
+    if (geom.params.linetype === 'dashed') markProps.strokeDash = [4, 4]
+    if (geom.params.linetype === 'dotted') markProps.strokeDash = [2, 2]
   }
 
   // Special handling for certain geoms
   if (geom.type === 'step') {
     markProps.interpolate = 'step-after'
   }
-  if (geom.type === 'smooth') {
+  if (geom.type === 'smooth' || geom.type === 'curve') {
     markProps.interpolate = 'monotone'
   }
   if (geom.type === 'histogram') {
     markProps.type = 'bar'
   }
   // Heatmap geoms need rect marks with proper tooltip
-  if (geom.type === 'tile' || geom.type === 'raster') {
+  if (geom.type === 'tile' || geom.type === 'raster' || geom.type === 'density_2d') {
     markProps.type = 'rect'
     markProps.tooltip = true
+  }
+  // Contour geoms
+  if (geom.type === 'contour') {
+    markProps.type = 'line'
+    markProps.strokeWidth = 1
+  }
+  if (geom.type === 'contour_filled') {
+    markProps.type = 'area'
+    markProps.opacity = 0.7
+  }
+  // Q-Q geoms
+  if (geom.type === 'qq') {
+    markProps.type = 'point'
+  }
+  if (geom.type === 'qq_line') {
+    markProps.type = 'line'
+    markProps.strokeDash = [4, 4]
   }
 
   // If only type, return string
@@ -281,6 +345,296 @@ function buildBoxplotSpec(
             },
           }
         : {}),
+    },
+  }
+}
+
+/**
+ * Build horizontal line (hline) spec
+ */
+function buildHLineSpec(
+  geom: Geom,
+  data: Record<string, unknown>[]
+): Partial<VegaLiteSpec> {
+  const yintercept = geom.params?.yintercept as number | undefined
+
+  if (yintercept !== undefined) {
+    // Fixed y position - create a rule across the full x extent
+    return {
+      mark: { type: 'rule', strokeDash: geom.params?.linetype === 'dashed' ? [4, 4] : undefined },
+      encoding: {
+        y: { datum: yintercept },
+        ...(geom.params?.color ? { color: { value: geom.params.color as string } } : {}),
+      },
+    }
+  }
+
+  // If no fixed intercept, use data
+  return {
+    mark: 'rule',
+    encoding: {
+      y: { field: 'y', type: 'quantitative' },
+    },
+  }
+}
+
+/**
+ * Build vertical line (vline) spec
+ */
+function buildVLineSpec(
+  geom: Geom,
+  data: Record<string, unknown>[]
+): Partial<VegaLiteSpec> {
+  const xintercept = geom.params?.xintercept as number | undefined
+
+  if (xintercept !== undefined) {
+    return {
+      mark: { type: 'rule', strokeDash: geom.params?.linetype === 'dashed' ? [4, 4] : undefined },
+      encoding: {
+        x: { datum: xintercept },
+        ...(geom.params?.color ? { color: { value: geom.params.color as string } } : {}),
+      },
+    }
+  }
+
+  return {
+    mark: 'rule',
+    encoding: {
+      x: { field: 'x', type: 'quantitative' },
+    },
+  }
+}
+
+/**
+ * Build abline (slope + intercept) spec
+ * Note: Vega-Lite doesn't natively support slope/intercept, so we approximate
+ * by generating line endpoints from the data extent
+ */
+function buildAblineSpec(
+  geom: Geom,
+  data: Record<string, unknown>[],
+  aes: AestheticMapping
+): Partial<VegaLiteSpec> {
+  const slope = (geom.params?.slope as number) ?? 1
+  const intercept = (geom.params?.intercept as number) ?? 0
+
+  // Get x range from data to draw line endpoints
+  const xValues = data.map(d => Number(d[aes.x])).filter(x => !isNaN(x))
+  const xMin = Math.min(...xValues)
+  const xMax = Math.max(...xValues)
+
+  // Calculate y values at endpoints
+  const yMin = slope * xMin + intercept
+  const yMax = slope * xMax + intercept
+
+  // Create line data
+  return {
+    data: {
+      values: [
+        { x: xMin, y: yMin },
+        { x: xMax, y: yMax },
+      ],
+    },
+    mark: { type: 'line', strokeDash: geom.params?.linetype === 'dashed' ? [4, 4] : undefined },
+    encoding: {
+      x: { field: 'x', type: 'quantitative' },
+      y: { field: 'y', type: 'quantitative' },
+      ...(geom.params?.color ? { color: { value: geom.params.color as string } } : {}),
+    },
+  } as unknown as Partial<VegaLiteSpec>
+}
+
+/**
+ * Build linerange spec (vertical line from ymin to ymax)
+ */
+function buildLinerangeSpec(
+  data: Record<string, unknown>[],
+  aes: AestheticMapping
+): Partial<VegaLiteSpec> {
+  return {
+    mark: 'rule',
+    encoding: {
+      x: { field: aes.x, type: inferFieldType(data, aes.x) },
+      y: { field: aes.ymin || 'ymin', type: 'quantitative' },
+      y2: { field: aes.ymax || 'ymax' },
+      ...(aes.color
+        ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
+        : {}),
+    },
+  }
+}
+
+/**
+ * Build pointrange spec (linerange + point at y)
+ */
+function buildPointrangeSpec(
+  data: Record<string, unknown>[],
+  aes: AestheticMapping
+): VegaLiteLayer[] {
+  const colorEncoding = aes.color
+    ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
+    : {}
+
+  return [
+    // Vertical line from ymin to ymax
+    {
+      mark: 'rule',
+      encoding: {
+        x: { field: aes.x, type: inferFieldType(data, aes.x) },
+        y: { field: aes.ymin || 'ymin', type: 'quantitative' },
+        y2: { field: aes.ymax || 'ymax' },
+        ...colorEncoding,
+      },
+    },
+    // Point at y value
+    {
+      mark: { type: 'point', filled: true },
+      encoding: {
+        x: { field: aes.x, type: inferFieldType(data, aes.x) },
+        y: { field: aes.y, type: 'quantitative' },
+        ...colorEncoding,
+      },
+    },
+  ]
+}
+
+/**
+ * Build crossbar spec (rectangle with horizontal line at y)
+ */
+function buildCrossbarSpec(
+  data: Record<string, unknown>[],
+  aes: AestheticMapping
+): VegaLiteLayer[] {
+  const colorEncoding = aes.color
+    ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
+    : {}
+
+  return [
+    // Rectangle from ymin to ymax
+    {
+      mark: { type: 'bar', width: 20 },
+      encoding: {
+        x: { field: aes.x, type: inferFieldType(data, aes.x) },
+        y: { field: aes.ymin || 'ymin', type: 'quantitative' },
+        y2: { field: aes.ymax || 'ymax' },
+        ...colorEncoding,
+      },
+    },
+    // Horizontal line at y (middle)
+    {
+      mark: { type: 'tick', thickness: 2 },
+      encoding: {
+        x: { field: aes.x, type: inferFieldType(data, aes.x) },
+        y: { field: aes.y, type: 'quantitative' },
+        color: { value: 'black' },
+      },
+    },
+  ]
+}
+
+/**
+ * Build horizontal errorbar spec
+ */
+function buildErrorbarhSpec(
+  data: Record<string, unknown>[],
+  aes: AestheticMapping
+): Partial<VegaLiteSpec> {
+  return {
+    mark: 'rule',
+    encoding: {
+      y: { field: aes.y, type: inferFieldType(data, aes.y) },
+      x: { field: aes.xmin || 'xmin', type: 'quantitative' },
+      x2: { field: aes.xmax || 'xmax' },
+      ...(aes.color
+        ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
+        : {}),
+    },
+  }
+}
+
+/**
+ * Build ribbon spec (area with y and y2)
+ */
+function buildRibbonSpec(
+  data: Record<string, unknown>[],
+  aes: AestheticMapping
+): Partial<VegaLiteSpec> {
+  return {
+    mark: { type: 'area', opacity: 0.3 },
+    encoding: {
+      x: { field: aes.x, type: inferFieldType(data, aes.x) },
+      y: { field: aes.ymin || 'ymin', type: 'quantitative' },
+      y2: { field: aes.ymax || 'ymax' },
+      ...(aes.color
+        ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
+        : {}),
+      ...(aes.fill
+        ? { fill: { field: aes.fill, type: inferFieldType(data, aes.fill) } }
+        : {}),
+    },
+  }
+}
+
+/**
+ * Build rug spec (tick marks along axis)
+ */
+function buildRugSpec(
+  data: Record<string, unknown>[],
+  aes: AestheticMapping,
+  geom: Geom
+): Partial<VegaLiteSpec> {
+  // Rug can be on x, y, or both
+  const sides = geom.params?.sides as string || 'b' // b=bottom, l=left, t=top, r=right
+
+  const encoding: Record<string, unknown> = {}
+
+  if (sides.includes('b') || sides.includes('t')) {
+    encoding.x = { field: aes.x, type: inferFieldType(data, aes.x) }
+  }
+  if (sides.includes('l') || sides.includes('r')) {
+    encoding.y = { field: aes.y, type: inferFieldType(data, aes.y) }
+  }
+
+  // Default to x if no sides specified
+  if (Object.keys(encoding).length === 0) {
+    encoding.x = { field: aes.x, type: inferFieldType(data, aes.x) }
+  }
+
+  return {
+    mark: { type: 'tick', thickness: 1 },
+    encoding,
+  }
+}
+
+/**
+ * Build bin2d spec (2D histogram as heatmap)
+ */
+function buildBin2dSpec(
+  data: Record<string, unknown>[],
+  aes: AestheticMapping,
+  geom: Geom
+): Partial<VegaLiteSpec> {
+  const binX = geom.params?.binwidth_x || geom.params?.bins || 10
+  const binY = geom.params?.binwidth_y || geom.params?.bins || 10
+
+  return {
+    mark: 'rect',
+    encoding: {
+      x: {
+        field: aes.x,
+        bin: { maxbins: binX as number },
+        type: 'quantitative',
+      },
+      y: {
+        field: aes.y,
+        bin: { maxbins: binY as number },
+        type: 'quantitative',
+      },
+      color: {
+        aggregate: 'count',
+        type: 'quantitative',
+        scale: { scheme: 'viridis' },
+      },
     },
   }
 }
@@ -440,46 +794,132 @@ export function plotSpecToVegaLite(
     }
   }
 
+  /**
+   * Build layer spec for a single geom, handling special cases
+   */
+  function buildGeomLayer(geom: Geom): VegaLiteLayer | VegaLiteLayer[] {
+    const data = spec.data as Record<string, unknown>[]
+
+    // Special handling for certain geom types
+    if (geom.type === 'histogram' || geom.stat === 'bin') {
+      const histSpec = buildHistogramSpec(data, spec.aes, geom)
+      return {
+        mark: histSpec.mark as string,
+        encoding: histSpec.encoding,
+      }
+    }
+
+    if (geom.type === 'boxplot') {
+      const boxSpec = buildBoxplotSpec(data, spec.aes)
+      return {
+        mark: boxSpec.mark as { type: string },
+        encoding: boxSpec.encoding,
+      }
+    }
+
+    if (geom.type === 'hline') {
+      const hlineSpec = buildHLineSpec(geom, data)
+      return {
+        mark: hlineSpec.mark as { type: string },
+        encoding: hlineSpec.encoding,
+      }
+    }
+
+    if (geom.type === 'vline') {
+      const vlineSpec = buildVLineSpec(geom, data)
+      return {
+        mark: vlineSpec.mark as { type: string },
+        encoding: vlineSpec.encoding,
+      }
+    }
+
+    if (geom.type === 'abline') {
+      const ablineSpec = buildAblineSpec(geom, data, spec.aes)
+      return {
+        mark: ablineSpec.mark as { type: string },
+        encoding: ablineSpec.encoding,
+        // Note: abline needs its own data, handled at top level
+      }
+    }
+
+    if (geom.type === 'linerange') {
+      const linerangeSpec = buildLinerangeSpec(data, spec.aes)
+      return {
+        mark: linerangeSpec.mark as string,
+        encoding: linerangeSpec.encoding,
+      }
+    }
+
+    if (geom.type === 'pointrange') {
+      // Returns multiple layers
+      return buildPointrangeSpec(data, spec.aes)
+    }
+
+    if (geom.type === 'crossbar') {
+      // Returns multiple layers
+      return buildCrossbarSpec(data, spec.aes)
+    }
+
+    if (geom.type === 'errorbarh') {
+      const errorhSpec = buildErrorbarhSpec(data, spec.aes)
+      return {
+        mark: errorhSpec.mark as string,
+        encoding: errorhSpec.encoding,
+      }
+    }
+
+    if (geom.type === 'ribbon') {
+      const ribbonSpec = buildRibbonSpec(data, spec.aes)
+      return {
+        mark: ribbonSpec.mark as { type: string },
+        encoding: ribbonSpec.encoding,
+      }
+    }
+
+    if (geom.type === 'rug') {
+      const rugSpec = buildRugSpec(data, spec.aes, geom)
+      return {
+        mark: rugSpec.mark as { type: string },
+        encoding: rugSpec.encoding,
+      }
+    }
+
+    if (geom.type === 'bin2d') {
+      const bin2dSpec = buildBin2dSpec(data, spec.aes, geom)
+      return {
+        mark: bin2dSpec.mark as string,
+        encoding: bin2dSpec.encoding,
+      }
+    }
+
+    // Default: use mark type and encoding builder
+    return {
+      mark: buildMark(geom),
+      encoding: buildEncoding(spec.aes, data, geom),
+    }
+  }
+
   // Handle multiple geoms as layers
   if (spec.geoms.length > 1) {
-    vlSpec.layer = spec.geoms.map(geom => {
-      // Special handling for certain geom types
-      if (geom.type === 'histogram' || geom.stat === 'bin') {
-        const histSpec = buildHistogramSpec(spec.data, spec.aes, geom)
-        return {
-          mark: histSpec.mark as string,
-          encoding: histSpec.encoding,
-        }
+    vlSpec.layer = []
+    for (const geom of spec.geoms) {
+      const layerResult = buildGeomLayer(geom)
+      if (Array.isArray(layerResult)) {
+        vlSpec.layer.push(...layerResult)
+      } else {
+        vlSpec.layer.push(layerResult)
       }
-
-      if (geom.type === 'boxplot') {
-        const boxSpec = buildBoxplotSpec(spec.data, spec.aes)
-        return {
-          mark: boxSpec.mark as { type: string },
-          encoding: boxSpec.encoding,
-        }
-      }
-
-      return {
-        mark: buildMark(geom),
-        encoding: buildEncoding(spec.aes, spec.data, geom),
-      }
-    })
+    }
   } else if (spec.geoms.length === 1) {
     const geom = spec.geoms[0]
+    const layerResult = buildGeomLayer(geom)
 
-    // Special handling for histogram
-    if (geom.type === 'histogram' || geom.stat === 'bin') {
-      const histSpec = buildHistogramSpec(spec.data, spec.aes, geom)
-      vlSpec.mark = histSpec.mark as string
-      vlSpec.encoding = histSpec.encoding
-    } else if (geom.type === 'boxplot') {
-      const boxSpec = buildBoxplotSpec(spec.data, spec.aes)
-      vlSpec.mark = boxSpec.mark
-      vlSpec.encoding = boxSpec.encoding
+    if (Array.isArray(layerResult)) {
+      // Composite geoms become layers
+      vlSpec.layer = layerResult
     } else {
-      vlSpec.mark = buildMark(geom)
-      vlSpec.encoding = buildEncoding(spec.aes, spec.data, geom)
+      vlSpec.mark = layerResult.mark
+      vlSpec.encoding = layerResult.encoding
     }
   } else {
     // Default to point if no geoms

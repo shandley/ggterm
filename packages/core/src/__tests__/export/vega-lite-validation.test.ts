@@ -150,11 +150,10 @@ describe('GEOM_TO_MARK mapping coverage', () => {
     }
 
     // Document current state - these geoms fall back to point
-    // Update this list as support is added
+    // Note: qq intentionally falls back to point (Q-Q plots are scatter plots)
+    // All other geoms now have proper Vega-Lite mappings
     const expectedFallbacks = [
-      'col', 'rug', 'errorbarh', 'crossbar', 'linerange', 'pointrange',
-      'ribbon', 'bin2d', 'label', 'contour', 'contour_filled', 'density_2d',
-      'qq', 'hline', 'vline', 'abline', 'curve', 'qq_line',
+      'qq', // Intentional: Q-Q plots are scatter plots of quantiles
     ]
 
     // This test will fail when new geoms are added but not mapped
