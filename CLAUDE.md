@@ -65,12 +65,12 @@ bun packages/core/src/cli-plot.ts export 2024-01-26-001 output.html
 ## Testing
 
 ```bash
-bun test             # Run all tests (~1220 tests)
+bun test             # Run all tests (~1843 tests)
 ```
 
 ## Claude Code Skills
 
-Six skills in `.claude/skills/` for AI-assisted data analysis:
+Seven skills in `.claude/skills/` for AI-assisted data analysis:
 
 | Skill | Purpose |
 |-------|---------|
@@ -80,6 +80,7 @@ Six skills in `.claude/skills/` for AI-assisted data analysis:
 | `ggterm-markdown` | Generate reports with plots |
 | `ggterm-publish` | Export plots to PNG/SVG/PDF/HTML |
 | `ggterm-customize` | Natural language plot customization |
+| `ggterm-style` | Apply publication-quality style presets (Wilke, Tufte, Nature, Economist) |
 
 ## Documentation
 
