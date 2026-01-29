@@ -670,7 +670,14 @@ function handlePlot(args: string[]): void {
   // Note: y may be absent for histograms (stat computes it)
   const aes: Record<string, string> = { x }
   if (y && y !== '-') aes.y = y
-  if (color && color !== '-') aes.color = color
+  // For heatmap geoms (tile, raster), use fill instead of color
+  if (color && color !== '-') {
+    if (geomType === 'tile' || geomType === 'raster') {
+      aes.fill = color
+    } else {
+      aes.color = color
+    }
+  }
 
   let plot = gg(data).aes(aes as any)
 

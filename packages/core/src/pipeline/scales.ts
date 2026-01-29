@@ -613,27 +613,58 @@ export function buildScaleContext(
     }
   }
 
-  // Infer y domain (always continuous for now)
-  // Get transform from user scale
-  const yTrans = userYScale?.trans ?? 'identity'
-  // Priority: coord ylim > user scale domain > computed from data
-  const yDomain = coordLimits?.ylim ??
-    userYScale?.domain as [number, number] | undefined ??
-    computeDomain(data, aes.y, yTrans)
+  // Determine if y is categorical or continuous
+  const yIsCategorical = isCategoricalField(data, aes.y)
 
   // Create y scale (maps to vertical canvas range, inverted because y=0 is top)
-  const y = createResolvedContinuousScale(
-    'y',
-    yDomain,
-    [plotArea.y + plotArea.height - 1, plotArea.y], // Inverted!
-    yTrans
-  )
-  // Apply user-provided breaks and labels
-  if (userYScale?.breaks) {
-    y.breaks = userYScale.breaks
-  }
-  if (userYScale?.labels) {
-    y.labels = userYScale.labels
+  let y: ResolvedScale
+  if (yIsCategorical) {
+    // Extract ordering options from user scale if provided
+    const yOrderOptions: InferDiscreteOptions = {}
+    if (userYScale) {
+      if (userYScale.domain && Array.isArray(userYScale.domain)) {
+        yOrderOptions.limits = userYScale.domain as string[]
+      }
+      // Check for orderOptions on user scale (from scale_y_discrete)
+      const orderOpts = (userYScale as any).orderOptions
+      if (orderOpts) {
+        if (orderOpts.order) yOrderOptions.order = orderOpts.order
+        if (orderOpts.reverse) yOrderOptions.reverse = orderOpts.reverse
+        if (orderOpts.exclude) yOrderOptions.exclude = orderOpts.exclude
+        if (orderOpts.drop !== undefined) yOrderOptions.drop = orderOpts.drop
+      }
+    }
+    const yDomain = inferDiscreteDomain(data, aes.y, yOrderOptions)
+    y = createResolvedDiscreteScale(
+      'y',
+      yDomain,
+      [plotArea.y + plotArea.height - 1, plotArea.y] // Inverted!
+    )
+    // Apply custom labels if provided
+    if (userYScale?.labels) {
+      y.labels = userYScale.labels as string[]
+    }
+  } else {
+    // Get transform from user scale
+    const yTrans = userYScale?.trans ?? 'identity'
+    // Priority: coord ylim > user scale domain > computed from data
+    const yDomain = coordLimits?.ylim ??
+      userYScale?.domain as [number, number] | undefined ??
+      computeDomain(data, aes.y, yTrans)
+
+    y = createResolvedContinuousScale(
+      'y',
+      yDomain,
+      [plotArea.y + plotArea.height - 1, plotArea.y], // Inverted!
+      yTrans
+    )
+    // Apply user-provided breaks and labels
+    if (userYScale?.breaks) {
+      y.breaks = userYScale.breaks
+    }
+    if (userYScale?.labels) {
+      y.labels = userYScale.labels
+    }
   }
 
   const context: ScaleContext = { x, y }

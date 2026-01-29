@@ -57,6 +57,9 @@ const GEOM_TO_MARK: Record<string, string> = {
   rect: 'rect',
   text: 'text',
   rule: 'rule',
+  // Heatmap geoms
+  tile: 'rect',
+  raster: 'rect',
   // These need special handling
   histogram: 'bar',
   freqpoly: 'line',
@@ -105,12 +108,16 @@ function buildEncoding(
 ): Record<string, unknown> {
   const encoding: Record<string, unknown> = {}
 
+  // Check if this is a heatmap geom (tile or raster)
+  const isHeatmap = geom.type === 'tile' || geom.type === 'raster'
+
   // X axis
   if (aes.x) {
     const xType = inferFieldType(data, aes.x)
     encoding.x = {
       field: aes.x,
-      type: xType,
+      // For heatmaps, prefer ordinal/nominal for proper grid layout
+      type: isHeatmap && xType === 'quantitative' ? 'ordinal' : xType,
       ...(xType === 'temporal' ? { timeUnit: 'yearmonthdate' } : {}),
     }
   }
@@ -124,13 +131,21 @@ function buildEncoding(
       const yType = inferFieldType(data, aes.y)
       encoding.y = {
         field: aes.y,
-        type: yType,
+        // For heatmaps, prefer ordinal/nominal for proper grid layout
+        type: isHeatmap && yType === 'quantitative' ? 'ordinal' : yType,
       }
     }
   }
 
-  // Color
-  if (aes.color) {
+  // Color - for heatmaps, use fill aesthetic as the color encoding
+  if (isHeatmap && aes.fill) {
+    const fillType = inferFieldType(data, aes.fill)
+    encoding.color = {
+      field: aes.fill,
+      type: fillType === 'nominal' ? 'quantitative' : fillType, // Heatmap fill should be quantitative
+      scale: { scheme: 'viridis' },
+    }
+  } else if (aes.color) {
     const colorType = inferFieldType(data, aes.color)
     encoding.color = {
       field: aes.color,
@@ -138,8 +153,8 @@ function buildEncoding(
     }
   }
 
-  // Fill (for bar charts, etc.)
-  if (aes.fill && !aes.color) {
+  // Fill (for bar charts, etc.) - skip if already handled for heatmaps
+  if (aes.fill && !aes.color && !isHeatmap) {
     const fillType = inferFieldType(data, aes.fill)
     encoding.color = {
       field: aes.fill,
@@ -191,6 +206,11 @@ function buildMark(geom: Geom): string | { type: string; [key: string]: unknown 
   }
   if (geom.type === 'histogram') {
     markProps.type = 'bar'
+  }
+  // Heatmap geoms need rect marks with proper tooltip
+  if (geom.type === 'tile' || geom.type === 'raster') {
+    markProps.type = 'rect'
+    markProps.tooltip = true
   }
 
   // If only type, return string

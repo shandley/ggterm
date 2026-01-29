@@ -1260,25 +1260,64 @@ export function renderGeomTile(
   const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
   const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
 
-  // Calculate tile size from data spacing or use defaults
-  let tileWidth = geom.params.width as number | undefined
-  let tileHeight = geom.params.height as number | undefined
+  // Calculate tile size in canvas coordinates
+  // For discrete scales, calculate based on number of categories
+  // For continuous scales, infer from data spacing or use defaults
+  let halfW: number
+  let halfH: number
 
-  if (!tileWidth || !tileHeight) {
-    // Infer from data spacing
-    const xVals = [...new Set(data.map((r) => Number(r[aes.x]) || 0))].sort((a, b) => a - b)
-    const yVals = [...new Set(data.map((r) => Number(r[aes.y]) || 0))].sort((a, b) => a - b)
+  const xIsDiscrete = scales.x.type === 'discrete'
+  const yIsDiscrete = scales.y.type === 'discrete'
 
-    if (xVals.length > 1) {
-      tileWidth = tileWidth ?? (xVals[1] - xVals[0])
+  if (xIsDiscrete) {
+    // For discrete x, divide canvas width by number of categories
+    const xDomain = scales.x.domain as string[]
+    const canvasWidth = Math.abs(scales.x.range[1] - scales.x.range[0])
+    halfW = Math.max(1, Math.floor(canvasWidth / (xDomain.length * 2)))
+  } else {
+    // For continuous x, infer from data spacing
+    let tileWidth = geom.params.width as number | undefined
+    if (!tileWidth) {
+      const xVals = [...new Set(data.map((r) => Number(r[aes.x])).filter(v => !isNaN(v)))].sort((a, b) => a - b)
+      if (xVals.length > 1) {
+        tileWidth = xVals[1] - xVals[0]
+      }
     }
-    if (yVals.length > 1) {
-      tileHeight = tileHeight ?? (yVals[1] - yVals[0])
+    tileWidth = tileWidth ?? 1
+    // Calculate half-width by mapping tile extent
+    const sampleX = data.find(r => r[aes.x] !== null && r[aes.x] !== undefined)?.[aes.x]
+    if (sampleX !== undefined) {
+      const cx = scales.x.map(sampleX)
+      halfW = Math.max(1, Math.floor(Math.abs(scales.x.map(Number(sampleX) + tileWidth / 2) - cx)))
+    } else {
+      halfW = 1
     }
   }
 
-  tileWidth = tileWidth ?? 1
-  tileHeight = tileHeight ?? 1
+  if (yIsDiscrete) {
+    // For discrete y, divide canvas height by number of categories
+    const yDomain = scales.y.domain as string[]
+    const canvasHeight = Math.abs(scales.y.range[1] - scales.y.range[0])
+    halfH = Math.max(1, Math.floor(canvasHeight / (yDomain.length * 2)))
+  } else {
+    // For continuous y, infer from data spacing
+    let tileHeight = geom.params.height as number | undefined
+    if (!tileHeight) {
+      const yVals = [...new Set(data.map((r) => Number(r[aes.y])).filter(v => !isNaN(v)))].sort((a, b) => a - b)
+      if (yVals.length > 1) {
+        tileHeight = yVals[1] - yVals[0]
+      }
+    }
+    tileHeight = tileHeight ?? 1
+    // Calculate half-height by mapping tile extent
+    const sampleY = data.find(r => r[aes.y] !== null && r[aes.y] !== undefined)?.[aes.y]
+    if (sampleY !== undefined) {
+      const cy = scales.y.map(sampleY)
+      halfH = Math.max(1, Math.floor(Math.abs(scales.y.map(Number(sampleY) + tileHeight / 2) - cy)))
+    } else {
+      halfH = 1
+    }
+  }
 
   for (const row of data) {
     const xVal = row[aes.x]
@@ -1292,10 +1331,6 @@ export function renderGeomTile(
     // Map center to canvas coordinates
     const cx = Math.round(scales.x.map(xVal))
     const cy = Math.round(scales.y.map(yVal))
-
-    // Calculate tile extent in canvas coordinates
-    const halfW = Math.max(1, Math.floor(Math.abs(scales.x.map(Number(xVal) + tileWidth / 2) - cx)))
-    const halfH = Math.max(1, Math.floor(Math.abs(scales.y.map(Number(yVal) + tileHeight / 2) - cy)))
 
     // Get color from scale or default
     let color: RGBA
