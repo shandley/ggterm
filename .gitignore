@@ -29,6 +29,8 @@ packages/*/src/**/*.d.ts.map
 # Testing
 coverage/
 .nyc_output/
+vega-lite-output/
+.playwright-mcp/
 
 # Logs
 *.log

@@ -40,8 +40,9 @@ export class TerminalCanvas implements Canvas {
    * Set a cell at the given position
    */
   setCell(x: number, y: number, cell: Partial<CanvasCell>): void {
-    // Bounds check
-    if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+    // Bounds check - also handles NaN and Infinity which fail standard comparisons
+    if (!Number.isFinite(x) || !Number.isFinite(y) ||
+        x < 0 || x >= this.width || y < 0 || y >= this.height) {
       return
     }
 
@@ -63,7 +64,9 @@ export class TerminalCanvas implements Canvas {
    * Get a cell at the given position
    */
   getCell(x: number, y: number): CanvasCell {
-    if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+    // Bounds check - also handles NaN and Infinity
+    if (!Number.isFinite(x) || !Number.isFinite(y) ||
+        x < 0 || x >= this.width || y < 0 || y >= this.height) {
       return createEmptyCell()
     }
     return this.cells[Math.floor(y)][Math.floor(x)]
