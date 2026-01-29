@@ -50,12 +50,14 @@ import {
   facet_wrap,
 } from './index'
 import { readFileSync, writeFileSync } from 'fs'
+import { join } from 'path'
 import {
   savePlotToHistory,
   loadPlotFromHistory,
   getHistory,
   searchHistory,
   getLatestPlotId,
+  getGGTermDir,
 } from './history'
 
 const GEOM_TYPES = [
@@ -943,6 +945,12 @@ function handleExport(idOrFile?: string, outputFile?: string): void {
   const spec = plotSpecToVegaLite(plotSpec, {
     interactive: true,
   })
+
+  // Save Vega-Lite spec for style skill to modify
+  writeFileSync(
+    join(getGGTermDir(), 'last-plot-vegalite.json'),
+    JSON.stringify(spec, null, 2)
+  )
 
   const title = typeof spec.title === 'string' ? spec.title : spec.title?.text || 'Plot'
   const output = outputFile || `${plotId}.html`
