@@ -6,8 +6,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "ggterm": "./dist/cli.js",
-    "ggterm-plot": "./dist/cli-plot.js"
+    "ggterm": "dist/cli.js",
+    "ggterm-plot": "dist/cli-plot.js"
   },
   "exports": {
     ".": {
@@ -36,7 +36,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/shandley/ggterm.git",
+    "url": "git+https://github.com/shandley/ggterm.git",
     "directory": "packages/core"
   },
   "homepage": "https://github.com/shandley/ggterm#readme",

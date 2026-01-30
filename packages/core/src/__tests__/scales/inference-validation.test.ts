@@ -499,15 +499,14 @@ describe('Edge cases', () => {
   })
 
   it('should handle numeric strings that look like numbers', () => {
-    // Numeric strings should be treated as categorical
+    // Numeric strings should be treated as categorical (discrete)
+    // This is important for boxplots where x values like '4', '6', '8' (cylinders)
+    // should be discrete categories, not continuous values
     const data = [{ x: '1', y: 10 }, { x: '2', y: 20 }, { x: '3', y: 30 }]
     const context = buildScaleContext(data, { x: 'x', y: 'y' }, plotArea)
 
-    // '1', '2', '3' are numeric when parsed but are strings
-    // isCategoricalField checks if string && isNaN(Number(value))
-    // '1' -> Number('1') = 1 -> isNaN(1) = false -> not categorical
-    // So these should be treated as continuous!
-    expect(context.x.type).toBe('continuous')
+    // String values are always treated as categorical, even if they look numeric
+    expect(context.x.type).toBe('discrete')
   })
 
   it('should handle true categorical strings', () => {

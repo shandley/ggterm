@@ -459,12 +459,18 @@ export function createResolvedContinuousColorScale(
 
 /**
  * Check if data field contains categorical (non-numeric) values
+ *
+ * A field is categorical if:
+ * - Any value is a string (regardless of whether it looks like a number)
+ * - This handles stat-transformed data (e.g., boxplot groups "4", "6", "8")
  */
 function isCategoricalField(data: DataSource, field: string): boolean {
   for (const row of data) {
     const value = row[field]
     if (value !== null && value !== undefined) {
-      if (typeof value === 'string' && isNaN(Number(value))) {
+      // Any string value indicates categorical data
+      // This handles stat_boxplot output where numeric groups become strings
+      if (typeof value === 'string') {
         return true
       }
     }
