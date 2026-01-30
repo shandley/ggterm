@@ -21,6 +21,7 @@ import {
   geom_col,
   geom_histogram,
   geom_freqpoly,
+  geom_density,
   geom_boxplot,
   geom_violin,
   geom_ridgeline,
@@ -55,6 +56,12 @@ import {
   geom_hline,
   geom_vline,
   geom_abline,
+  geom_calendar,
+  geom_flame,
+  geom_icicle,
+  geom_corrmat,
+  geom_sankey,
+  geom_treemap,
   facet_wrap,
 } from './index'
 import { readFileSync, writeFileSync } from 'fs'
@@ -70,13 +77,13 @@ import {
 import { handleInit } from './init'
 
 const GEOM_TYPES = [
-  'point', 'line', 'path', 'step', 'bar', 'col', 'histogram', 'freqpoly',
+  'point', 'line', 'path', 'step', 'bar', 'col', 'histogram', 'freqpoly', 'density',
   'boxplot', 'violin', 'ridgeline', 'joy', 'beeswarm', 'quasirandom',
   'dumbbell', 'lollipop', 'waffle', 'sparkline', 'bullet', 'braille',
   'area', 'ribbon', 'rug', 'errorbar', 'errorbarh',
   'crossbar', 'linerange', 'pointrange', 'smooth', 'segment', 'rect',
   'raster', 'tile', 'bin2d', 'text', 'label', 'contour', 'contour_filled',
-  'density_2d', 'qq'
+  'density_2d', 'qq', 'calendar', 'flame', 'icicle', 'corrmat', 'sankey', 'treemap'
 ]
 
 // Date pattern: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
@@ -557,7 +564,7 @@ function validateGeomType(geomType: string): void {
     // Group by category for readability
     console.error(`  Points/Lines: point, line, path, step, smooth, segment`)
     console.error(`  Bars/Areas:   bar, col, histogram, freqpoly, area, ribbon`)
-    console.error(`  Distributions: boxplot, violin, ridgeline, joy, beeswarm, quasirandom, qq, density_2d`)
+    console.error(`  Distributions: boxplot, violin, ridgeline, joy, beeswarm, quasirandom, qq, density, density_2d`)
     console.error(`  Uncertainty:  errorbar, errorbarh, crossbar, linerange, pointrange`)
     console.error(`  2D:           tile, rect, raster, bin2d, contour, contour_filled`)
     console.error(`  Text:         text, label`)
@@ -676,7 +683,7 @@ function handlePlot(args: string[]): void {
   if (geomsRequiringY.includes(geomType) && (!y || y === '-')) {
     console.error(`\nError: Geometry type "${geomType}" requires a y column`)
     console.error(`\nUsage: cli-plot.ts ${dataFile} <x> <y> [color] [title] ${geomType}`)
-    console.error(`\nIf you want a univariate plot, try: histogram, bar, qq, or freqpoly`)
+    console.error(`\nIf you want a univariate plot, try: histogram, density, bar, qq, or freqpoly`)
     process.exit(1)
   }
 
@@ -711,6 +718,9 @@ function handlePlot(args: string[]): void {
       break
     case 'freqpoly':
       plot = plot.geom(geom_freqpoly({ bins: 20 }))
+      break
+    case 'density':
+      plot = plot.geom(geom_density())
       break
     case 'boxplot':
       plot = plot.geom(geom_boxplot())
@@ -811,6 +821,24 @@ function handlePlot(args: string[]): void {
       plot = plot.geom(geom_qq())
       plot = plot.geom(geom_qq_line())
       break
+    case 'calendar':
+      plot = plot.geom(geom_calendar())
+      break
+    case 'flame':
+      plot = plot.geom(geom_flame())
+      break
+    case 'icicle':
+      plot = plot.geom(geom_icicle())
+      break
+    case 'corrmat':
+      plot = plot.geom(geom_corrmat())
+      break
+    case 'sankey':
+      plot = plot.geom(geom_sankey())
+      break
+    case 'treemap':
+      plot = plot.geom(geom_treemap())
+      break
     case 'point':
     default:
       plot = plot.geom(geom_point())
@@ -831,6 +859,9 @@ function handlePlot(args: string[]): void {
   let yLabel: string | undefined = y !== '-' ? y : undefined
   if ((geomType === 'histogram' || geomType === 'bar' || geomType === 'freqpoly') && !yLabel) {
     yLabel = 'count'
+  }
+  if (geomType === 'density' && !yLabel) {
+    yLabel = 'density'
   }
   if (geomType === 'qq') {
     yLabel = 'Sample Quantiles'

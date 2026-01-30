@@ -916,6 +916,124 @@ export function renderGeomFreqpoly(
 }
 
 /**
+ * Render geom_density (1D kernel density estimation)
+ * Data should be pre-transformed by stat_density
+ */
+export function renderGeomDensity(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  if (data.length < 2) return
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Group by color aesthetic if present
+  const groups = new Map<string, DataSource[number][]>()
+  const groupField = aes.group || aes.color || aes.fill
+
+  if (groupField) {
+    for (const row of data) {
+      const key = String(row[groupField] ?? 'default')
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(row)
+    }
+  } else {
+    groups.set('default', data as DataSource[number][])
+  }
+
+  // Get baseline (y=0 mapped to canvas, or bottom of plot area)
+  let baseline = Math.round(scales.y.map(0))
+  baseline = Math.max(plotTop, Math.min(plotBottom, baseline))
+
+  const alpha = (geom.params.alpha as number) ?? 0.3
+  const fillChar = '░'
+
+  // Draw filled area and outline for each group
+  for (const [groupKey, groupData] of groups) {
+    if (groupData.length < 2) continue
+
+    // Sort by x
+    const sorted = [...groupData].sort((a, b) => {
+      const ax = Number(a.x) || 0
+      const bx = Number(b.x) || 0
+      return ax - bx
+    })
+
+    // Get color for this group
+    let baseColor = scales.color?.map(groupKey) ?? DEFAULT_POINT_COLOR
+
+    // Apply alpha by reducing color intensity for fill
+    const fillColor: RGBA = {
+      r: Math.round(baseColor.r * alpha),
+      g: Math.round(baseColor.g * alpha),
+      b: Math.round(baseColor.b * alpha),
+      a: baseColor.a,
+    }
+
+    // Draw filled area from baseline to density curve
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const row1 = sorted[i]
+      const row2 = sorted[i + 1]
+
+      // Get density value (y or density field)
+      const density1 = Number(row1.y ?? row1.density) || 0
+      const density2 = Number(row2.y ?? row2.density) || 0
+
+      const x1 = Math.round(scales.x.map(row1.x as number))
+      const y1 = Math.round(scales.y.map(density1))
+      const x2 = Math.round(scales.x.map(row2.x as number))
+      const y2 = Math.round(scales.y.map(density2))
+
+      // Fill columns between x1 and x2
+      for (let x = x1; x <= x2; x++) {
+        if (x < plotLeft || x > plotRight) continue
+
+        // Interpolate y value at this x position
+        const t = x2 !== x1 ? (x - x1) / (x2 - x1) : 0
+        const yInterp = Math.round(y1 + (y2 - y1) * t)
+
+        // Fill from yInterp to baseline
+        const top = Math.min(yInterp, baseline)
+        const bottom = Math.max(yInterp, baseline)
+
+        for (let y = top; y <= bottom; y++) {
+          if (y >= plotTop && y <= plotBottom) {
+            canvas.drawChar(x, y, fillChar, fillColor)
+          }
+        }
+      }
+    }
+
+    // Draw outline on top
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const row1 = sorted[i]
+      const row2 = sorted[i + 1]
+
+      const density1 = Number(row1.y ?? row1.density) || 0
+      const density2 = Number(row2.y ?? row2.density) || 0
+
+      const x1 = Math.round(scales.x.map(row1.x as number))
+      const y1 = Math.round(scales.y.map(density1))
+      const x2 = Math.round(scales.x.map(row2.x as number))
+      const y2 = Math.round(scales.y.map(density2))
+
+      // Clip line to plot area
+      if (x1 >= plotLeft && x1 <= plotRight && x2 >= plotLeft && x2 <= plotRight &&
+          y1 >= plotTop && y1 <= plotBottom && y2 >= plotTop && y2 <= plotBottom) {
+        drawLine(canvas, x1, y1, x2, y2, baseColor)
+      }
+    }
+  }
+}
+
+/**
  * Render geom_boxplot
  * Data should be pre-transformed by stat_boxplot
  */
@@ -1911,6 +2029,103 @@ export function renderGeomLinerange(
 }
 
 /**
+ * Render geom_crossbar (box with thick middle line at y, spanning ymin to ymax)
+ */
+export function renderGeomCrossbar(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const width = (geom.params.width as number) ?? 0.5
+  const fatten = (geom.params.fatten as number) ?? 2.5
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Calculate half-width in canvas coordinates
+  const halfWidth = Math.max(2, Math.round(width * 4))
+
+  for (const row of data) {
+    const xVal = row[aes.x]
+    const yVal = row[aes.y]
+    const ymin = row['ymin'] as number
+    const ymax = row['ymax'] as number
+
+    if (xVal === null || xVal === undefined || ymin === undefined || ymax === undefined) {
+      continue
+    }
+
+    const cx = Math.round(scales.x.map(xVal))
+    const cy = yVal !== null && yVal !== undefined ? Math.round(scales.y.map(yVal)) : null
+    const cyMin = Math.round(scales.y.map(ymin))
+    const cyMax = Math.round(scales.y.map(ymax))
+
+    const color = getPointColor(row, aes, scales.color)
+
+    // Draw the box outline
+    const top = Math.min(cyMin, cyMax)
+    const bottom = Math.max(cyMin, cyMax)
+    const left = cx - halfWidth
+    const right = cx + halfWidth
+
+    // Draw vertical sides
+    for (let y = top; y <= bottom; y++) {
+      if (y >= plotTop && y <= plotBottom) {
+        if (left >= plotLeft && left <= plotRight) {
+          canvas.drawChar(left, y, '│', color)
+        }
+        if (right >= plotLeft && right <= plotRight) {
+          canvas.drawChar(right, y, '│', color)
+        }
+      }
+    }
+
+    // Draw horizontal top and bottom
+    for (let x = left; x <= right; x++) {
+      if (x >= plotLeft && x <= plotRight) {
+        if (top >= plotTop && top <= plotBottom) {
+          canvas.drawChar(x, top, '─', color)
+        }
+        if (bottom >= plotTop && bottom <= plotBottom) {
+          canvas.drawChar(x, bottom, '─', color)
+        }
+      }
+    }
+
+    // Draw corners
+    if (left >= plotLeft && left <= plotRight) {
+      if (top >= plotTop && top <= plotBottom) canvas.drawChar(left, top, '┌', color)
+      if (bottom >= plotTop && bottom <= plotBottom) canvas.drawChar(left, bottom, '└', color)
+    }
+    if (right >= plotLeft && right <= plotRight) {
+      if (top >= plotTop && top <= plotBottom) canvas.drawChar(right, top, '┐', color)
+      if (bottom >= plotTop && bottom <= plotBottom) canvas.drawChar(right, bottom, '┘', color)
+    }
+
+    // Draw thick middle line at y position (the "cross" bar)
+    if (cy !== null && cy >= plotTop && cy <= plotBottom) {
+      // Draw multiple lines for "fatten" effect
+      const fattenLines = Math.max(1, Math.round(fatten / 2))
+      for (let dy = -fattenLines + 1; dy < fattenLines; dy++) {
+        const lineY = cy + dy
+        if (lineY >= plotTop && lineY <= plotBottom && lineY >= top && lineY <= bottom) {
+          for (let x = left + 1; x < right; x++) {
+            if (x >= plotLeft && x <= plotRight) {
+              canvas.drawChar(x, lineY, '━', color)
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
  * Render geom_pointrange (point with vertical line from ymin to ymax)
  */
 export function renderGeomPointrange(
@@ -2866,6 +3081,931 @@ export function renderGeomBraille(
 }
 
 /**
+ * Render geom_calendar (GitHub-style contribution heatmap)
+ */
+export function renderGeomCalendar(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  if (data.length === 0) return
+
+  const cellChar = (geom.params.cell_char as string) ?? '█'
+  const emptyColor = parseColorToRgba(geom.params.empty_color ?? '#161b22')
+  const fillColor = parseColorToRgba(geom.params.fill_color ?? '#39d353')
+  const levels = (geom.params.levels as number) ?? 5
+  const showDays = (geom.params.show_days as boolean) ?? true
+  const showMonths = (geom.params.show_months as boolean) ?? true
+  const weekStart = (geom.params.week_start as number) ?? 0
+
+  // Parse dates and values
+  const dateField = aes.x
+  const valueField = aes.fill || aes.y || 'value'
+
+  const entries: { date: Date; value: number }[] = []
+  let minValue = Infinity
+  let maxValue = -Infinity
+
+  for (const row of data) {
+    const dateVal = row[dateField]
+    const val = Number(row[valueField]) || 0
+
+    let date: Date
+    if (dateVal instanceof Date) {
+      date = dateVal
+    } else if (typeof dateVal === 'string' || typeof dateVal === 'number') {
+      date = new Date(dateVal)
+    } else {
+      continue
+    }
+
+    if (isNaN(date.getTime())) continue
+
+    entries.push({ date, value: val })
+    if (val < minValue) minValue = val
+    if (val > maxValue) maxValue = val
+  }
+
+  if (entries.length === 0) return
+
+  // Sort by date
+  entries.sort((a, b) => a.date.getTime() - b.date.getTime())
+
+  // Find date range
+  const startDate = new Date(entries[0].date)
+  const endDate = new Date(entries[entries.length - 1].date)
+
+  // Adjust start to beginning of week
+  startDate.setDate(startDate.getDate() - ((startDate.getDay() - weekStart + 7) % 7))
+
+  // Build date -> value map
+  const valueMap = new Map<string, number>()
+  for (const entry of entries) {
+    const key = entry.date.toISOString().slice(0, 10)
+    valueMap.set(key, (valueMap.get(key) || 0) + entry.value)
+  }
+
+  // Get plot area
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+
+  // Day labels
+  const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+  // Calculate weeks
+  const msPerDay = 24 * 60 * 60 * 1000
+  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / msPerDay) + 7
+  const numWeeks = Math.ceil(totalDays / 7)
+
+  // Interpolate color
+  const getColor = (value: number): RGBA => {
+    if (value === 0 || maxValue === minValue) return emptyColor
+    const t = Math.min(1, Math.max(0, (value - minValue) / (maxValue - minValue)))
+    const level = Math.floor(t * (levels - 1))
+    const levelT = level / (levels - 1)
+    return {
+      r: Math.round(emptyColor.r + (fillColor.r - emptyColor.r) * levelT),
+      g: Math.round(emptyColor.g + (fillColor.g - emptyColor.g) * levelT),
+      b: Math.round(emptyColor.b + (fillColor.b - emptyColor.b) * levelT),
+      a: 1,
+    }
+  }
+
+  // Render day labels
+  const xOffset = showDays ? 3 : 0
+  const yOffset = showMonths ? 2 : 0
+
+  if (showDays) {
+    for (let d = 0; d < 7; d++) {
+      const dayIndex = (d + weekStart) % 7
+      const y = plotTop + yOffset + d
+      canvas.drawChar(plotLeft, y, dayLabels[dayIndex], { r: 128, g: 128, b: 128, a: 1 })
+    }
+  }
+
+  // Render weeks
+  let lastMonth = -1
+  const currentDate = new Date(startDate)
+
+  for (let week = 0; week < numWeeks; week++) {
+    const x = plotLeft + xOffset + week * 2
+
+    // Month label
+    if (showMonths && currentDate.getMonth() !== lastMonth) {
+      const monthLabel = monthLabels[currentDate.getMonth()]
+      for (let i = 0; i < monthLabel.length; i++) {
+        canvas.drawChar(x + i, plotTop, monthLabel[i], { r: 128, g: 128, b: 128, a: 1 })
+      }
+      lastMonth = currentDate.getMonth()
+    }
+
+    // Render days in this week
+    for (let day = 0; day < 7; day++) {
+      const dayDate = new Date(currentDate)
+      dayDate.setDate(dayDate.getDate() + day)
+
+      if (dayDate > endDate) break
+
+      const key = dayDate.toISOString().slice(0, 10)
+      const value = valueMap.get(key) || 0
+      const color = getColor(value)
+      const y = plotTop + yOffset + day
+
+      canvas.drawChar(x, y, cellChar, color)
+    }
+
+    currentDate.setDate(currentDate.getDate() + 7)
+  }
+}
+
+/**
+ * Render geom_flame (flame graph / icicle chart)
+ */
+export function renderGeomFlame(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  if (data.length === 0) return
+
+  const style = (geom.params.style as string) ?? 'flame'
+  const palette = (geom.params.palette as string) ?? 'warm'
+  const showLabels = (geom.params.show_labels as boolean) ?? true
+  const minLabelWidth = (geom.params.min_label_width as number) ?? 10
+  const barChar = (geom.params.bar_char as string) ?? '█'
+
+  // Get plot area
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+  const plotWidth = plotRight - plotLeft
+  const plotHeight = plotBottom - plotTop
+
+  // Extract frame data
+  const nameField = aes.x || 'name'
+  const valueField = aes.fill || 'value'
+  const depthField = aes.y || 'depth'
+  const startField = 'start'
+
+  interface Frame {
+    name: string
+    value: number
+    depth: number
+    start: number
+    width: number
+  }
+
+  // Parse frames
+  const frames: Frame[] = []
+  let totalValue = 0
+  let maxDepth = 0
+
+  for (const row of data) {
+    const name = String(row[nameField] || '')
+    const value = Number(row[valueField]) || 0
+    const depth = Number(row[depthField]) || 0
+    const start = row[startField] !== undefined ? Number(row[startField]) : -1
+
+    frames.push({ name, value, depth, start, width: 0 })
+    if (depth === 0) totalValue += value
+    if (depth > maxDepth) maxDepth = depth
+  }
+
+  if (totalValue === 0) return
+
+  // Calculate widths (as fraction of total)
+  for (const frame of frames) {
+    frame.width = (frame.value / totalValue) * plotWidth
+  }
+
+  // Sort by depth, then by start position
+  frames.sort((a, b) => {
+    if (a.depth !== b.depth) return a.depth - b.depth
+    if (a.start !== b.start) return a.start - b.start
+    return a.name.localeCompare(b.name)
+  })
+
+  // Compute start positions if not provided
+  const depthOffsets: number[] = new Array(maxDepth + 1).fill(0)
+  for (const frame of frames) {
+    if (frame.start < 0) {
+      frame.start = depthOffsets[frame.depth]
+    }
+    depthOffsets[frame.depth] = frame.start + frame.width
+  }
+
+  // Color palettes
+  const getPaletteColor = (name: string): RGBA => {
+    // Hash the name for consistent colors
+    let hash = 0
+    for (let i = 0; i < name.length; i++) {
+      hash = ((hash << 5) - hash) + name.charCodeAt(i)
+      hash = hash & hash
+    }
+    const hue = Math.abs(hash) % 360
+
+    // Convert palette preference to hue range
+    let h: number
+    if (palette === 'warm') {
+      h = (hue % 60) + 0 // 0-60 (red to yellow)
+    } else if (palette === 'cool') {
+      h = (hue % 60) + 180 // 180-240 (cyan to blue)
+    } else {
+      h = (hue % 40) + 10 // 10-50 (orange to yellow)
+    }
+
+    // HSL to RGB (simplified)
+    const s = 0.7
+    const l = 0.5
+    const c = (1 - Math.abs(2 * l - 1)) * s
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1))
+    const m = l - c / 2
+
+    let r = 0, g = 0, b = 0
+    if (h < 60) { r = c; g = x; b = 0; }
+    else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+
+    return {
+      r: Math.round((r + m) * 255),
+      g: Math.round((g + m) * 255),
+      b: Math.round((b + m) * 255),
+      a: 1,
+    }
+  }
+
+  // Render frames
+  const rowHeight = Math.max(1, Math.floor(plotHeight / (maxDepth + 1)))
+
+  for (const frame of frames) {
+    const x1 = plotLeft + Math.round(frame.start)
+    const x2 = plotLeft + Math.round(frame.start + frame.width)
+    const width = x2 - x1
+
+    if (width < 1) continue
+
+    // Y position based on style
+    let y: number
+    if (style === 'icicle') {
+      y = plotTop + frame.depth * rowHeight
+    } else {
+      y = plotBottom - (frame.depth + 1) * rowHeight
+    }
+
+    const color = getPaletteColor(frame.name)
+
+    // Draw the bar
+    for (let row = 0; row < rowHeight; row++) {
+      for (let col = x1; col < x2; col++) {
+        if (col >= plotLeft && col < plotRight && y + row >= plotTop && y + row < plotBottom) {
+          canvas.drawChar(col, y + row, barChar, color)
+        }
+      }
+    }
+
+    // Draw label if wide enough
+    if (showLabels && width >= minLabelWidth) {
+      const label = frame.name.slice(0, width - 2)
+      const labelX = x1 + 1
+      const labelY = y + Math.floor(rowHeight / 2)
+
+      // Contrasting text color
+      const textColor: RGBA = { r: 255, g: 255, b: 255, a: 1 }
+
+      for (let i = 0; i < label.length; i++) {
+        if (labelX + i < x2 - 1) {
+          canvas.drawChar(labelX + i, labelY, label[i], textColor)
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Render geom_corrmat (correlation matrix heatmap)
+ */
+export function renderGeomCorrmat(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  if (data.length === 0) return
+
+  const showValues = (geom.params.show_values as boolean) ?? true
+  const decimals = (geom.params.decimals as number) ?? 2
+  const positiveColor = parseColorToRgba(geom.params.positive_color ?? '#2166ac')
+  const negativeColor = parseColorToRgba(geom.params.negative_color ?? '#b2182b')
+  const neutralColor = parseColorToRgba(geom.params.neutral_color ?? '#f7f7f7')
+  const lowerTriangle = (geom.params.lower_triangle as boolean) ?? false
+  const upperTriangle = (geom.params.upper_triangle as boolean) ?? false
+
+  // Get plot area
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Extract correlation data
+  const xField = aes.x || 'var1'
+  const yField = aes.y || 'var2'
+  const valueField = aes.fill || 'correlation'
+
+  // Get unique variables
+  const xVars = new Set<string>()
+  const yVars = new Set<string>()
+  const corrMap = new Map<string, number>()
+
+  for (const row of data) {
+    const x = String(row[xField] || '')
+    const y = String(row[yField] || '')
+    const r = Number(row[valueField]) || 0
+
+    xVars.add(x)
+    yVars.add(y)
+    corrMap.set(`${x}|${y}`, r)
+  }
+
+  const xList = [...xVars]
+  const yList = [...yVars]
+  const numX = xList.length
+  const numY = yList.length
+
+  if (numX === 0 || numY === 0) return
+
+  // Calculate cell size
+  const cellWidth = Math.max(4, Math.floor((plotRight - plotLeft) / numX))
+  const cellHeight = Math.max(2, Math.floor((plotBottom - plotTop) / numY))
+
+  // Color interpolation for correlation values (-1 to 1)
+  const getColor = (r: number): RGBA => {
+    const t = (r + 1) / 2 // Map -1..1 to 0..1
+
+    if (t < 0.5) {
+      // Negative: interpolate from negative to neutral
+      const s = t * 2
+      return {
+        r: Math.round(negativeColor.r + (neutralColor.r - negativeColor.r) * s),
+        g: Math.round(negativeColor.g + (neutralColor.g - negativeColor.g) * s),
+        b: Math.round(negativeColor.b + (neutralColor.b - negativeColor.b) * s),
+        a: 1,
+      }
+    } else {
+      // Positive: interpolate from neutral to positive
+      const s = (t - 0.5) * 2
+      return {
+        r: Math.round(neutralColor.r + (positiveColor.r - neutralColor.r) * s),
+        g: Math.round(neutralColor.g + (positiveColor.g - neutralColor.g) * s),
+        b: Math.round(neutralColor.b + (positiveColor.b - neutralColor.b) * s),
+        a: 1,
+      }
+    }
+  }
+
+  // Render cells
+  for (let i = 0; i < numX; i++) {
+    for (let j = 0; j < numY; j++) {
+      // Handle triangle options
+      if (lowerTriangle && i < j) continue
+      if (upperTriangle && i > j) continue
+
+      const x = xList[i]
+      const y = yList[j]
+      const key = `${x}|${y}`
+      const r = corrMap.get(key) ?? corrMap.get(`${y}|${x}`) ?? (i === j ? 1 : 0)
+
+      const color = getColor(r)
+      const cellX = plotLeft + i * cellWidth
+      const cellY = plotTop + j * cellHeight
+
+      // Fill cell
+      for (let cy = 0; cy < cellHeight; cy++) {
+        for (let cx = 0; cx < cellWidth; cx++) {
+          if (cellX + cx < plotRight && cellY + cy < plotBottom) {
+            canvas.drawChar(cellX + cx, cellY + cy, '█', color)
+          }
+        }
+      }
+
+      // Draw value
+      if (showValues && cellWidth >= 4) {
+        const valueStr = r.toFixed(decimals)
+        const textX = cellX + Math.floor((cellWidth - valueStr.length) / 2)
+        const textY = cellY + Math.floor(cellHeight / 2)
+
+        // Contrasting text color
+        const brightness = (color.r * 299 + color.g * 587 + color.b * 114) / 1000
+        const textColor: RGBA = brightness > 128
+          ? { r: 0, g: 0, b: 0, a: 1 }
+          : { r: 255, g: 255, b: 255, a: 1 }
+
+        for (let k = 0; k < valueStr.length; k++) {
+          if (textX + k < cellX + cellWidth && textX + k < plotRight) {
+            canvas.drawChar(textX + k, textY, valueStr[k], textColor)
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Render a Sankey flow diagram
+ */
+export function renderGeomSankey(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  if (data.length === 0) return
+
+  const nodeWidth = (geom.params.node_width as number) ?? 3
+  const nodePadding = (geom.params.node_padding as number) ?? 2
+  const nodeChar = (geom.params.node_char as string) ?? '█'
+  const showLabels = (geom.params.show_labels as boolean) ?? true
+  const showValues = (geom.params.show_values as boolean) ?? false
+  const minFlowWidth = (geom.params.min_flow_width as number) ?? 1
+
+  // Get plot area
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+  const plotHeight = plotBottom - plotTop
+
+  // Extract flow data - use x for source, y for target, fill for value
+  const sourceField = aes.x || 'source'
+  const targetField = aes.y || 'target'
+  const valueField = aes.fill || 'value'
+
+  // Node type definition
+  type SankeyNode = { name: string; value: number; column: number; y: number; height: number }
+
+  // Build node and link structures
+  const nodes = new Map<string, SankeyNode>()
+  const links: { source: string; target: string; value: number }[] = []
+  const sourceNodes = new Set<string>()
+  const targetNodes = new Set<string>()
+
+  for (const row of data) {
+    const source = String(row[sourceField] ?? '')
+    const target = String(row[targetField] ?? '')
+    const value = Number(row[valueField]) || 0
+
+    if (!source || !target) continue
+
+    sourceNodes.add(source)
+    targetNodes.add(target)
+    links.push({ source, target, value })
+
+    // Track total flow through each node
+    if (!nodes.has(source)) {
+      nodes.set(source, { name: source, value: 0, column: 0, y: 0, height: 0 })
+    }
+    if (!nodes.has(target)) {
+      nodes.set(target, { name: target, value: 0, column: 1, y: 0, height: 0 })
+    }
+    nodes.get(source)!.value += value
+    nodes.get(target)!.value += value
+  }
+
+  // Determine columns (simple 2-column layout for now)
+  // Nodes that are only sources go to column 0, only targets to column 1
+  // Nodes that are both stay in column 0
+  for (const [name, node] of nodes) {
+    if (sourceNodes.has(name) && !targetNodes.has(name)) {
+      node.column = 0
+    } else if (targetNodes.has(name) && !sourceNodes.has(name)) {
+      node.column = 1
+    } else {
+      // Both source and target - put in middle
+      node.column = 0
+    }
+  }
+
+  // Group nodes by column
+  const columns: SankeyNode[][] = [[], []]
+  for (const [, node] of nodes) {
+    if (!columns[node.column]) columns[node.column] = []
+    columns[node.column].push(node)
+  }
+
+  // Calculate total value for scaling
+  const maxColumnValue = Math.max(
+    columns[0]?.reduce((sum, n) => sum + n.value, 0) || 0,
+    columns[1]?.reduce((sum, n) => sum + n.value, 0) || 0
+  )
+
+  if (maxColumnValue === 0) return
+
+  // Position nodes vertically within columns
+  const availableHeight = plotHeight - (nodePadding * Math.max(columns[0]?.length || 0, columns[1]?.length || 0))
+
+  for (let col = 0; col < 2; col++) {
+    if (!columns[col]) continue
+    let currentY = plotTop
+
+    // Sort by value (largest first)
+    columns[col].sort((a, b) => b.value - a.value)
+
+    for (const node of columns[col]) {
+      node.height = Math.max(1, Math.round((node.value / maxColumnValue) * availableHeight))
+      node.y = currentY
+      currentY += node.height + nodePadding
+    }
+  }
+
+  // Get colors for nodes
+  const colorPalette = [
+    { r: 79, g: 169, b: 238, a: 1 },   // Blue
+    { r: 240, g: 128, b: 60, a: 1 },   // Orange
+    { r: 102, g: 194, b: 114, a: 1 },  // Green
+    { r: 218, g: 98, b: 125, a: 1 },   // Pink
+    { r: 169, g: 140, b: 204, a: 1 },  // Purple
+    { r: 255, g: 204, b: 102, a: 1 },  // Yellow
+  ]
+
+  const nodeColors = new Map<string, RGBA>()
+  let colorIdx = 0
+  for (const [name] of nodes) {
+    nodeColors.set(name, colorPalette[colorIdx % colorPalette.length])
+    colorIdx++
+  }
+
+  // Calculate column x positions
+  const labelSpace = showLabels ? 8 : 0
+  const col0X = plotLeft + labelSpace
+  const col1X = plotRight - nodeWidth - labelSpace
+
+  // Draw nodes
+  for (const [name, node] of nodes) {
+    const x = node.column === 0 ? col0X : col1X
+    const color = nodeColors.get(name)!
+
+    // Draw node bar
+    for (let dy = 0; dy < node.height; dy++) {
+      for (let dx = 0; dx < nodeWidth; dx++) {
+        canvas.drawChar(x + dx, node.y + dy, nodeChar, color)
+      }
+    }
+
+    // Draw label
+    if (showLabels) {
+      const labelX = node.column === 0 ? x - name.length - 1 : x + nodeWidth + 1
+      const labelY = node.y + Math.floor(node.height / 2)
+      const labelColor: RGBA = { r: 180, g: 180, b: 180, a: 1 }
+
+      for (let i = 0; i < name.length && labelX + i >= plotLeft && labelX + i < plotRight; i++) {
+        canvas.drawChar(labelX + i, labelY, name[i], labelColor)
+      }
+    }
+  }
+
+  // Draw flows (simplified - straight lines with varying thickness)
+  for (const link of links) {
+    const sourceNode = nodes.get(link.source)
+    const targetNode = nodes.get(link.target)
+    if (!sourceNode || !targetNode) continue
+
+    const flowWidth = Math.max(minFlowWidth, Math.round((link.value / maxColumnValue) * (plotHeight / 4)))
+    const sourceColor = nodeColors.get(link.source)!
+
+    // Calculate flow positions
+    const x1 = col0X + nodeWidth
+    const x2 = col1X
+    const y1 = sourceNode.y + Math.floor(sourceNode.height / 2)
+    const y2 = targetNode.y + Math.floor(targetNode.height / 2)
+
+    // Draw curved/angled flow using bezier-like steps
+    const steps = Math.abs(x2 - x1)
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps
+      // Smooth curve
+      const x = Math.round(x1 + (x2 - x1) * t)
+      const y = Math.round(y1 + (y2 - y1) * (3 * t * t - 2 * t * t * t)) // Smooth step
+
+      // Draw flow band
+      const halfWidth = Math.floor(flowWidth / 2)
+      for (let dy = -halfWidth; dy <= halfWidth; dy++) {
+        const flowY = y + dy
+        if (flowY >= plotTop && flowY < plotBottom && x >= plotLeft && x < plotRight) {
+          // Blend with existing - use semi-transparent flow
+          const flowColor: RGBA = {
+            r: sourceColor.r,
+            g: sourceColor.g,
+            b: sourceColor.b,
+            a: 0.4
+          }
+          const char = dy === 0 ? '─' : '░'
+          canvas.drawChar(x, flowY, char, flowColor)
+        }
+      }
+    }
+
+    // Draw value if requested
+    if (showValues) {
+      const midX = Math.round((x1 + x2) / 2)
+      const midY = Math.round((y1 + y2) / 2)
+      const valueStr = String(link.value)
+      const textColor: RGBA = { r: 200, g: 200, b: 200, a: 1 }
+
+      for (let i = 0; i < valueStr.length; i++) {
+        canvas.drawChar(midX - Math.floor(valueStr.length / 2) + i, midY, valueStr[i], textColor)
+      }
+    }
+  }
+}
+
+/**
+ * Render a treemap visualization
+ */
+export function renderGeomTreemap(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  if (data.length === 0) return
+
+  const showLabels = (geom.params.show_labels as boolean) ?? true
+  const showValues = (geom.params.show_values as boolean) ?? false
+  const border = (geom.params.border as boolean) ?? true
+  const minLabelSize = (geom.params.min_label_size as number) ?? 4
+  const fillChar = (geom.params.fill_char as string) ?? '█'
+  // algorithm param reserved for future use
+
+  // Get plot area
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Extract data - use x for label/id, y for value, group for parent
+  const labelField = aes.x || 'name'
+  const valueField = aes.fill || aes.y || 'value'
+  const parentField = aes.group || 'parent'
+  const idField = aes.x || 'id'
+
+  interface TreeNode {
+    id: string
+    label: string
+    value: number
+    parent?: string
+    children: TreeNode[]
+    x: number
+    y: number
+    width: number
+    height: number
+  }
+
+  // Build nodes
+  const nodeMap = new Map<string, TreeNode>()
+  const roots: TreeNode[] = []
+
+  for (const row of data) {
+    const id = String(row[idField] ?? row[labelField] ?? '')
+    const label = String(row[labelField] ?? id)
+    const value = Number(row[valueField]) || 0
+    const parent = row[parentField] ? String(row[parentField]) : undefined
+
+    const node: TreeNode = {
+      id,
+      label,
+      value,
+      parent,
+      children: [],
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+    }
+    nodeMap.set(id, node)
+  }
+
+  // Build tree structure
+  for (const [, node] of nodeMap) {
+    if (node.parent && nodeMap.has(node.parent)) {
+      nodeMap.get(node.parent)!.children.push(node)
+    } else {
+      roots.push(node)
+    }
+  }
+
+  // If no hierarchy, treat all as roots
+  if (roots.length === 0) {
+    for (const [, node] of nodeMap) {
+      roots.push(node)
+    }
+  }
+
+  // Calculate values (propagate up if needed)
+  function calculateValue(node: TreeNode): number {
+    if (node.children.length === 0) {
+      return node.value
+    }
+    const childSum = node.children.reduce((sum, child) => sum + calculateValue(child), 0)
+    return node.value || childSum
+  }
+
+  for (const root of roots) {
+    root.value = calculateValue(root)
+  }
+
+  // Filter out zero-value nodes and sort by value
+  const validRoots = roots.filter(n => n.value > 0).sort((a, b) => b.value - a.value)
+  if (validRoots.length === 0) return
+
+  // Squarify algorithm for treemap layout
+  function squarify(
+    nodes: TreeNode[],
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ): void {
+    if (nodes.length === 0 || width <= 0 || height <= 0) return
+
+    const totalValue = nodes.reduce((sum, n) => sum + n.value, 0)
+    if (totalValue === 0) return
+
+    if (nodes.length === 1) {
+      const node = nodes[0]
+      node.x = x
+      node.y = y
+      node.width = width
+      node.height = height
+      return
+    }
+
+    // Simple slice-and-dice based on aspect ratio
+    const isHorizontal = width > height
+
+    let currentPos = isHorizontal ? x : y
+    const totalSize = isHorizontal ? width : height
+
+    for (const node of nodes) {
+      const fraction = node.value / totalValue
+      const size = Math.round(totalSize * fraction)
+
+      if (isHorizontal) {
+        node.x = currentPos
+        node.y = y
+        node.width = Math.max(1, size)
+        node.height = height
+        currentPos += node.width
+      } else {
+        node.x = x
+        node.y = currentPos
+        node.width = width
+        node.height = Math.max(1, size)
+        currentPos += node.height
+      }
+    }
+  }
+
+  // Layout the treemap
+  squarify(
+    validRoots,
+    plotLeft,
+    plotTop,
+    plotRight - plotLeft,
+    plotBottom - plotTop
+  )
+
+  // Color palette for treemap cells
+  const colorPalette = [
+    { r: 66, g: 133, b: 244, a: 1 },   // Blue
+    { r: 234, g: 67, b: 53, a: 1 },    // Red
+    { r: 251, g: 188, b: 5, a: 1 },    // Yellow
+    { r: 52, g: 168, b: 83, a: 1 },    // Green
+    { r: 154, g: 102, b: 255, a: 1 },  // Purple
+    { r: 255, g: 109, b: 0, a: 1 },    // Orange
+    { r: 0, g: 188, b: 212, a: 1 },    // Cyan
+    { r: 233, g: 30, b: 99, a: 1 },    // Pink
+  ]
+
+  // Render each rectangle
+  function renderNode(node: TreeNode, colorIndex: number, depth: number): void {
+    if (node.width <= 0 || node.height <= 0) return
+
+    const baseColor = colorPalette[colorIndex % colorPalette.length]
+    // Darken based on depth
+    const depthFactor = Math.max(0.5, 1 - depth * 0.15)
+    const color: RGBA = {
+      r: Math.round(baseColor.r * depthFactor),
+      g: Math.round(baseColor.g * depthFactor),
+      b: Math.round(baseColor.b * depthFactor),
+      a: 1,
+    }
+
+    // Fill rectangle
+    for (let dy = 0; dy < node.height; dy++) {
+      for (let dx = 0; dx < node.width; dx++) {
+        const px = node.x + dx
+        const py = node.y + dy
+        if (px >= plotLeft && px < plotRight && py >= plotTop && py < plotBottom) {
+          canvas.drawChar(px, py, fillChar, color)
+        }
+      }
+    }
+
+    // Draw border
+    if (border && node.width >= 2 && node.height >= 2) {
+      const borderColor: RGBA = { r: 40, g: 40, b: 40, a: 1 }
+
+      // Top and bottom borders
+      for (let dx = 0; dx < node.width; dx++) {
+        const px = node.x + dx
+        if (px >= plotLeft && px < plotRight) {
+          if (node.y >= plotTop) canvas.drawChar(px, node.y, '─', borderColor)
+          if (node.y + node.height - 1 < plotBottom) canvas.drawChar(px, node.y + node.height - 1, '─', borderColor)
+        }
+      }
+
+      // Left and right borders
+      for (let dy = 0; dy < node.height; dy++) {
+        const py = node.y + dy
+        if (py >= plotTop && py < plotBottom) {
+          if (node.x >= plotLeft) canvas.drawChar(node.x, py, '│', borderColor)
+          if (node.x + node.width - 1 < plotRight) canvas.drawChar(node.x + node.width - 1, py, '│', borderColor)
+        }
+      }
+
+      // Corners
+      if (node.x >= plotLeft && node.y >= plotTop) canvas.drawChar(node.x, node.y, '┌', borderColor)
+      if (node.x + node.width - 1 < plotRight && node.y >= plotTop) canvas.drawChar(node.x + node.width - 1, node.y, '┐', borderColor)
+      if (node.x >= plotLeft && node.y + node.height - 1 < plotBottom) canvas.drawChar(node.x, node.y + node.height - 1, '└', borderColor)
+      if (node.x + node.width - 1 < plotRight && node.y + node.height - 1 < plotBottom) canvas.drawChar(node.x + node.width - 1, node.y + node.height - 1, '┘', borderColor)
+    }
+
+    // Draw label
+    if (showLabels && node.width >= minLabelSize && node.height >= 1) {
+      const label = node.label.substring(0, node.width - 2)
+      const labelX = node.x + 1
+      const labelY = node.y + Math.floor(node.height / 2)
+
+      // Contrasting text color
+      const brightness = (color.r * 299 + color.g * 587 + color.b * 114) / 1000
+      const textColor: RGBA = brightness > 128
+        ? { r: 0, g: 0, b: 0, a: 1 }
+        : { r: 255, g: 255, b: 255, a: 1 }
+
+      for (let i = 0; i < label.length; i++) {
+        const px = labelX + i
+        if (px >= plotLeft && px < node.x + node.width - 1 && px < plotRight) {
+          canvas.drawChar(px, labelY, label[i], textColor)
+        }
+      }
+
+      // Draw value below label if requested and there's space
+      if (showValues && node.height >= 3) {
+        const valueStr = String(node.value)
+        const valueY = labelY + 1
+        for (let i = 0; i < valueStr.length; i++) {
+          const px = labelX + i
+          if (px >= plotLeft && px < node.x + node.width - 1 && px < plotRight && valueY < plotBottom) {
+            canvas.drawChar(px, valueY, valueStr[i], textColor)
+          }
+        }
+      }
+    }
+
+    // Recursively render children
+    if (node.children.length > 0) {
+      const childrenSorted = [...node.children].sort((a, b) => b.value - a.value)
+      squarify(
+        childrenSorted,
+        node.x + (border ? 1 : 0),
+        node.y + (border ? 1 : 0),
+        node.width - (border ? 2 : 0),
+        node.height - (border ? 2 : 0)
+      )
+      for (let i = 0; i < childrenSorted.length; i++) {
+        renderNode(childrenSorted[i], colorIndex, depth + 1)
+      }
+    }
+  }
+
+  // Render all root nodes
+  for (let i = 0; i < validRoots.length; i++) {
+    renderNode(validRoots[i], i, 0)
+  }
+}
+
+/**
  * Geometry renderer dispatch
  */
 export function renderGeom(
@@ -2912,6 +4052,9 @@ export function renderGeom(
     case 'freqpoly':
       renderGeomFreqpoly(data, geom, aes, scales, canvas)
       break
+    case 'density':
+      renderGeomDensity(data, geom, aes, scales, canvas)
+      break
     case 'boxplot':
       renderGeomBoxplot(data, geom, aes, scales, canvas)
       break
@@ -2951,6 +4094,9 @@ export function renderGeom(
     case 'linerange':
       renderGeomLinerange(data, geom, aes, scales, canvas)
       break
+    case 'crossbar':
+      renderGeomCrossbar(data, geom, aes, scales, canvas)
+      break
     case 'pointrange':
       renderGeomPointrange(data, geom, aes, scales, canvas)
       break
@@ -2979,6 +4125,23 @@ export function renderGeom(
       break
     case 'braille':
       renderGeomBraille(data, geom, aes, scales, canvas)
+      break
+    // Specialized visualizations
+    case 'calendar':
+      renderGeomCalendar(data, geom, aes, scales, canvas)
+      break
+    case 'flame':
+    case 'icicle':
+      renderGeomFlame(data, geom, aes, scales, canvas)
+      break
+    case 'corrmat':
+      renderGeomCorrmat(data, geom, aes, scales, canvas)
+      break
+    case 'sankey':
+      renderGeomSankey(data, geom, aes, scales, canvas)
+      break
+    case 'treemap':
+      renderGeomTreemap(data, geom, aes, scales, canvas)
       break
     default:
       // Unknown geom type, skip

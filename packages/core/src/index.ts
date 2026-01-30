@@ -59,6 +59,7 @@ export {
   geom_area,
   geom_ribbon,
   geom_histogram,
+  geom_density,
   geom_boxplot,
   geom_segment,
   geom_curve,
@@ -103,6 +104,13 @@ export {
   SPARK_DOTS,
   BRAILLE_BASE,
   BRAILLE_DOTS,
+  // Specialized visualizations
+  geom_calendar,
+  geom_flame,
+  geom_icicle,
+  geom_corrmat,
+  geom_sankey,
+  geom_treemap,
 } from './geoms'
 export type {
   PathOptions,
@@ -119,6 +127,7 @@ export type {
   QQOptions,
   QQLineOptions,
   FreqpolyOptions,
+  DensityOptions,
   RidgelineOptions,
   BeeswarmOptions,
   DumbbellOptions,
@@ -127,6 +136,11 @@ export type {
   SparklineOptions,
   BulletOptions,
   BrailleOptions,
+  CalendarOptions,
+  FlameOptions,
+  CorrmatOptions,
+  SankeyOptions,
+  TreemapOptions,
 } from './geoms'
 
 // Position adjustments
