@@ -462,6 +462,56 @@ console.log(plot.render({ width: 60, height: 15 }))
 
 ---
 
+## Density Plots
+
+Density plots show a smoothed estimate of the distribution of a continuous variable. They're the continuous analog of histograms and are useful for comparing distributions.
+
+### Basic Density Plot
+
+```typescript
+import { gg, geom_density } from '@ggterm/core'
+
+const data = [
+  { value: 1.2 }, { value: 2.3 }, { value: 2.5 }, { value: 3.1 },
+  { value: 3.4 }, { value: 3.5 }, { value: 3.8 }, { value: 4.2 },
+  { value: 4.5 }, { value: 5.1 }, { value: 5.8 }, { value: 6.2 },
+]
+
+gg(data)
+  .aes({ x: 'value' })
+  .geom(geom_density())
+  .labs({ title: 'Value Distribution', x: 'Value', y: 'Density' })
+```
+
+### Comparing Distributions
+
+```typescript
+import { gg, geom_density } from '@ggterm/core'
+
+const data = [
+  { score: 72, group: 'Control' }, { score: 78, group: 'Control' },
+  { score: 85, group: 'Treatment' }, { score: 88, group: 'Treatment' },
+  // ... more data
+]
+
+gg(data)
+  .aes({ x: 'score', color: 'group', fill: 'group' })
+  .geom(geom_density({ alpha: 0.3 }))
+  .labs({ title: 'Score Distribution by Group' })
+```
+
+### Density via CLI
+
+```bash
+# Basic density plot
+bun packages/core/src/cli-plot.ts data.csv value - - "Distribution" density
+
+# Grouped density
+bun packages/core/src/cli-plot.ts data.csv score - group "Scores by Group" density
+```
+
+---
+
 ## Ridgeline Plots
 
 Ridgeline plots (also called joy plots) display multiple distribution curves stacked vertically. Perfect for comparing distributions across categories like time periods or groups.
@@ -1242,6 +1292,170 @@ const plot = gg(data)
   .labs({ title: 'Grid Facets' })
 
 console.log(plot.render({ width: 80, height: 24 }))
+```
+
+---
+
+## Specialized Visualizations
+
+Domain-specific visualizations for data science, profiling, and time-based analysis.
+
+### Calendar Heatmap
+
+GitHub-style contribution heatmap showing activity over time.
+
+```typescript
+import { gg, geom_calendar } from '@ggterm/core'
+
+// Generate daily commit data
+const data = []
+const startDate = new Date('2025-01-01')
+for (let i = 0; i < 90; i++) {
+  const date = new Date(startDate)
+  date.setDate(date.getDate() + i)
+  data.push({
+    date: date.toISOString().split('T')[0],
+    commits: Math.floor(Math.random() * 10)
+  })
+}
+
+const plot = gg(data)
+  .aes({ x: 'date', fill: 'commits' })
+  .geom(geom_calendar())
+  .labs({ title: 'Contribution Activity' })
+
+console.log(plot.render({ width: 80, height: 15 }))
+```
+
+### Flame Graph
+
+Performance profiling visualization showing call stack hierarchies.
+
+```typescript
+import { gg, geom_flame } from '@ggterm/core'
+
+const stackData = [
+  { name: 'main', depth: 0, value: 100, start: 0 },
+  { name: 'processRequest', depth: 1, value: 60, start: 0 },
+  { name: 'handleResponse', depth: 1, value: 40, start: 60 },
+  { name: 'parseJSON', depth: 2, value: 30, start: 0 },
+  { name: 'validate', depth: 2, value: 30, start: 30 },
+  { name: 'render', depth: 2, value: 25, start: 60 },
+]
+
+const plot = gg(stackData)
+  .aes({ x: 'name', y: 'depth', fill: 'value' })
+  .geom(geom_flame())
+  .labs({ title: 'CPU Profile' })
+
+console.log(plot.render({ width: 80, height: 12 }))
+```
+
+### Icicle Chart
+
+Top-down version of flame graph (inverted hierarchy).
+
+```typescript
+import { gg, geom_icicle } from '@ggterm/core'
+
+const plot = gg(stackData)
+  .aes({ x: 'name', y: 'depth', fill: 'value' })
+  .geom(geom_icicle({ palette: 'cool' }))
+  .labs({ title: 'Call Tree' })
+
+console.log(plot.render({ width: 80, height: 12 }))
+```
+
+### Correlation Matrix
+
+Heatmap of pairwise correlations with diverging colors.
+
+```typescript
+import { gg, geom_corrmat } from '@ggterm/core'
+
+const corrData = [
+  { var1: 'mpg', var2: 'mpg', correlation: 1.0 },
+  { var1: 'mpg', var2: 'hp', correlation: -0.78 },
+  { var1: 'mpg', var2: 'wt', correlation: -0.87 },
+  { var1: 'hp', var2: 'mpg', correlation: -0.78 },
+  { var1: 'hp', var2: 'hp', correlation: 1.0 },
+  { var1: 'hp', var2: 'wt', correlation: 0.66 },
+  { var1: 'wt', var2: 'mpg', correlation: -0.87 },
+  { var1: 'wt', var2: 'hp', correlation: 0.66 },
+  { var1: 'wt', var2: 'wt', correlation: 1.0 },
+]
+
+const plot = gg(corrData)
+  .aes({ x: 'var1', y: 'var2', fill: 'correlation' })
+  .geom(geom_corrmat())
+  .labs({ title: 'Variable Correlations' })
+
+console.log(plot.render({ width: 60, height: 18 }))
+```
+
+### Sankey Flow Diagram
+
+Visualize flows between nodes with proportional-width connections.
+
+```typescript
+import { gg, geom_sankey } from '@ggterm/core'
+
+const flows = [
+  { source: 'Coal', target: 'Electricity', value: 25 },
+  { source: 'Gas', target: 'Electricity', value: 20 },
+  { source: 'Nuclear', target: 'Electricity', value: 15 },
+  { source: 'Coal', target: 'Heat', value: 10 },
+  { source: 'Gas', target: 'Heat', value: 15 },
+]
+
+const plot = gg(flows)
+  .aes({ x: 'source', y: 'target', fill: 'value' })
+  .geom(geom_sankey())
+  .labs({ title: 'Energy Flow' })
+
+console.log(plot.render({ width: 70, height: 18 }))
+```
+
+### Treemap
+
+Hierarchical data as nested rectangles where area represents value.
+
+```typescript
+import { gg, geom_treemap } from '@ggterm/core'
+
+const data = [
+  { name: 'JavaScript', value: 300 },
+  { name: 'Python', value: 250 },
+  { name: 'TypeScript', value: 200 },
+  { name: 'Rust', value: 150 },
+  { name: 'Go', value: 120 },
+]
+
+const plot = gg(data)
+  .aes({ x: 'name', fill: 'value' })
+  .geom(geom_treemap())
+  .labs({ title: 'Language Usage' })
+
+console.log(plot.render({ width: 60, height: 18 }))
+```
+
+### Via CLI
+
+```bash
+# Calendar heatmap
+bun packages/core/src/cli-plot.ts activity.csv date value - "Activity" calendar
+
+# Flame graph
+bun packages/core/src/cli-plot.ts profile.csv name depth value "CPU Profile" flame
+
+# Correlation matrix
+bun packages/core/src/cli-plot.ts correlations.csv var1 var2 correlation "Correlations" corrmat
+
+# Sankey diagram
+bun packages/core/src/cli-plot.ts flows.csv source target value "Energy Flow" sankey
+
+# Treemap
+bun packages/core/src/cli-plot.ts usage.csv name - value "Usage" treemap
 ```
 
 ---

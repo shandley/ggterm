@@ -102,6 +102,45 @@ gg(data).aes({ x: 'time', y: 'value' }).geom(geom_line({
 | `linetype` | string | 'solid' | Line style |
 | `alpha` | number | 1 | Opacity |
 
+### geom_path()
+
+Connects data points in the order they appear in the data (unlike geom_line which sorts by x).
+
+```typescript
+import { geom_path } from '@ggterm/core'
+
+gg(data).aes({ x: 'longitude', y: 'latitude' }).geom(geom_path())
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `linewidth` | number | 1 | Line thickness |
+| `linetype` | string | 'solid' | Line style |
+| `alpha` | number | 1 | Opacity |
+
+### geom_step()
+
+Connects data points with step functions (horizontal then vertical).
+
+```typescript
+import { geom_step } from '@ggterm/core'
+
+gg(data).aes({ x: 'time', y: 'value' }).geom(geom_step())
+
+// Control step direction
+gg(data).aes({ x: 'time', y: 'value' }).geom(geom_step({ direction: 'vh' }))
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `direction` | string | 'hv' | Step direction: 'hv' (horizontal-vertical) or 'vh' |
+| `linewidth` | number | 1 | Line thickness |
+| `alpha` | number | 1 | Opacity |
+
 ### geom_bar()
 
 Renders vertical bars.
@@ -124,6 +163,61 @@ gg(data).aes({ x: 'category', y: 'value' }).geom(geom_bar({ stat: 'identity' }))
 | `width` | number | 0.9 | Bar width (0-1) |
 | `position` | string | 'stack' | Position adjustment |
 
+### geom_col()
+
+Renders bars with heights from data (shorthand for `geom_bar({ stat: 'identity' })`).
+
+```typescript
+import { geom_col } from '@ggterm/core'
+
+gg(data).aes({ x: 'category', y: 'value' }).geom(geom_col())
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `width` | number | 0.9 | Bar width (0-1) |
+| `position` | string | 'stack' | Position adjustment |
+
+### geom_histogram()
+
+Renders histogram bars showing distribution of a single variable.
+
+```typescript
+import { geom_histogram } from '@ggterm/core'
+
+gg(data).aes({ x: 'value' }).geom(geom_histogram())
+
+// Control bin count
+gg(data).aes({ x: 'value' }).geom(geom_histogram({ bins: 30 }))
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `bins` | number | 30 | Number of bins |
+| `binwidth` | number | null | Width of each bin (overrides bins) |
+| `position` | string | 'stack' | Position adjustment |
+
+### geom_freqpoly()
+
+Renders frequency polygons (line-based histograms).
+
+```typescript
+import { geom_freqpoly } from '@ggterm/core'
+
+gg(data).aes({ x: 'value', color: 'group' }).geom(geom_freqpoly())
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `bins` | number | 30 | Number of bins |
+| `binwidth` | number | null | Width of each bin |
+
 ### geom_area()
 
 Renders filled areas under lines.
@@ -135,6 +229,25 @@ gg(data).aes({ x: 'time', y: 'value' }).geom(geom_area({
   alpha: 0.5
 }))
 ```
+
+### geom_ribbon()
+
+Renders a filled area between ymin and ymax values.
+
+```typescript
+import { geom_ribbon } from '@ggterm/core'
+
+gg(data).aes({ x: 'time', ymin: 'lower', ymax: 'upper' }).geom(geom_ribbon({
+  alpha: 0.3
+}))
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `alpha` | number | 0.5 | Fill opacity |
+| `fill` | string | null | Fixed fill color |
 
 ### geom_text()
 
@@ -148,6 +261,26 @@ gg(data).aes({ x: 'pc1', y: 'pc2', label: 'name' }).geom(geom_text({
   nudge_y: 0.5
 }))
 ```
+
+### geom_label()
+
+Adds text labels with background rectangles.
+
+```typescript
+import { geom_label } from '@ggterm/core'
+
+gg(data).aes({ x: 'x', y: 'y', label: 'name' }).geom(geom_label({
+  padding: 0.2
+}))
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `padding` | number | 0.1 | Padding around text |
+| `nudge_x` | number | 0 | Horizontal offset |
+| `nudge_y` | number | 0 | Vertical offset |
 
 ### geom_hline() / geom_vline()
 
@@ -608,6 +741,37 @@ gg(data)
 | `scale` | string | 'area' | 'area', 'count', or 'width' |
 | `trim` | boolean | true | Trim to data range |
 
+### geom_density()
+
+1D kernel density estimation - a smoothed version of the histogram.
+
+```typescript
+import { geom_density } from '@ggterm/core'
+
+// Basic density plot
+gg(data)
+  .aes({ x: 'value' })
+  .geom(geom_density())
+
+// Compare distributions with color
+gg(data)
+  .aes({ x: 'value', color: 'group', fill: 'group' })
+  .geom(geom_density({ alpha: 0.3 }))
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `n` | number | 512 | Number of evaluation points |
+| `bw` | number | auto | Bandwidth (Silverman's rule if not specified) |
+| `kernel` | string | 'gaussian' | Kernel: 'gaussian', 'epanechnikov', 'rectangular' |
+| `adjust` | number | 1 | Bandwidth adjustment factor |
+| `alpha` | number | 0.3 | Fill transparency |
+| `color` | string | - | Outline color |
+| `fill` | string | - | Fill color |
+| `linetype` | string | 'solid' | Line type for outline |
+
 ### geom_tile()
 
 Rectangular tiles for heatmaps.
@@ -641,6 +805,132 @@ gg(data)
   .geom(geom_contour({ bins: 10 }))
 ```
 
+### geom_contour_filled()
+
+Filled contour regions for 2D density.
+
+```typescript
+import { geom_contour_filled } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x', y: 'y', z: 'z' })
+  .geom(geom_contour_filled({ bins: 10 }))
+```
+
+### geom_density_2d()
+
+2D kernel density estimation shown as contours.
+
+```typescript
+import { geom_density_2d } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_density_2d())
+```
+
+### geom_bin2d()
+
+2D binned heatmap.
+
+```typescript
+import { geom_bin2d } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_bin2d({ bins: [20, 20] }))
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `bins` | number[] | [30, 30] | Number of bins [x, y] |
+
+### geom_raster()
+
+Fast rendering of regular grids (similar to tile but optimized).
+
+```typescript
+import { geom_raster } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x', y: 'y', fill: 'value' })
+  .geom(geom_raster())
+```
+
+### geom_smooth()
+
+Adds a smoothed conditional mean line.
+
+```typescript
+import { geom_smooth } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_point())
+  .geom(geom_smooth({ method: 'loess' }))
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `method` | string | 'loess' | Smoothing method: 'loess', 'lm', 'gam' |
+| `span` | number | 0.75 | Smoothing span (for loess) |
+| `se` | boolean | true | Show confidence interval |
+
+### geom_rug()
+
+Adds marginal rug marks showing data positions.
+
+```typescript
+import { geom_rug } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_point())
+  .geom(geom_rug({ sides: 'bl' }))
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `sides` | string | 'bl' | Sides for rugs: 'b', 't', 'l', 'r' combinations |
+| `length` | number | 0.03 | Rug mark length |
+
+### geom_segment()
+
+Line segments defined by start and end points.
+
+```typescript
+import { geom_segment } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x1', y: 'y1', xend: 'x2', yend: 'y2' })
+  .geom(geom_segment())
+```
+
+### geom_curve()
+
+Curved line segments.
+
+```typescript
+import { geom_curve } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x1', y: 'y1', xend: 'x2', yend: 'y2' })
+  .geom(geom_curve({ curvature: 0.3 }))
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `curvature` | number | 0.5 | Curvature amount |
+| `angle` | number | 90 | Curve angle |
+
 ### geom_errorbar() / geom_errorbarh()
 
 Error bars for uncertainty visualization.
@@ -660,6 +950,42 @@ gg(data)
 |--------|------|---------|-------------|
 | `width` | number | 0.5 | Cap width |
 | `alpha` | number | 1 | Opacity |
+
+### geom_crossbar()
+
+Crossbar showing median with box range.
+
+```typescript
+import { geom_crossbar } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'group', y: 'median', ymin: 'lower', ymax: 'upper' })
+  .geom(geom_crossbar({ width: 0.5 }))
+```
+
+### geom_linerange()
+
+Vertical line ranges (no horizontal caps).
+
+```typescript
+import { geom_linerange } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x', ymin: 'lower', ymax: 'upper' })
+  .geom(geom_linerange())
+```
+
+### geom_pointrange()
+
+Point with vertical range line.
+
+```typescript
+import { geom_pointrange } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x', y: 'y', ymin: 'lower', ymax: 'upper' })
+  .geom(geom_pointrange())
+```
 
 ### geom_rect()
 
@@ -725,6 +1051,34 @@ bun packages/core/src/cli-plot.ts data.csv temp month - "Temperatures" ridgeline
 
 # Using joy alias
 bun packages/core/src/cli-plot.ts data.csv value category - "Distribution" joy
+```
+
+### geom_qq() / geom_qq_line()
+
+Q-Q (quantile-quantile) plots for comparing distributions, typically to check for normality.
+
+```typescript
+import { geom_qq, geom_qq_line } from '@ggterm/core'
+
+// Check if data is normally distributed
+gg(data)
+  .aes({ sample: 'value' })
+  .geom(geom_qq())
+  .geom(geom_qq_line())
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `distribution` | string | 'norm' | Reference distribution |
+| `dparams` | object | {} | Distribution parameters |
+
+#### CLI Usage
+
+```bash
+# Q-Q plot for normality check
+bun packages/core/src/cli-plot.ts data.csv value - - "Normality Check" qq
 ```
 
 ### geom_beeswarm() / geom_quasirandom()
@@ -1001,6 +1355,177 @@ BRAILLE_BASE // 0x2800
 // Dot bit positions: [col][row]
 BRAILLE_DOTS // [[0x01,0x02,0x04,0x40], [0x08,0x10,0x20,0x80]]
 ```
+
+### geom_calendar()
+
+GitHub-style contribution heatmap showing activity over time. Data should have date and value fields.
+
+```typescript
+import { geom_calendar } from '@ggterm/core'
+
+const data = [
+  { date: '2025-01-01', commits: 5 },
+  { date: '2025-01-02', commits: 3 },
+  // ...
+]
+
+gg(data)
+  .aes({ x: 'date', fill: 'commits' })
+  .geom(geom_calendar())
+  .labs({ title: 'Contribution Activity' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `cell_char` | string | '█' | Character for cells |
+| `empty_char` | string | '░' | Character for empty cells |
+| `empty_color` | string | '#161b22' | Color for empty/zero cells |
+| `fill_color` | string | '#39d353' | Color for max value |
+| `show_months` | boolean | true | Show month labels |
+| `show_days` | boolean | true | Show day-of-week labels |
+| `week_start` | number | 0 | Week start day (0=Sun, 1=Mon) |
+| `levels` | number | 5 | Number of color intensity levels |
+
+### geom_flame()
+
+Flame graph for performance profiling. Displays hierarchical stack data as horizontal bars where width represents time/samples.
+
+```typescript
+import { geom_flame } from '@ggterm/core'
+
+const data = [
+  { name: 'main', depth: 0, value: 100, start: 0 },
+  { name: 'foo', depth: 1, value: 40, start: 0 },
+  { name: 'bar', depth: 1, value: 30, start: 40 },
+  // ...
+]
+
+gg(data)
+  .aes({ x: 'name', y: 'depth', fill: 'value' })
+  .geom(geom_flame())
+  .labs({ title: 'CPU Profile' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `style` | string | 'flame' | 'flame' (bottom-up) or 'icicle' (top-down) |
+| `palette` | string | 'warm' | Color palette: 'warm', 'cool', 'hot' |
+| `show_labels` | boolean | true | Show function names in bars |
+| `min_label_width` | number | 10 | Minimum bar width to show label |
+| `sort` | string | 'alpha' | Sort frames: 'alpha', 'value', 'none' |
+| `bar_char` | string | '█' | Character for bars |
+
+#### Aliases
+
+- `geom_icicle()` - Same as `geom_flame({ style: 'icicle' })`
+
+### geom_corrmat()
+
+Correlation matrix heatmap with diverging colors. Displays pairwise correlations between variables.
+
+```typescript
+import { geom_corrmat } from '@ggterm/core'
+
+const data = [
+  { var1: 'A', var2: 'A', correlation: 1.0 },
+  { var1: 'A', var2: 'B', correlation: 0.8 },
+  { var1: 'A', var2: 'C', correlation: -0.3 },
+  // ... full matrix
+]
+
+gg(data)
+  .aes({ x: 'var1', y: 'var2', fill: 'correlation' })
+  .geom(geom_corrmat())
+  .labs({ title: 'Correlation Matrix' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show_values` | boolean | true | Show correlation values in cells |
+| `decimals` | number | 2 | Decimal places for values |
+| `show_significance` | boolean | false | Show significance markers |
+| `sig_threshold` | number | 0.05 | Significance threshold |
+| `sig_marker` | string | '*' | Marker for significant values |
+| `positive_color` | string | '#2166ac' | Color for r=+1 (blue) |
+| `negative_color` | string | '#b2182b' | Color for r=-1 (red) |
+| `neutral_color` | string | '#f7f7f7' | Color for r=0 (white) |
+| `lower_triangle` | boolean | false | Show only lower triangle |
+| `upper_triangle` | boolean | false | Show only upper triangle |
+| `show_diagonal` | boolean | true | Show diagonal elements |
+| `method` | string | 'pearson' | Correlation method: 'pearson' or 'spearman' |
+
+### geom_sankey()
+
+Sankey flow diagram showing flows between nodes with proportional-width connections.
+
+```typescript
+import { geom_sankey } from '@ggterm/core'
+
+const flows = [
+  { source: 'Coal', target: 'Electricity', value: 25 },
+  { source: 'Gas', target: 'Electricity', value: 20 },
+  { source: 'Coal', target: 'Heat', value: 10 },
+]
+
+gg(flows)
+  .aes({ x: 'source', y: 'target', fill: 'value' })
+  .geom(geom_sankey())
+  .labs({ title: 'Energy Flow' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `node_width` | number | 3 | Node bar width in characters |
+| `node_padding` | number | 2 | Padding between nodes |
+| `node_char` | string | '█' | Character for node bars |
+| `flow_char` | string | '─' | Character for flow lines |
+| `show_labels` | boolean | true | Show node labels |
+| `show_values` | boolean | false | Show flow values |
+| `align` | string | 'justify' | Node alignment: 'left', 'right', 'center', 'justify' |
+| `color_by` | string | 'auto' | Color scheme: 'auto', 'source', 'target' |
+| `min_flow_width` | number | 1 | Minimum flow line width |
+
+### geom_treemap()
+
+Treemap visualization displaying hierarchical data as nested rectangles where area represents value.
+
+```typescript
+import { geom_treemap } from '@ggterm/core'
+
+const data = [
+  { name: 'JavaScript', value: 300 },
+  { name: 'Python', value: 250 },
+  { name: 'TypeScript', value: 200 },
+]
+
+gg(data)
+  .aes({ x: 'name', fill: 'value' })
+  .geom(geom_treemap())
+  .labs({ title: 'Language Usage' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `algorithm` | string | 'squarify' | Tiling: 'squarify', 'binary', 'slice', 'dice' |
+| `show_labels` | boolean | true | Show labels in rectangles |
+| `show_values` | boolean | false | Show values in rectangles |
+| `border` | boolean | true | Draw borders around rectangles |
+| `padding` | number | 0 | Padding between nested rectangles |
+| `min_label_size` | number | 4 | Minimum size to show label |
+| `color_by` | string | 'value' | Color by: 'value', 'depth', 'parent' |
+| `fill_char` | string | '█' | Fill character |
+| `max_depth` | number | unlimited | Maximum hierarchy depth to show |
+| `aspect_ratio` | number | 1.618 | Target aspect ratio (golden ratio) |
 
 ---
 
