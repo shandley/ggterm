@@ -85,6 +85,9 @@ export {
   geom_qq_line,
   // Frequency polygon
   geom_freqpoly,
+  // Ridgeline (joy plots)
+  geom_ridgeline,
+  geom_joy,
 } from './geoms'
 export type {
   PathOptions,
@@ -101,6 +104,7 @@ export type {
   QQOptions,
   QQLineOptions,
   FreqpolyOptions,
+  RidgelineOptions,
 } from './geoms'
 
 // Position adjustments

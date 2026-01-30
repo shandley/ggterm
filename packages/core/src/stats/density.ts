@@ -246,3 +246,64 @@ export function stat_ydensity(params: StatDensityParams = {}): Stat {
     },
   }
 }
+
+/**
+ * Create stat_xdensity transformation for ridgeline plots
+ * Groups data by y aesthetic (categorical) and computes density on x values
+ */
+export function stat_xdensity(params: StatDensityParams = {}): Stat {
+  return {
+    type: 'xdensity',
+    compute(data: DataSource, aes: AestheticMapping): DataSource {
+      // Group data by y aesthetic (categorical groups for ridgelines)
+      const groups = new Map<string, number[]>()
+      const groupOrder: string[] = []
+
+      for (const row of data) {
+        const groupKey = String(row[aes.y] ?? 'default')
+        const xVal = row[aes.x]
+
+        if (xVal === null || xVal === undefined) continue
+        const numX = Number(xVal)
+        if (isNaN(numX)) continue
+
+        if (!groups.has(groupKey)) {
+          groups.set(groupKey, [])
+          groupOrder.push(groupKey)
+        }
+        groups.get(groupKey)!.push(numX)
+      }
+
+      // Compute density for each group
+      const result: DataSource = []
+      let groupIndex = 0
+
+      for (const groupKey of groupOrder) {
+        const xValues = groups.get(groupKey)!
+        if (xValues.length < 2) {
+          groupIndex++
+          continue
+        }
+
+        // Create temporary data for computeDensity
+        const tempData: DataSource = xValues.map(v => ({ x: v }))
+        const densityResult = computeDensity(tempData, 'x', params)
+
+        // Transform results: y is the group, x is position, height is density
+        for (const d of densityResult) {
+          result.push({
+            x: d.x, // The position along the x-axis
+            y: groupKey, // The group (categorical)
+            yIndex: groupIndex, // Numeric index for positioning
+            density: d.density,
+            scaled: d.scaled,
+            height: d.scaled, // Alias for rendering
+          })
+        }
+        groupIndex++
+      }
+
+      return result
+    },
+  }
+}

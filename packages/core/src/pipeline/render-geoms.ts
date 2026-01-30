@@ -1292,6 +1292,178 @@ export function renderGeomViolin(
 }
 
 /**
+ * Render geom_ridgeline (joy plot)
+ * Creates stacked density plots for comparing distributions across groups.
+ * Data should be density curves grouped by y (categorical)
+ */
+export function renderGeomRidgeline(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const scaleFactor = (geom.params.scale as number) ?? 0.9
+  const alpha = (geom.params.alpha as number) ?? 0.8
+  const showOutline = (geom.params.outline as boolean) ?? true
+  const fixedFill = geom.params.fill as string | undefined
+  const fixedColor = geom.params.color as string | undefined
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Data is pre-transformed by stat_xdensity:
+  // { x: xPosition, y: groupKey, yIndex: groupIndex, density: densityValue, scaled: scaledDensity }
+
+  // Group data by y (the categorical groups)
+  const groups = new Map<string, { data: DataSource; index: number }>()
+  const groupKeys: string[] = []
+
+  for (const row of data) {
+    const key = String(row.y ?? 'default')
+    if (!groups.has(key)) {
+      groups.set(key, { data: [], index: Number(row.yIndex) ?? groupKeys.length })
+      groupKeys.push(key)
+    }
+    groups.get(key)!.data.push(row)
+  }
+
+  const numGroups = groupKeys.length
+  if (numGroups === 0) return
+
+  // Calculate available height per ridge
+  const plotHeight = Math.abs(plotBottom - plotTop)
+  const ridgeBaseHeight = plotHeight / numGroups
+
+  // Color palette for groups
+  const defaultColors: RGBA[] = [
+    { r: 79, g: 169, b: 238, a: 1 },   // Blue
+    { r: 238, g: 136, b: 102, a: 1 },  // Orange
+    { r: 102, g: 204, b: 153, a: 1 },  // Green
+    { r: 204, g: 102, b: 204, a: 1 },  // Purple
+    { r: 255, g: 200, b: 87, a: 1 },   // Yellow
+    { r: 138, g: 201, b: 222, a: 1 },  // Cyan
+    { r: 255, g: 153, b: 153, a: 1 },  // Pink
+    { r: 170, g: 170, b: 170, a: 1 },  // Gray
+  ]
+
+  // Parse fixed fill color if provided
+  let parsedFillColor: RGBA | null = null
+  if (fixedFill) {
+    parsedFillColor = parseColorToRgba(fixedFill)
+  }
+
+  // Draw each ridge (from back to front, bottom to top)
+  const sortedKeys = [...groupKeys].sort((a, b) => {
+    const idxA = groups.get(a)?.index ?? 0
+    const idxB = groups.get(b)?.index ?? 0
+    return idxB - idxA // Reverse order so we draw from bottom up
+  })
+
+  for (const groupKey of sortedKeys) {
+    const group = groups.get(groupKey)
+    if (!group) continue
+
+    const groupIndex = group.index
+    const groupData = group.data
+
+    // Sort by x position
+    const sorted = [...groupData].sort((a, b) => {
+      const ax = Number(a.x) || 0
+      const bx = Number(b.x) || 0
+      return ax - bx
+    })
+
+    if (sorted.length < 2) continue
+
+    // Calculate the baseline y position for this ridge
+    // Groups are stacked from top to bottom
+    const baseline = plotTop + (groupIndex + 0.5) * ridgeBaseHeight
+
+    // Get color for this group
+    let fillColor: RGBA
+    if (parsedFillColor) {
+      fillColor = parsedFillColor
+    } else if ((aes.fill || aes.color) && scales.color) {
+      const mappedColor = scales.color.map(groupKey)
+      if (typeof mappedColor === 'object' && 'r' in mappedColor) {
+        fillColor = mappedColor as RGBA
+      } else {
+        fillColor = defaultColors[groupIndex % defaultColors.length]
+      }
+    } else {
+      fillColor = defaultColors[groupIndex % defaultColors.length]
+    }
+
+    // Apply alpha
+    const alphaFillColor: RGBA = {
+      r: Math.round(fillColor.r * alpha + 255 * (1 - alpha) * 0.1),
+      g: Math.round(fillColor.g * alpha + 255 * (1 - alpha) * 0.1),
+      b: Math.round(fillColor.b * alpha + 255 * (1 - alpha) * 0.1),
+      a: 1,
+    }
+
+    // Maximum height for ridge in character cells
+    const maxRidgeHeight = ridgeBaseHeight * scaleFactor * 1.5
+
+    // Draw the filled ridge
+    const outlinePoints: Array<{ x: number; y: number }> = []
+
+    for (const row of sorted) {
+      const xVal = Number(row.x)
+      const scaled = Number(row.scaled) || 0
+
+      const px = Math.round(scales.x.map(xVal))
+      // Ridge goes upward from baseline
+      const ridgeHeight = scaled * maxRidgeHeight
+      const py = Math.round(baseline - ridgeHeight)
+
+      if (px < plotLeft || px > plotRight) continue
+
+      // Fill from baseline to ridge top
+      const fillTop = Math.max(plotTop, py)
+      const fillBottom = Math.min(plotBottom, Math.round(baseline))
+
+      for (let y = fillTop; y <= fillBottom; y++) {
+        canvas.drawChar(px, y, '█', alphaFillColor)
+      }
+
+      // Store outline points
+      if (showOutline) {
+        outlinePoints.push({ x: px, y: Math.max(plotTop, py) })
+      }
+    }
+
+    // Draw outline on top
+    if (showOutline && outlinePoints.length > 1) {
+      const outlineColor: RGBA = fixedColor
+        ? parseColorToRgba(fixedColor)
+        : { r: Math.min(255, fillColor.r + 40), g: Math.min(255, fillColor.g + 40), b: Math.min(255, fillColor.b + 40), a: 1 }
+
+      for (let i = 0; i < outlinePoints.length - 1; i++) {
+        const p1 = outlinePoints[i]
+        const p2 = outlinePoints[i + 1]
+
+        // Simple line drawing between points
+        if (Math.abs(p2.x - p1.x) <= 1) {
+          if (p1.y >= plotTop && p1.y <= plotBottom) {
+            canvas.drawChar(p1.x, p1.y, '▄', outlineColor)
+          }
+        }
+      }
+      // Draw last point
+      const last = outlinePoints[outlinePoints.length - 1]
+      if (last.y >= plotTop && last.y <= plotBottom) {
+        canvas.drawChar(last.x, last.y, '▄', outlineColor)
+      }
+    }
+  }
+}
+
+/**
  * Render geom_tile (heatmap)
  */
 export function renderGeomTile(
@@ -1962,6 +2134,10 @@ export function renderGeom(
     // Phase 7: Extended Grammar
     case 'violin':
       renderGeomViolin(data, geom, aes, scales, canvas)
+      break
+    case 'ridgeline':
+    case 'joy':
+      renderGeomRidgeline(data, geom, aes, scales, canvas)
       break
     case 'tile':
     case 'raster':

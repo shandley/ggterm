@@ -15,7 +15,7 @@ import { stat_bin } from '../stats/bin'
 import { stat_bin2d } from '../stats/bin2d'
 import { stat_boxplot } from '../stats/boxplot'
 import { stat_count } from '../stats/count'
-import { stat_density, stat_ydensity } from '../stats/density'
+import { stat_density, stat_ydensity, stat_xdensity } from '../stats/density'
 import { stat_smooth } from '../stats/smooth'
 import { stat_summary } from '../stats/summary'
 import { stat_qq, stat_qq_line } from '../stats/qq'
@@ -157,6 +157,15 @@ function applyStatTransform(
       adjust: geom.params.adjust as number,
     })
     return ydensityStat.compute(data, aes)
+  } else if (geom.stat === 'xdensity') {
+    // For ridgeline plots - compute density on x values grouped by y
+    const xdensityStat = stat_xdensity({
+      bw: geom.params.bw as number,
+      kernel: geom.params.kernel as 'gaussian' | 'epanechnikov' | 'rectangular',
+      n: geom.params.n as number,
+      adjust: geom.params.adjust as number,
+    })
+    return xdensityStat.compute(data, aes)
   } else if (geom.stat === 'smooth') {
     const smoothStat = stat_smooth({
       method: geom.params.method as 'lm' | 'loess' | 'lowess',
@@ -329,6 +338,11 @@ export function renderToCanvas(
       scaleData = applyStatTransform(spec.data, geom, spec.aes)
       scaleAes = { ...spec.aes, x: 'x', y: 'y' }
       break
+    } else if (geom.stat === 'xdensity') {
+      // Ridgeline: x is density positions, y is categorical groups
+      scaleData = applyStatTransform(spec.data, geom, spec.aes)
+      scaleAes = { ...spec.aes, x: 'x', y: 'y' }
+      break
     }
   }
 
@@ -398,6 +412,9 @@ export function renderToCanvas(
         geomAes = { ...spec.aes, x: 'x', y: 'y', fill: 'fill' }
       } else if (geom.stat === 'density_2d') {
         // density_2d outputs x, y (grid points), z (density)
+        geomAes = { ...spec.aes, x: 'x', y: 'y' }
+      } else if (geom.stat === 'xdensity') {
+        // xdensity outputs x (positions), y (groups), density, scaled
         geomAes = { ...spec.aes, x: 'x', y: 'y' }
       }
 

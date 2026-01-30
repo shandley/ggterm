@@ -14,7 +14,7 @@ export type { StatCountParams, CountResult } from './count'
 export { stat_boxplot, computeBoxplotStats } from './boxplot'
 export type { StatBoxplotParams, BoxplotResult } from './boxplot'
 
-export { stat_density, stat_ydensity, computeDensity } from './density'
+export { stat_density, stat_ydensity, stat_xdensity, computeDensity } from './density'
 export type { StatDensityParams, DensityResult } from './density'
 
 export { stat_density_2d, computeDensity2d } from './density2d'

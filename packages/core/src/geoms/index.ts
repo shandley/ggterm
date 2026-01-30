@@ -30,3 +30,4 @@ export {
 } from './errorbar'
 export { geom_rect, geom_abline, type RectOptions, type AblineOptions } from './rect'
 export { geom_qq, geom_qq_line, type QQOptions, type QQLineOptions } from './qq'
+export { geom_ridgeline, geom_joy, type RidgelineOptions } from './ridgeline'
