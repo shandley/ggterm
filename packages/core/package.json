@@ -1,6 +1,6 @@
 {
   "name": "@ggterm/core",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Grammar of Graphics engine for terminals",
   "type": "module",
   "main": "./dist/index.js",
