@@ -2,10 +2,14 @@
  * Initialize ggterm skills in the current directory
  *
  * Creates .claude/skills/ with all ggterm skills configured for npx usage
+ * Safe to run multiple times - updates skills if version changed
  */
 
-import { mkdirSync, writeFileSync, existsSync } from 'fs'
-import { join } from 'path'
+import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSync } from 'fs'
+import { join, extname } from 'path'
+
+// Current version - update when skills change
+const SKILLS_VERSION = '0.2.6'
 
 // Skill templates - these use npx ggterm-plot for portability
 const SKILLS: Record<string, { files: Record<string, string> }> = {
@@ -480,45 +484,191 @@ $ARGUMENTS
   }
 }
 
+/**
+ * Scan directory for data files (CSV, JSON, JSONL)
+ */
+function findDataFiles(dir: string, maxDepth = 2): string[] {
+  const dataFiles: string[] = []
+  const dataExtensions = ['.csv', '.json', '.jsonl']
+
+  function scan(currentDir: string, depth: number) {
+    if (depth > maxDepth) return
+
+    try {
+      const entries = readdirSync(currentDir)
+      for (const entry of entries) {
+        // Skip hidden directories and node_modules
+        if (entry.startsWith('.') || entry === 'node_modules') continue
+
+        const fullPath = join(currentDir, entry)
+        try {
+          const stat = statSync(fullPath)
+          if (stat.isDirectory()) {
+            scan(fullPath, depth + 1)
+          } else if (dataExtensions.includes(extname(entry).toLowerCase())) {
+            dataFiles.push(fullPath)
+          }
+        } catch {
+          // Skip files we can't stat
+        }
+      }
+    } catch {
+      // Skip directories we can't read
+    }
+  }
+
+  scan(dir, 0)
+  return dataFiles
+}
+
+/**
+ * Get basic info about a data file (fast, no full parse)
+ */
+function getDataFileInfo(filePath: string): { rows: number; cols: number } | null {
+  try {
+    const content = readFileSync(filePath, 'utf-8')
+    const ext = extname(filePath).toLowerCase()
+
+    if (ext === '.csv') {
+      const lines = content.trim().split('\n')
+      const headerCols = lines[0]?.split(',').length || 0
+      return { rows: Math.max(0, lines.length - 1), cols: headerCols }
+    } else if (ext === '.json') {
+      const data = JSON.parse(content)
+      if (Array.isArray(data) && data.length > 0) {
+        return { rows: data.length, cols: Object.keys(data[0]).length }
+      }
+    } else if (ext === '.jsonl') {
+      const lines = content.trim().split('\n').filter(l => l.trim())
+      if (lines.length > 0) {
+        const first = JSON.parse(lines[0])
+        return { rows: lines.length, cols: Object.keys(first).length }
+      }
+    }
+  } catch {
+    // Skip files we can't parse
+  }
+  return null
+}
+
+/**
+ * Get recent plots from history
+ */
+function getRecentPlots(dir: string, limit = 3): Array<{ id: string; description: string }> {
+  const historyDir = join(dir, '.ggterm', 'plots')
+  if (!existsSync(historyDir)) return []
+
+  try {
+    const files = readdirSync(historyDir)
+      .filter(f => f.endsWith('.json'))
+      .sort()
+      .reverse()
+      .slice(0, limit)
+
+    return files.map(f => {
+      try {
+        const content = JSON.parse(readFileSync(join(historyDir, f), 'utf-8'))
+        const description = content._provenance?.description || content.description || 'Plot'
+        return {
+          id: f.replace('.json', ''),
+          description
+        }
+      } catch {
+        return { id: f.replace('.json', ''), description: 'Plot' }
+      }
+    })
+  } catch {
+    return []
+  }
+}
+
 export function handleInit(): void {
   const cwd = process.cwd()
   const skillsDir = join(cwd, '.claude', 'skills')
+  const ggtermDir = join(cwd, '.ggterm')
+  const versionFile = join(ggtermDir, 'version.json')
 
-  // Check if skills already exist
-  if (existsSync(skillsDir)) {
-    console.log('⚠️  .claude/skills/ already exists')
-    console.log('')
-    console.log('To reinstall, remove the directory first:')
-    console.log('  rm -rf .claude/skills')
-    console.log('  npx ggterm-plot init')
-    return
-  }
-
-  console.log('Initializing ggterm skills...')
-  console.log('')
-
-  // Create skills directory
-  mkdirSync(skillsDir, { recursive: true })
-
-  // Write each skill
-  for (const [skillName, skill] of Object.entries(SKILLS)) {
-    const skillDir = join(skillsDir, skillName)
-    mkdirSync(skillDir, { recursive: true })
-
-    for (const [fileName, content] of Object.entries(skill.files)) {
-      writeFileSync(join(skillDir, fileName), content)
+  // Check current installed version
+  let installedVersion: string | null = null
+  if (existsSync(versionFile)) {
+    try {
+      const versionData = JSON.parse(readFileSync(versionFile, 'utf-8'))
+      installedVersion = versionData.version
+    } catch {
+      // Ignore parse errors
     }
-    console.log(`  ✓ ${skillName}`)
   }
 
-  console.log('')
-  console.log('Done! ggterm skills installed to .claude/skills/')
-  console.log('')
-  console.log('You can now use Claude Code to create visualizations:')
-  console.log('  "Load my data and show me a scatter plot of x vs y"')
-  console.log('  "Create a histogram of the age column"')
-  console.log('  "Style this like Tufte and export as PNG"')
-  console.log('')
-  console.log('Make sure @ggterm/core is installed:')
-  console.log('  npm install @ggterm/core')
+  const needsInstall = !existsSync(skillsDir)
+  const needsUpdate = installedVersion !== SKILLS_VERSION
+
+  // Install or update skills if needed
+  if (needsInstall || needsUpdate) {
+    if (needsInstall) {
+      console.log('Installing ggterm skills...')
+    } else {
+      console.log(`Updating ggterm skills (${installedVersion} → ${SKILLS_VERSION})...`)
+    }
+    console.log('')
+
+    // Create directories
+    mkdirSync(skillsDir, { recursive: true })
+    mkdirSync(ggtermDir, { recursive: true })
+
+    // Write each skill
+    for (const [skillName, skill] of Object.entries(SKILLS)) {
+      const skillDir = join(skillsDir, skillName)
+      mkdirSync(skillDir, { recursive: true })
+
+      for (const [fileName, content] of Object.entries(skill.files)) {
+        writeFileSync(join(skillDir, fileName), content)
+      }
+      console.log(`  ✓ ${skillName}`)
+    }
+
+    // Write version file
+    writeFileSync(versionFile, JSON.stringify({ version: SKILLS_VERSION }, null, 2))
+    console.log('')
+  } else {
+    console.log(`ggterm v${SKILLS_VERSION} ready`)
+    console.log('')
+  }
+
+  // Discover data files
+  const dataFiles = findDataFiles(cwd)
+  if (dataFiles.length > 0) {
+    console.log('Data files:')
+    for (const file of dataFiles.slice(0, 10)) {
+      const relativePath = file.replace(cwd + '/', '')
+      const info = getDataFileInfo(file)
+      if (info) {
+        console.log(`  • ${relativePath} (${info.rows} rows × ${info.cols} cols)`)
+      } else {
+        console.log(`  • ${relativePath}`)
+      }
+    }
+    if (dataFiles.length > 10) {
+      console.log(`  ... and ${dataFiles.length - 10} more`)
+    }
+    console.log('')
+  }
+
+  // Show recent plots
+  const recentPlots = getRecentPlots(cwd)
+  if (recentPlots.length > 0) {
+    console.log('Recent plots:')
+    for (const plot of recentPlots) {
+      console.log(`  • ${plot.id}: ${plot.description}`)
+    }
+    console.log('')
+  }
+
+  // Quick tips on first install
+  if (needsInstall) {
+    console.log('Try:')
+    console.log('  "Show me a scatter plot of x vs y from data.csv"')
+    console.log('  "Create a histogram of the age column"')
+    console.log('  "Style this like Tufte and export as PNG"')
+    console.log('')
+  }
 }
