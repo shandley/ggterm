@@ -58,6 +58,55 @@ function getPointColor(
 }
 
 /**
+ * Parse a color value (hex string, named color, or RGBA object) to RGBA
+ */
+function parseColorToRgba(color: unknown, fallback: RGBA = { r: 128, g: 128, b: 128, a: 1 }): RGBA {
+  if (!color) return fallback
+
+  // Already RGBA object
+  if (typeof color === 'object' && color !== null && 'r' in color) {
+    return color as RGBA
+  }
+
+  // String color (hex or named)
+  if (typeof color === 'string') {
+    // Hex color
+    if (color.startsWith('#')) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color)
+      if (result) {
+        return {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+          a: 1,
+        }
+      }
+    }
+
+    // Named colors
+    const namedColors: Record<string, RGBA> = {
+      red: { r: 255, g: 0, b: 0, a: 1 },
+      blue: { r: 0, g: 0, b: 255, a: 1 },
+      green: { r: 0, g: 128, b: 0, a: 1 },
+      black: { r: 0, g: 0, b: 0, a: 1 },
+      white: { r: 255, g: 255, b: 255, a: 1 },
+      gray: { r: 128, g: 128, b: 128, a: 1 },
+      grey: { r: 128, g: 128, b: 128, a: 1 },
+      yellow: { r: 255, g: 255, b: 0, a: 1 },
+      orange: { r: 255, g: 165, b: 0, a: 1 },
+      purple: { r: 128, g: 0, b: 128, a: 1 },
+      cyan: { r: 0, g: 255, b: 255, a: 1 },
+      magenta: { r: 255, g: 0, b: 255, a: 1 },
+    }
+
+    const named = namedColors[color.toLowerCase()]
+    if (named) return named
+  }
+
+  return fallback
+}
+
+/**
  * Render geom_point
  */
 export function renderGeomPoint(
@@ -725,7 +774,7 @@ export function renderGeomHLine(
   if (yintercept === undefined) return
 
   const cy = Math.round(scales.y.map(yintercept))
-  const color = (geom.params.color as RGBA) ?? { r: 128, g: 128, b: 128, a: 1 }
+  const color = parseColorToRgba(geom.params.color)
 
   const startX = Math.round(scales.x.range[0])
   const endX = Math.round(scales.x.range[1])
@@ -747,7 +796,7 @@ export function renderGeomVLine(
   if (xintercept === undefined) return
 
   const cx = Math.round(scales.x.map(xintercept))
-  const color = (geom.params.color as RGBA) ?? { r: 128, g: 128, b: 128, a: 1 }
+  const color = parseColorToRgba(geom.params.color)
 
   const startY = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
   const endY = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
@@ -1619,7 +1668,7 @@ export function renderGeomAbline(
   const linetype = (geom.params.linetype as string) ?? 'solid'
 
   const lineChar = linetype === 'dotted' ? '·' : linetype === 'dashed' ? '╌' : '─'
-  const color = (geom.params.color as RGBA) ?? { r: 128, g: 128, b: 128, a: 1 }
+  const color = parseColorToRgba(geom.params.color)
 
   // Get plot area boundaries
   const plotLeft = Math.round(scales.x.range[0])
