@@ -9,7 +9,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSy
 import { join, extname } from 'path'
 
 // Current version - update when skills change
-const SKILLS_VERSION = '0.2.6'
+const SKILLS_VERSION = '0.2.7'
 
 // Skill templates - these use npx ggterm-plot for portability
 const SKILLS: Record<string, { files: Record<string, string> }> = {
