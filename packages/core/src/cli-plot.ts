@@ -59,6 +59,7 @@ import {
   getLatestPlotId,
   getGGTermDir,
 } from './history'
+import { handleInit } from './init'
 
 const GEOM_TYPES = [
   'point', 'line', 'path', 'step', 'bar', 'col', 'histogram', 'freqpoly',
@@ -1022,6 +1023,7 @@ function printUsage(): void {
 ggterm CLI - Terminal plotting tool
 
 Commands:
+  init                                        Install ggterm skills in current directory
   inspect <file>                              Show column types and statistics
   suggest <file>                              Suggest visualizations with commands
   history [search]                            List all plots (optionally filter by search)
@@ -1039,6 +1041,7 @@ Reference lines (append to geom with +):
   abline@<slope>,<int>   Line with slope and intercept
 
 Examples:
+  ggterm-plot init                             # Set up skills in current project
   ggterm-plot inspect data.csv
   ggterm-plot data.json x y                    # JSON array of objects
   ggterm-plot data.jsonl x y color             # JSON Lines format
@@ -1063,7 +1066,9 @@ if (args.length === 0) {
 
 const command = args[0]
 
-if (command === 'inspect') {
+if (command === 'init') {
+  handleInit()
+} else if (command === 'inspect') {
   if (args.length < 2) {
     console.error('Usage: ggterm-plot inspect <file>')
     process.exit(1)

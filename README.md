@@ -48,43 +48,53 @@ See our [example vignettes](./examples/) for complete workflows using real data:
 
 ## Getting Started
 
-### With Claude Code (Recommended)
+### Use in Your Project (Recommended)
 
-ggterm is designed to work with Claude Code through natural language:
+Add ggterm to any project and use Claude Code for natural language visualization:
 
 ```bash
-# Clone the repository
+# In your project directory (e.g., "Epi Analysis")
+cd my-project
+
+# Install ggterm
+npm install @ggterm/core
+
+# Set up Claude Code skills
+npx ggterm-plot init
+```
+
+Now open Claude Code and start talking:
+
+```
+You: Load outbreak_data.csv and show me cases over time by region
+
+Claude: [Creates line chart with automatic date parsing and color encoding]
+
+You: Add a reference line at 100 cases
+
+Claude: [Updates plot with horizontal reference line]
+
+You: Style this like The Economist and export as PNG
+
+Claude: [Applies Economist style preset and generates publication-ready output]
+```
+
+### For Contributors
+
+Clone the repo to develop or contribute:
+
+```bash
 git clone https://github.com/shandley/ggterm.git
 cd ggterm
-
-# Install dependencies
 bun install
 ```
-
-Now open Claude Code in the ggterm directory and start talking:
-
-```
-You: Load the iris dataset and show me how petal dimensions relate to species
-
-Claude: [Creates scatter plot with automatic scales, legends, and color mapping]
-
-You: Color by species and add a trend line
-
-Claude: [Updates plot with color encoding and regression line]
-
-You: Export this for my paper
-
-Claude: [Generates publication-ready HTML with PNG/SVG download]
-```
-
-The `.claude/skills/` directory contains skills that teach Claude Code how to create visualizations, apply publication styles, and export figures.
 
 ### Interactive REPL
 
 For hands-on exploration without AI:
 
 ```bash
-bun packages/core/src/cli.ts
+npx ggterm
 ```
 
 ```
