@@ -17,6 +17,9 @@ export type { StatBoxplotParams, BoxplotResult } from './boxplot'
 export { stat_density, stat_ydensity, computeDensity } from './density'
 export type { StatDensityParams, DensityResult } from './density'
 
+export { stat_density_2d, computeDensity2d } from './density2d'
+export type { StatDensity2dParams, Density2dResult } from './density2d'
+
 export { stat_smooth, computeSmooth } from './smooth'
 export type { StatSmoothParams, SmoothResult } from './smooth'
 

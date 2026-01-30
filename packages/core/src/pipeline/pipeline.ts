@@ -19,6 +19,7 @@ import { stat_density, stat_ydensity } from '../stats/density'
 import { stat_smooth } from '../stats/smooth'
 import { stat_summary } from '../stats/summary'
 import { stat_qq, stat_qq_line } from '../stats/qq'
+import { stat_density_2d } from '../stats/density2d'
 import { computeFacetPanels, calculatePanelLayouts, calculateGridStripLayout, label_value } from '../facets'
 import type { FacetPanel, PanelLayout, Labeller } from '../facets'
 
@@ -198,6 +199,15 @@ function applyStatTransform(
       drop: geom.params.drop as boolean,
     })
     return bin2dStat.compute(data, aes)
+  } else if (geom.stat === 'density_2d') {
+    const density2dStat = stat_density_2d({
+      h: geom.params.bandwidth as number | [number, number],
+      n: geom.params.n as number,
+      nx: geom.params.nx as number,
+      ny: geom.params.ny as number,
+      adjust: geom.params.adjust as number,
+    })
+    return density2dStat.compute(data, aes)
   }
   return data
 }
@@ -314,6 +324,11 @@ export function renderToCanvas(
       scaleData = applyStatTransform(spec.data, geom, spec.aes)
       scaleAes = { ...spec.aes, x: 'x', y: 'y', fill: 'fill' }
       break
+    } else if (geom.stat === 'density_2d') {
+      // 2D density: x and y are grid points, z is density
+      scaleData = applyStatTransform(spec.data, geom, spec.aes)
+      scaleAes = { ...spec.aes, x: 'x', y: 'y' }
+      break
     }
   }
 
@@ -381,6 +396,9 @@ export function renderToCanvas(
       } else if (geom.stat === 'bin2d') {
         // bin2d outputs x, y (centers), fill (count), width, height
         geomAes = { ...spec.aes, x: 'x', y: 'y', fill: 'fill' }
+      } else if (geom.stat === 'density_2d') {
+        // density_2d outputs x, y (grid points), z (density)
+        geomAes = { ...spec.aes, x: 'x', y: 'y' }
       }
 
       // Apply coordinate transformation (flip, polar, trans, etc.)
