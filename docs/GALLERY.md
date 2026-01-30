@@ -12,6 +12,7 @@ A visual guide to all plot types available in ggterm.
 - [Q-Q Plots](#q-q-plots)
 - [Area Charts](#area-charts)
 - [Box Plots](#box-plots)
+- [2D Density Plots](#2d-density-plots)
 - [Heatmaps](#heatmaps)
 - [Error Bars](#error-bars)
 - [Faceted Plots](#faceted-plots)
@@ -449,6 +450,87 @@ console.log(plot.render({ width: 60, height: 15 }))
     10 ┤·········────┴────···············────┴────············
        └┬────────────────────────┬────────────────────────┬───
         A                        B
+```
+
+---
+
+## 2D Density Plots
+
+Visualize the density of points in 2D space using contour lines.
+
+### Basic 2D Density
+
+```typescript
+import { gg, geom_density_2d } from '@ggterm/core'
+
+const data = Array.from({ length: 100 }, () => ({
+  x: Math.random() * 10,
+  y: Math.random() * 10
+}))
+
+const plot = gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_density_2d())
+  .labs({ title: '2D Density Plot' })
+
+console.log(plot.render({ width: 60, height: 15 }))
+```
+
+**Output:**
+```
+                      2D Density Plot
+
+   10 ┤·······────────────────────────·······
+      │····───────────────────────────────···
+    8 ┤··───────────────────────────────────·
+      │·─────────────────────────────────────
+    6 ┤·─────────────────────────────────────
+      │·─────────────────────────────────────
+    4 ┤·─────────────────────────────────────
+      │··───────────────────────────────────·
+    2 ┤····───────────────────────────────···
+      │·······────────────────────────·······
+    0 ┤
+      └┬──────────┬──────────┬──────────┬────
+       0          3          6          10
+```
+
+### 2D Density with Points
+
+```typescript
+import { gg, geom_point, geom_density_2d } from '@ggterm/core'
+
+const plot = gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_density_2d({ bins: 5 }))
+  .geom(geom_point({ alpha: 0.3 }))
+  .labs({ title: 'Density Contours with Points' })
+
+console.log(plot.render({ width: 60, height: 15 }))
+```
+
+### Custom Bandwidth
+
+```typescript
+import { gg, geom_density_2d } from '@ggterm/core'
+
+// Narrow bandwidth = sharper contours
+const plot = gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_density_2d({ bandwidth: 0.5 }))
+  .labs({ title: 'Sharp Density Contours' })
+
+// Wide bandwidth = smoother contours
+const smoothPlot = gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_density_2d({ bandwidth: 2 }))
+  .labs({ title: 'Smooth Density Contours' })
+```
+
+### 2D Density via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts data.csv x y - "2D Density" density_2d
 ```
 
 ---

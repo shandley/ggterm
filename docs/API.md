@@ -222,6 +222,31 @@ gg(data)
   .geom(geom_area())
 ```
 
+### stat_density_2d()
+
+Computes 2D kernel density estimates for contour plots.
+
+```typescript
+import { stat_density_2d } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .stat(stat_density_2d({ n: 25, h: 1.5 }))
+  .geom(geom_contour())
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `n` | number | 25 | Grid resolution (n × n points) |
+| `nx` | number | n | Grid resolution for x-axis |
+| `ny` | number | n | Grid resolution for y-axis |
+| `h` | number \| [number, number] | auto | Bandwidth (uses Scott's rule if not specified) |
+| `adjust` | number | 1 | Bandwidth adjustment multiplier |
+
+The stat computes a density grid using Gaussian kernel density estimation and Scott's rule for automatic bandwidth selection: `h = n^(-1/6) × σ`.
+
 ### stat_summary()
 
 Summarizes data by groups.
