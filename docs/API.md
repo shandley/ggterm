@@ -686,6 +686,47 @@ gg(data)
   .geom(geom_abline({ slope: 1, intercept: 0, linetype: 'dashed' }))
 ```
 
+### geom_ridgeline() / geom_joy()
+
+Ridgeline plots (also called joy plots) for comparing distributions across groups. Shows stacked density curves, ideal for visualizing how distributions change across categories.
+
+```typescript
+import { geom_ridgeline, geom_joy } from '@ggterm/core'
+
+// Temperature distributions by month
+gg(data)
+  .aes({ x: 'temp', y: 'month' })
+  .geom(geom_ridgeline())
+  .labs({ title: 'Temperature by Month' })
+
+// Using the joy alias (same as ridgeline)
+gg(data)
+  .aes({ x: 'value', y: 'category' })
+  .geom(geom_joy({ scale: 1.2, alpha: 0.7 }))
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `scale` | number | 0.9 | Height scale for density curves (higher = more overlap) |
+| `alpha` | number | 0.8 | Opacity (0-1) |
+| `fill` | string | null | Fill color (cycles through palette if not set) |
+| `color` | string | null | Outline color |
+| `adjust` | number | 1 | Bandwidth adjustment for density estimation |
+| `n` | number | 128 | Number of points for density curve |
+| `outline` | boolean | true | Whether to draw outlines |
+
+#### CLI Usage
+
+```bash
+# Basic ridgeline plot
+bun packages/core/src/cli-plot.ts data.csv temp month - "Temperatures" ridgeline
+
+# Using joy alias
+bun packages/core/src/cli-plot.ts data.csv value category - "Distribution" joy
+```
+
 ---
 
 ## Annotations

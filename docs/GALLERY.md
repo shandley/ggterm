@@ -12,6 +12,7 @@ A visual guide to all plot types available in ggterm.
 - [Q-Q Plots](#q-q-plots)
 - [Area Charts](#area-charts)
 - [Box Plots](#box-plots)
+- [Ridgeline Plots](#ridgeline-plots)
 - [2D Density Plots](#2d-density-plots)
 - [Heatmaps](#heatmaps)
 - [Error Bars](#error-bars)
@@ -451,6 +452,96 @@ console.log(plot.render({ width: 60, height: 15 }))
        └┬────────────────────────┬────────────────────────┬───
         A                        B
 ```
+
+---
+
+## Ridgeline Plots
+
+Ridgeline plots (also called joy plots) display multiple distribution curves stacked vertically. Perfect for comparing distributions across categories like time periods or groups.
+
+### Basic Ridgeline Plot
+
+```typescript
+import { gg, geom_ridgeline } from '@ggterm/core'
+
+const data = [
+  { month: 'Jan', temp: 32 }, { month: 'Jan', temp: 35 }, { month: 'Jan', temp: 28 },
+  { month: 'Feb', temp: 38 }, { month: 'Feb', temp: 42 }, { month: 'Feb', temp: 35 },
+  { month: 'Mar', temp: 48 }, { month: 'Mar', temp: 52 }, { month: 'Mar', temp: 45 },
+  // ... more data points per month
+]
+
+const plot = gg(data)
+  .aes({ x: 'temp', y: 'month' })
+  .geom(geom_ridgeline())
+  .labs({ title: 'Monthly Temperature Distribution' })
+
+console.log(plot.render({ width: 60, height: 20 }))
+```
+
+**Output:**
+```
+              Monthly Temperature Distribution
+
+  Mar │          ▄▄████████▄▄
+      │        ▄██████████████▄
+  Feb │      ▄████████████▄▄
+      │    ▄████████████████▄
+  Jan │  ▄▄██████████▄▄
+      │  ████████████████▄
+      └──────────────────────────────────────────────
+         25    30    35    40    45    50    55
+                       temp
+```
+
+### Customized Ridgeline
+
+```typescript
+import { gg, geom_ridgeline, scale_fill_viridis } from '@ggterm/core'
+
+const plot = gg(data)
+  .aes({ x: 'temp', y: 'month', fill: 'month' })
+  .geom(geom_ridgeline({
+    scale: 1.5,     // More overlap between ridges
+    alpha: 0.7,     // Semi-transparent
+    outline: true   // Show outlines
+  }))
+  .scale(scale_fill_viridis())
+  .labs({ title: 'Temperature Distributions' })
+
+console.log(plot.render({ width: 60, height: 20 }))
+```
+
+### Joy Plot Alias
+
+```typescript
+import { gg, geom_joy } from '@ggterm/core'
+
+// geom_joy is an alias for geom_ridgeline
+const plot = gg(data)
+  .aes({ x: 'value', y: 'category' })
+  .geom(geom_joy())
+  .labs({ title: 'Joy Plot' })
+
+console.log(plot.render({ width: 60, height: 20 }))
+```
+
+### Ridgeline via CLI
+
+```bash
+# Basic ridgeline plot
+bun packages/core/src/cli-plot.ts temps.csv temp month - "Monthly Temps" ridgeline
+
+# Using joy alias
+bun packages/core/src/cli-plot.ts data.csv value group - "Distributions" joy
+```
+
+### When to Use Ridgeline Plots
+
+- **Time series distributions**: How distributions change over time (months, years)
+- **Group comparisons**: Comparing density shapes across categories
+- **Before/after analysis**: Showing distribution shifts
+- **Seasonal patterns**: Visualizing cyclic distribution changes
 
 ---
 
