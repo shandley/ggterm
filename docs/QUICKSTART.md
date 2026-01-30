@@ -347,6 +347,43 @@ bun packages/core/src/cli-plot.ts export output.html
 
 The HTML export uses Vega-Lite, so you can further customize it in the Vega Editor.
 
+## Publication Style Presets
+
+Apply expert-curated style presets to your exported plots using Claude Code's `/ggterm-style` skill:
+
+```bash
+# 1. Create and export a plot
+bun packages/core/src/cli-plot.ts data.csv x y color "Title"
+bun packages/core/src/cli-plot.ts export
+
+# 2. Apply a style preset (in Claude Code)
+/ggterm-style wilke    # Clean, minimal (Claus Wilke)
+/ggterm-style tufte    # Maximum data-ink ratio (Edward Tufte)
+/ggterm-style economist # The Economist magazine style
+/ggterm-style nature   # Nature journal format
+/ggterm-style apa      # APA publication guidelines
+/ggterm-style minimal  # Distraction-free
+```
+
+### Available Style Presets
+
+| Style | Best For | Key Features |
+|-------|----------|--------------|
+| **wilke** | Academic papers | Subtle Y-grid, clean sans-serif, no bold titles |
+| **tufte** | Minimalist presentations | No grid, no borders, serif font, grayscale |
+| **economist** | Editorial/magazine | Blue-gray background, white gridlines, bold colors |
+| **nature** | Nature journal | Compact (180x150px), small fonts, publication-ready |
+| **apa** | Psychology papers | Times New Roman, italic titles, grayscale |
+| **minimal** | Web/presentations | No decoration, system fonts |
+
+### Style Comparison
+
+```
+Wilke:     Clean academic style with subtle horizontal gridlines
+Tufte:     Pure data - removes all non-data ink
+Economist: Distinctive editorial look with colored background
+```
+
 ## Plot History
 
 All plots are automatically saved with provenance metadata:

@@ -183,6 +183,86 @@ Resolution: Vector (infinite)
 
 ---
 
+### Applying Publication Styles
+
+**You:** Style this like Claus Wilke's book.
+
+**AI:** *Applies Wilke style preset:*
+```
+Applied Wilke style to your plot.
+
+Changes:
+- Font: Helvetica Neue (clean sans-serif)
+- Title: Normal weight, left-aligned
+- Gridlines: Y-axis only, subtle gray (#ebebeb)
+- X-axis: No grid (reduces visual clutter)
+- Colors: Colorblind-safe palette
+- Axis labels: No bold, dark gray (#333333)
+
+Export with /ggterm-publish to generate PNG/SVG/PDF.
+```
+
+---
+
+### Alternative Styles
+
+**You:** What other styles are available?
+
+**AI:** Six publication-quality presets:
+
+| Style | Description |
+|-------|-------------|
+| **wilke** | Claus Wilke's *Fundamentals of Data Visualization* - clean, minimal |
+| **tufte** | Edward Tufte - maximum data-ink ratio, no grid |
+| **economist** | The Economist - blue-gray background, white gridlines |
+| **nature** | Nature journal - compact 180x150px, small fonts |
+| **apa** | APA guidelines - Times New Roman, italic titles |
+| **minimal** | Generic - no decoration, system fonts |
+
+---
+
+### Tufte Style Example
+
+**You:** Try Tufte style.
+
+**AI:** *Applies Tufte style:*
+```
+Applied Tufte style to your plot.
+
+Changes:
+- Font: Georgia (elegant serif)
+- No axis domain lines
+- No gridlines (data should speak for itself)
+- No tick marks
+- Grayscale palette
+- Different point shapes per species (redundant encoding)
+
+"Above all else, show the data." - Edward Tufte
+```
+
+---
+
+### Economist Style Example
+
+**You:** Show me the Economist style.
+
+**AI:** *Applies Economist style:*
+```
+Applied Economist style to your plot.
+
+Changes:
+- Background: Light blue-gray (#d5e4eb)
+- Gridlines: White horizontal lines
+- X-axis: Bold black baseline
+- Title: Bold with subtitle support
+- Colors: Economist palette (deep blue, cyan, orange)
+- Legend: Top-right position
+
+This editorial style is designed for magazine publication.
+```
+
+---
+
 ## Figure Evolution
 
 The figure evolved through conversation:
@@ -192,5 +272,35 @@ The figure evolved through conversation:
 4. Faceted by species
 5. Publication styling and labels
 6. Exported as vector graphics
+7. Applied Wilke style preset
+8. Explored alternative styles (Tufte, Economist)
 
-Total prompts: 6
+Total prompts: 9
+
+---
+
+## Style Presets Reference
+
+### Wilke Style (Recommended for Academic Papers)
+- Subtle Y-axis gridlines only
+- No bold axis titles
+- Colorblind-safe palettes
+- ~1.6:1 aspect ratio
+
+### Tufte Style (Maximum Data-Ink)
+- No grid, no borders, no ticks
+- Serif typography (Georgia)
+- Grayscale when possible
+- Direct labeling over legends
+
+### Economist Style (Editorial/Magazine)
+- Signature blue-gray background
+- White gridlines
+- Bold colors and titles
+- Legend at top
+
+### Nature Style (Journal Submission)
+- Compact dimensions (180x150px)
+- Small fonts (8-10pt)
+- No grid
+- Publication-ready dimensions

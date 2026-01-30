@@ -966,6 +966,136 @@ const quantized = quantizeColor({ r: 255, g: 128, b: 0, a: 1 }, '256')
 
 ---
 
+## Claude Code Skills
+
+ggterm includes AI-assisted skills for Claude Code that enable natural language interaction with plots.
+
+### Available Skills
+
+| Skill | Trigger | Description |
+|-------|---------|-------------|
+| `data-load` | "load data", "read csv" | Load CSV, JSON, JSONL files |
+| `ggterm-plot` | "plot", "chart", "visualize" | Create terminal visualizations |
+| `ggterm-history` | "show history", "find plot" | Search and retrieve historical plots |
+| `ggterm-markdown` | "create report", "export markdown" | Generate reports with embedded plots |
+| `ggterm-publish` | "export", "save as png" | Export to PNG/SVG/PDF/HTML |
+| `ggterm-customize` | "change colors", "make title bigger" | Natural language plot customization |
+| `ggterm-style` | "style like Wilke", "Tufte style" | Apply publication-quality style presets |
+
+### ggterm-style
+
+Apply expert-curated style presets for publication-ready output.
+
+#### Usage
+
+```bash
+# In Claude Code, after creating and exporting a plot:
+/ggterm-style wilke
+/ggterm-style tufte
+/ggterm-style economist
+```
+
+#### Available Presets
+
+##### wilke (Claus Wilke)
+Based on *Fundamentals of Data Visualization*:
+- Font: Helvetica Neue (clean sans-serif)
+- Gridlines: Y-axis only, subtle gray (#ebebeb)
+- Axis titles: Normal weight, dark gray
+- Colors: Colorblind-safe categorical palette
+- Best for: Academic papers, general publication
+
+##### tufte (Edward Tufte)
+Maximum data-ink ratio principles:
+- Font: Georgia (elegant serif)
+- No gridlines, no axis lines, no tick marks
+- Grayscale color palette
+- Shape encoding for redundancy
+- Best for: Minimalist presentations, data-focused reports
+
+##### economist (The Economist)
+Distinctive editorial magazine style:
+- Background: Light blue-gray (#d5e4eb)
+- Gridlines: White horizontal lines
+- X-axis: Bold black baseline
+- Colors: Bold Economist palette (blue, cyan, orange)
+- Best for: Editorial content, magazine publication
+
+##### nature (Nature Journal)
+Nature publication specifications:
+- Dimensions: 180x150px (compact)
+- Fonts: 8-10pt Arial
+- No grid
+- Best for: Nature/Science journal submission
+
+##### apa (APA Guidelines)
+American Psychological Association style:
+- Font: Times New Roman (serif)
+- Axis titles: Italic
+- Colors: Grayscale
+- Best for: Psychology papers, academic publication
+
+##### minimal
+Generic distraction-free style:
+- Font: System UI
+- No grid, no borders, no ticks
+- Best for: Web, presentations
+
+#### Workflow Example
+
+```bash
+# 1. Create a plot
+bun packages/core/src/cli-plot.ts data.csv x y color "Title" point
+
+# 2. Export to save Vega-Lite spec
+bun packages/core/src/cli-plot.ts export output.html
+
+# 3. Apply style (in Claude Code)
+/ggterm-style wilke
+
+# 4. View styled result
+open /tmp/styled-plot.html
+```
+
+#### Style Configuration Structure
+
+Styles modify the Vega-Lite `config` object:
+
+```javascript
+{
+  config: {
+    font: "Helvetica Neue, Arial, sans-serif",
+    background: "white",
+    view: { stroke: null },
+    title: {
+      fontSize: 14,
+      fontWeight: "normal",
+      anchor: "start"
+    },
+    axis: {
+      domain: true,
+      domainColor: "#333333",
+      grid: false,
+      labelFontSize: 11,
+      titleFontWeight: "normal"
+    },
+    axisY: {
+      grid: true,
+      gridColor: "#ebebeb"
+    },
+    legend: {
+      labelFontSize: 11,
+      orient: "right"
+    },
+    range: {
+      category: ["#4C78A8", "#F58518", "#E45756", ...]
+    }
+  }
+}
+```
+
+---
+
 ## TypeScript Types
 
 ```typescript
