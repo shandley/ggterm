@@ -313,19 +313,19 @@ Plot directly from CSV files without writing code:
 
 ```bash
 # Basic usage
-bun packages/core/src/cli-plot.ts <file> <x> <y> [color] [title] [geom] [facet]
+npx ggterm-plot <file> <x> <y> [color] [title] [geom] [facet]
 
 # Scatter plot from CSV
-bun packages/core/src/cli-plot.ts data.csv x y
+npx ggterm-plot data.csv x y
 
 # With color mapping
-bun packages/core/src/cli-plot.ts data.csv x y category "Sales by Region"
+npx ggterm-plot data.csv x y category "Sales by Region"
 
 # Histogram (use '-' to skip color)
-bun packages/core/src/cli-plot.ts data.csv value - "Distribution" histogram
+npx ggterm-plot data.csv value - "Distribution" histogram
 
 # Faceted plot (small multiples)
-bun packages/core/src/cli-plot.ts data.csv x y color "Title" point region
+npx ggterm-plot data.csv x y color "Title" point region
 ```
 
 **Available geoms** (29 types): point, line, path, step, bar, col, histogram, freqpoly, boxplot, violin, area, ribbon, rug, errorbar, errorbarh, crossbar, linerange, pointrange, smooth, segment, rect, raster, tile, text, label, contour, contour_filled, density_2d, qq
@@ -336,7 +336,7 @@ Create interactive, publication-ready visualizations:
 
 ```bash
 # After creating a plot, export to HTML
-bun packages/core/src/cli-plot.ts export output.html
+npx ggterm-plot export output.html
 
 # Export includes:
 # - Interactive Vega-Lite chart
@@ -353,8 +353,8 @@ Apply expert-curated style presets to your exported plots using Claude Code's `/
 
 ```bash
 # 1. Create and export a plot
-bun packages/core/src/cli-plot.ts data.csv x y color "Title"
-bun packages/core/src/cli-plot.ts export
+npx ggterm-plot data.csv x y color "Title"
+npx ggterm-plot export
 
 # 2. Apply a style preset (in Claude Code)
 /ggterm-style wilke    # Clean, minimal (Claus Wilke)
@@ -390,17 +390,17 @@ All plots are automatically saved with provenance metadata:
 
 ```bash
 # List all historical plots
-bun packages/core/src/cli-plot.ts history
+npx ggterm-plot history
 
 # Search history
-bun packages/core/src/cli-plot.ts history scatter
-bun packages/core/src/cli-plot.ts history sales
+npx ggterm-plot history scatter
+npx ggterm-plot history sales
 
 # Show a specific plot again
-bun packages/core/src/cli-plot.ts show 2024-01-26-001
+npx ggterm-plot show 2024-01-26-001
 
 # Export a historical plot
-bun packages/core/src/cli-plot.ts export 2024-01-26-001 output.html
+npx ggterm-plot export 2024-01-26-001 output.html
 ```
 
 ## Next Steps

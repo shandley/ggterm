@@ -1,7 +1,7 @@
 ---
 name: ggterm-history
 description: Search and retrieve plots from history. Use when the user asks about previous plots, wants to find a plot they made earlier, re-display a past visualization, or export a historical plot.
-allowed-tools: Bash(bun:*), Read
+allowed-tools: Bash(npx:ggterm-plot*), Read
 ---
 
 # Plot History Management
@@ -22,7 +22,7 @@ Use this skill when the user:
 Before recreating a plot from scratch, ALWAYS check if it already exists in history:
 
 ```bash
-bun packages/core/src/cli-plot.ts history
+npx ggterm-plot history
 ```
 
 This saves time and ensures consistency with what the user previously created.
@@ -32,7 +32,7 @@ This saves time and ensures consistency with what the user previously created.
 ### List All Plots
 
 ```bash
-bun packages/core/src/cli-plot.ts history
+npx ggterm-plot history
 ```
 
 Output:
@@ -51,7 +51,7 @@ Total: 3 plot(s)
 ### Search History
 
 ```bash
-bun packages/core/src/cli-plot.ts history <search-term>
+npx ggterm-plot history <search-term>
 ```
 
 Searches across:
@@ -61,16 +61,16 @@ Searches across:
 
 Examples:
 ```bash
-bun packages/core/src/cli-plot.ts history scatter     # Find scatter plots
-bun packages/core/src/cli-plot.ts history sales       # Find plots with "sales"
-bun packages/core/src/cli-plot.ts history histogram   # Find histograms
-bun packages/core/src/cli-plot.ts history iris.csv    # Find plots using iris.csv
+npx ggterm-plot history scatter     # Find scatter plots
+npx ggterm-plot history sales       # Find plots with "sales"
+npx ggterm-plot history histogram   # Find histograms
+npx ggterm-plot history iris.csv    # Find plots using iris.csv
 ```
 
 ### Re-render a Plot
 
 ```bash
-bun packages/core/src/cli-plot.ts show <plot-id>
+npx ggterm-plot show <plot-id>
 ```
 
 Displays the plot in the terminal exactly as it was originally created.
@@ -78,7 +78,7 @@ Displays the plot in the terminal exactly as it was originally created.
 ### Export a Plot
 
 ```bash
-bun packages/core/src/cli-plot.ts export <plot-id> [output.html]
+npx ggterm-plot export <plot-id> [output.html]
 ```
 
 Creates an interactive HTML file with PNG/SVG download buttons.
@@ -101,24 +101,24 @@ Creates an interactive HTML file with PNG/SVG download buttons.
 
 ```bash
 # Step 1: Search for it
-bun packages/core/src/cli-plot.ts history housing
+npx ggterm-plot history housing
 
 # Output shows: 2024-01-26-001  Scatter plot of price vs sqft - "Housing Prices"
 
 # Step 2: Display it
-bun packages/core/src/cli-plot.ts show 2024-01-26-001
+npx ggterm-plot show 2024-01-26-001
 ```
 
 ### Example 2: "Export my histogram to PNG"
 
 ```bash
 # Step 1: Find histograms
-bun packages/core/src/cli-plot.ts history histogram
+npx ggterm-plot history histogram
 
 # Output shows: 2024-01-26-002  Histogram of income - "Income Distribution"
 
 # Step 2: Export to HTML (user can download PNG from browser)
-bun packages/core/src/cli-plot.ts export 2024-01-26-002 income-histogram.html
+npx ggterm-plot export 2024-01-26-002 income-histogram.html
 
 # Step 3: Tell user to open in browser and click "Download PNG"
 ```
@@ -127,7 +127,7 @@ bun packages/core/src/cli-plot.ts export 2024-01-26-002 income-histogram.html
 
 ```bash
 # List all and filter by date visually
-bun packages/core/src/cli-plot.ts history
+npx ggterm-plot history
 
 # Look for entries with dates from last week in the output
 ```

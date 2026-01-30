@@ -218,15 +218,6 @@ function buildEncoding(
 }
 
 /**
- * Geoms that need special handling beyond simple mark mapping
- */
-const SPECIAL_GEOMS = new Set([
-  'histogram', 'boxplot', 'hline', 'vline', 'abline',
-  'linerange', 'pointrange', 'crossbar', 'errorbarh',
-  'ribbon', 'rug', 'bin2d',
-])
-
-/**
  * Build mark specification from geom
  */
 function buildMark(geom: Geom): string | { type: string; [key: string]: unknown } {
@@ -354,7 +345,7 @@ function buildBoxplotSpec(
  */
 function buildHLineSpec(
   geom: Geom,
-  data: Record<string, unknown>[]
+  _data: Record<string, unknown>[]
 ): Partial<VegaLiteSpec> {
   const yintercept = geom.params?.yintercept as number | undefined
 
@@ -383,7 +374,7 @@ function buildHLineSpec(
  */
 function buildVLineSpec(
   geom: Geom,
-  data: Record<string, unknown>[]
+  _data: Record<string, unknown>[]
 ): Partial<VegaLiteSpec> {
   const xintercept = geom.params?.xintercept as number | undefined
 
@@ -610,7 +601,7 @@ function buildRugSpec(
  * Build bin2d spec (2D histogram as heatmap)
  */
 function buildBin2dSpec(
-  data: Record<string, unknown>[],
+  _data: Record<string, unknown>[],
   aes: AestheticMapping,
   geom: Geom
 ): Partial<VegaLiteSpec> {

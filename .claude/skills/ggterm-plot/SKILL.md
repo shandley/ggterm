@@ -1,7 +1,7 @@
 ---
 name: ggterm-plot
 description: Create terminal data visualizations using Grammar of Graphics. Use when plotting data, creating charts, graphing, visualizing distributions, or when the user mentions plot, chart, graph, histogram, scatter, boxplot, or visualize.
-allowed-tools: Bash(bun:*), Read
+allowed-tools: Bash(npx:ggterm-plot*), Read
 ---
 
 # Terminal Plotting with ggterm
@@ -11,7 +11,7 @@ Create plots using the CLI tool. Start by inspecting the data, then plot.
 ## Step 1: Inspect Data (Recommended)
 
 ```bash
-bun packages/core/src/cli-plot.ts inspect <data.csv>
+npx ggterm-plot inspect <data.csv>
 ```
 
 Shows column names, types (numeric/categorical/date), unique counts, and sample values.
@@ -19,7 +19,7 @@ Shows column names, types (numeric/categorical/date), unique counts, and sample 
 ## Step 2: Get Suggestions (Optional)
 
 ```bash
-bun packages/core/src/cli-plot.ts suggest <data.csv>
+npx ggterm-plot suggest <data.csv>
 ```
 
 Returns ready-to-run plot commands based on column types.
@@ -27,7 +27,7 @@ Returns ready-to-run plot commands based on column types.
 ## Step 3: Create Plot
 
 ```bash
-bun packages/core/src/cli-plot.ts <data.csv> <x> <y> [color] [title] [geom]
+npx ggterm-plot <data.csv> <x> <y> [color] [title] [geom]
 ```
 
 Arguments:
@@ -42,22 +42,22 @@ Arguments:
 
 Scatter plot:
 ```bash
-bun packages/core/src/cli-plot.ts examples/data/iris.csv sepal_length sepal_width species "Iris Dataset" point
+npx ggterm-plot data/iris.csv sepal_length sepal_width species "Iris Dataset" point
 ```
 
 Line chart:
 ```bash
-bun packages/core/src/cli-plot.ts examples/data/stocks.csv date price symbol "Stock Prices" line
+npx ggterm-plot data/stocks.csv date price symbol "Stock Prices" line
 ```
 
 Histogram:
 ```bash
-bun packages/core/src/cli-plot.ts examples/data/iris.csv sepal_width - - "Sepal Width Distribution" histogram
+npx ggterm-plot data/iris.csv sepal_width - - "Sepal Width Distribution" histogram
 ```
 
 Box plot:
 ```bash
-bun packages/core/src/cli-plot.ts examples/data/experiment.csv treatment response_time - "Response by Treatment" boxplot
+npx ggterm-plot data/experiment.csv treatment response_time - "Response by Treatment" boxplot
 ```
 
 ## Workflow

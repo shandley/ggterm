@@ -64,12 +64,40 @@ If you're using Claude Code, Cursor, or another AI coding assistant:
 
 That's it. The AI handles the rest.
 
+### CLI Plotting
+
+Plot CSV, JSON, or JSONL files directly from the command line:
+
+```bash
+# Install globally for npx usage
+npm install -g @ggterm/core
+
+# Or use npx directly
+npx ggterm-plot data.csv x_column y_column [color] [title] [geom]
+```
+
+Examples:
+
+```bash
+# Scatter plot
+npx ggterm-plot iris.csv sepal_length petal_length species "Iris" point
+
+# Histogram (use - for y)
+npx ggterm-plot iris.csv sepal_width - - "Sepal Width Distribution" histogram
+
+# Inspect data columns
+npx ggterm-plot inspect mydata.csv
+
+# Get plot suggestions
+npx ggterm-plot suggest mydata.csv
+```
+
 ### Interactive REPL
 
 For hands-on exploration:
 
 ```bash
-npx @ggterm/core
+npx ggterm
 ```
 
 ```

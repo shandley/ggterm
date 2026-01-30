@@ -1,12 +1,13 @@
 {
   "name": "@ggterm/core",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Grammar of Graphics engine for terminals",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "ggterm": "./dist/cli.js"
+    "ggterm": "./dist/cli.js",
+    "ggterm-plot": "./dist/cli-plot.js"
   },
   "exports": {
     ".": {
@@ -18,7 +19,7 @@
     }
   },
   "scripts": {
-    "build": "bun build ./src/index.ts ./src/cli.ts --outdir ./dist --target node && tsc --emitDeclarationOnly",
+    "build": "bun build ./src/index.ts ./src/cli.ts ./src/cli-plot.ts --outdir ./dist --target node && tsc --emitDeclarationOnly",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
  * CLI for creating plots and inspecting data
  *
@@ -1039,17 +1039,17 @@ Reference lines (append to geom with +):
   abline@<slope>,<int>   Line with slope and intercept
 
 Examples:
-  bun cli-plot.ts inspect data.csv
-  bun cli-plot.ts data.json x y                    # JSON array of objects
-  bun cli-plot.ts data.jsonl x y color             # JSON Lines format
-  bun cli-plot.ts data.csv x y color "Title" point
-  bun cli-plot.ts data.csv value - - - histogram
-  bun cli-plot.ts data.csv x y - - point+hline@50  # With reference line
-  bun cli-plot.ts data.csv x y - - line+vline@2.5+hline@100
-  bun cli-plot.ts data.csv x y - - point+abline@1,0  # y = x line
-  bun cli-plot.ts history
-  bun cli-plot.ts show 2024-01-26-001
-  bun cli-plot.ts export 2024-01-26-001 figure.html
+  ggterm-plot inspect data.csv
+  ggterm-plot data.json x y                    # JSON array of objects
+  ggterm-plot data.jsonl x y color             # JSON Lines format
+  ggterm-plot data.csv x y color "Title" point
+  ggterm-plot data.csv value - - - histogram
+  ggterm-plot data.csv x y - - point+hline@50  # With reference line
+  ggterm-plot data.csv x y - - line+vline@2.5+hline@100
+  ggterm-plot data.csv x y - - point+abline@1,0  # y = x line
+  ggterm-plot history
+  ggterm-plot show 2024-01-26-001
+  ggterm-plot export 2024-01-26-001 figure.html
 `)
 }
 
@@ -1065,13 +1065,13 @@ const command = args[0]
 
 if (command === 'inspect') {
   if (args.length < 2) {
-    console.error('Usage: bun cli-plot.ts inspect <file>')
+    console.error('Usage: ggterm-plot inspect <file>')
     process.exit(1)
   }
   handleInspect(args[1])
 } else if (command === 'suggest') {
   if (args.length < 2) {
-    console.error('Usage: bun cli-plot.ts suggest <file>')
+    console.error('Usage: ggterm-plot suggest <file>')
     process.exit(1)
   }
   handleSuggest(args[1])
@@ -1079,7 +1079,7 @@ if (command === 'inspect') {
   handleHistory(args[1]) // Optional search query
 } else if (command === 'show') {
   if (args.length < 2) {
-    console.error('Usage: bun cli-plot.ts show <plot-id>')
+    console.error('Usage: ggterm-plot show <plot-id>')
     process.exit(1)
   }
   handleShow(args[1])

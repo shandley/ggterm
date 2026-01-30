@@ -25,7 +25,7 @@ Contains:
 
 ## Current Status
 
-- **Version**: 0.2.5
+- **Version**: 0.2.6
 - **npm**: https://www.npmjs.com/package/@ggterm/core
 - **Repo**: https://github.com/shandley/ggterm (public)
 
@@ -48,18 +48,22 @@ Contains:
 ## CLI Usage
 
 ```bash
-# Supports CSV, JSON, JSONL (auto-detected by extension)
-bun packages/core/src/cli-plot.ts data.csv x y
-bun packages/core/src/cli-plot.ts data.json x y color "Title" point
-bun packages/core/src/cli-plot.ts data.jsonl x y - - histogram
+# After npm install (use npx):
+npx ggterm-plot data.csv x y
+npx ggterm-plot data.json x y color "Title" point
+npx ggterm-plot data.jsonl x y - - histogram
 
 # Reference lines
-bun packages/core/src/cli-plot.ts data.csv x y - - point+hline@50+vline@2
+npx ggterm-plot data.csv x y - - point+hline@50+vline@2
 
 # History and export
-bun packages/core/src/cli-plot.ts history
-bun packages/core/src/cli-plot.ts show 2024-01-26-001
-bun packages/core/src/cli-plot.ts export 2024-01-26-001 output.html
+npx ggterm-plot history
+npx ggterm-plot show 2024-01-26-001
+npx ggterm-plot export 2024-01-26-001 output.html
+
+# Inspect and suggest
+npx ggterm-plot inspect data.csv
+npx ggterm-plot suggest data.csv
 ```
 
 ## Testing
