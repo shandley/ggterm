@@ -2076,6 +2076,95 @@ function parseColor(color: string): RGBA {
 }
 
 /**
+ * Render geom_beeswarm (beeswarm/quasirandom points)
+ * Data should be pre-transformed by stat_beeswarm with x containing offset positions
+ */
+export function renderGeomBeeswarm(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const alpha = (geom.params.alpha as number) ?? 1
+  const fixedColor = geom.params.color as string | undefined
+  const shape = getPointShape(geom.params.shape as string | undefined)
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Data from stat_beeswarm has:
+  // x: groupIndex + offset (continuous)
+  // y: original y value (continuous)
+  // xOriginal: category name
+  // xOffset: the offset applied
+
+  // Color palette for groups
+  const defaultColors: RGBA[] = [
+    { r: 79, g: 169, b: 238, a: 1 },   // Blue
+    { r: 238, g: 136, b: 102, a: 1 },  // Orange
+    { r: 102, g: 204, b: 153, a: 1 },  // Green
+    { r: 204, g: 102, b: 204, a: 1 },  // Purple
+    { r: 255, g: 200, b: 87, a: 1 },   // Yellow
+    { r: 138, g: 201, b: 222, a: 1 },  // Cyan
+    { r: 255, g: 153, b: 153, a: 1 },  // Pink
+    { r: 170, g: 170, b: 170, a: 1 },  // Gray
+  ]
+
+  // Get unique categories to map colors
+  const categories = new Set<string>()
+  for (const row of data) {
+    categories.add(String(row.xOriginal ?? row[aes.x] ?? 'default'))
+  }
+  const categoryList = [...categories]
+
+  for (const row of data) {
+    const xVal = row.x  // This is groupIndex + offset from stat_beeswarm
+    const yVal = row.y
+
+    if (xVal === null || xVal === undefined || yVal === null || yVal === undefined) {
+      continue
+    }
+
+    // Map x (which is groupIndex + offset) to canvas coordinates
+    // We need to map from [0, numGroups) range to the x scale range
+    const numGroups = categoryList.length
+    const xRange = plotRight - plotLeft
+    const xNormalized = (Number(xVal) + 0.5) / numGroups
+    const cx = Math.round(plotLeft + xNormalized * xRange)
+
+    // Map y to canvas coordinates
+    const cy = Math.round(scales.y.map(yVal))
+
+    // Determine color
+    let color: RGBA
+    if (fixedColor) {
+      color = parseColorToRgba(fixedColor)
+    } else if (scales.color && aes.color) {
+      color = getPointColor(row, aes, scales.color)
+    } else {
+      // Color by category
+      const category = String(row.xOriginal ?? row[aes.x] ?? 'default')
+      const categoryIdx = categoryList.indexOf(category)
+      color = defaultColors[categoryIdx % defaultColors.length]
+    }
+
+    // Apply alpha
+    if (alpha < 1) {
+      color = { ...color, a: alpha }
+    }
+
+    // Draw point if within bounds
+    if (cx >= plotLeft && cx <= plotRight && cy >= plotTop && cy <= plotBottom) {
+      canvas.drawChar(cx, cy, shape, color)
+    }
+  }
+}
+
+/**
  * Geometry renderer dispatch
  */
 export function renderGeom(
@@ -2166,6 +2255,10 @@ export function renderGeom(
       break
     case 'smooth':
       renderGeomSmooth(data, geom, aes, scales, canvas)
+      break
+    case 'beeswarm':
+    case 'quasirandom':
+      renderGeomBeeswarm(data, geom, aes, scales, canvas)
       break
     default:
       // Unknown geom type, skip

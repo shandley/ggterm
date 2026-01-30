@@ -16,6 +16,7 @@ import { stat_bin2d } from '../stats/bin2d'
 import { stat_boxplot } from '../stats/boxplot'
 import { stat_count } from '../stats/count'
 import { stat_density, stat_ydensity, stat_xdensity } from '../stats/density'
+import { stat_beeswarm } from '../stats/beeswarm'
 import { stat_smooth } from '../stats/smooth'
 import { stat_summary } from '../stats/summary'
 import { stat_qq, stat_qq_line } from '../stats/qq'
@@ -166,6 +167,16 @@ function applyStatTransform(
       adjust: geom.params.adjust as number,
     })
     return xdensityStat.compute(data, aes)
+  } else if (geom.stat === 'beeswarm') {
+    // For beeswarm plots - arrange points to avoid overlap
+    const beeswarmStat = stat_beeswarm({
+      method: geom.params.method as 'swarm' | 'center' | 'square',
+      cex: geom.params.cex as number,
+      side: geom.params.side as -1 | 0 | 1,
+      priority: geom.params.priority as 'ascending' | 'descending' | 'density' | 'random',
+      dodge: geom.params.dodge as number,
+    })
+    return beeswarmStat.compute(data, aes)
   } else if (geom.stat === 'smooth') {
     const smoothStat = stat_smooth({
       method: geom.params.method as 'lm' | 'loess' | 'lowess',
@@ -343,6 +354,12 @@ export function renderToCanvas(
       scaleData = applyStatTransform(spec.data, geom, spec.aes)
       scaleAes = { ...spec.aes, x: 'x', y: 'y' }
       break
+    } else if (geom.stat === 'beeswarm') {
+      // Beeswarm: keep original x for discrete scale, use original y
+      // The stat transforms x to continuous positions, but we want categorical x-axis
+      scaleData = spec.data  // Use original data for scale building
+      scaleAes = spec.aes    // Use original aesthetics
+      break
     }
   }
 
@@ -415,6 +432,9 @@ export function renderToCanvas(
         geomAes = { ...spec.aes, x: 'x', y: 'y' }
       } else if (geom.stat === 'xdensity') {
         // xdensity outputs x (positions), y (groups), density, scaled
+        geomAes = { ...spec.aes, x: 'x', y: 'y' }
+      } else if (geom.stat === 'beeswarm') {
+        // beeswarm outputs x (groupIndex + offset), y (original y values)
         geomAes = { ...spec.aes, x: 'x', y: 'y' }
       }
 

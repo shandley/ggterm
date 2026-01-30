@@ -13,6 +13,7 @@ A visual guide to all plot types available in ggterm.
 - [Area Charts](#area-charts)
 - [Box Plots](#box-plots)
 - [Ridgeline Plots](#ridgeline-plots)
+- [Beeswarm Plots](#beeswarm-plots)
 - [2D Density Plots](#2d-density-plots)
 - [Heatmaps](#heatmaps)
 - [Error Bars](#error-bars)
@@ -542,6 +543,107 @@ bun packages/core/src/cli-plot.ts data.csv value group - "Distributions" joy
 - **Group comparisons**: Comparing density shapes across categories
 - **Before/after analysis**: Showing distribution shifts
 - **Seasonal patterns**: Visualizing cyclic distribution changes
+
+---
+
+## Beeswarm Plots
+
+Beeswarm plots show individual data points arranged to avoid overlap. Perfect for small-to-medium datasets where you want to see every point while also understanding the distribution.
+
+### Basic Beeswarm Plot
+
+```typescript
+import { gg, geom_beeswarm } from '@ggterm/core'
+
+const data = [
+  { group: 'Control', value: 23 }, { group: 'Control', value: 25 },
+  { group: 'Control', value: 22 }, { group: 'Control', value: 27 },
+  { group: 'Treatment', value: 32 }, { group: 'Treatment', value: 35 },
+  { group: 'Treatment', value: 30 }, { group: 'Treatment', value: 38 },
+  // ... more data points
+]
+
+const plot = gg(data)
+  .aes({ x: 'group', y: 'value' })
+  .geom(geom_beeswarm())
+  .labs({ title: 'Treatment Response' })
+
+console.log(plot.render({ width: 60, height: 20 }))
+```
+
+**Output:**
+```
+                    Treatment Response
+
+    40 ┤
+       │              ●
+       │              ●
+       │              ●
+    30 ┤              ●
+       │     ●
+       │     ●        ●
+       │     ●        ●
+    20 ┤     ●
+       └─────────────────────────────────
+           Control    Treatment
+```
+
+### Customized Beeswarm
+
+```typescript
+import { gg, geom_beeswarm } from '@ggterm/core'
+
+const plot = gg(data)
+  .aes({ x: 'group', y: 'value', color: 'group' })
+  .geom(geom_beeswarm({
+    method: 'swarm',   // Compact arrangement
+    size: 2,           // Larger points
+    alpha: 0.8         // Slight transparency
+  }))
+  .labs({ title: 'Grouped Comparison' })
+
+console.log(plot.render({ width: 60, height: 20 }))
+```
+
+### Quasirandom Alias
+
+```typescript
+import { gg, geom_quasirandom } from '@ggterm/core'
+
+// geom_quasirandom uses the 'center' method
+const plot = gg(data)
+  .aes({ x: 'category', y: 'measurement' })
+  .geom(geom_quasirandom())
+  .labs({ title: 'Quasirandom Plot' })
+
+console.log(plot.render({ width: 60, height: 20 }))
+```
+
+### Beeswarm via CLI
+
+```bash
+# Basic beeswarm plot
+bun packages/core/src/cli-plot.ts data.csv group value - "Group Comparison" beeswarm
+
+# Using quasirandom alias
+bun packages/core/src/cli-plot.ts data.csv treatment response - "Responses" quasirandom
+```
+
+### When to Use Beeswarm Plots
+
+- **Small datasets**: When you have <100 points per group
+- **Individual points matter**: When outliers or specific values are important
+- **Distribution + detail**: Show both overall pattern and individual observations
+- **Comparing groups**: Side-by-side categorical comparisons
+
+### Beeswarm vs Other Distribution Plots
+
+| Plot Type | Best For |
+|-----------|----------|
+| Beeswarm | Small datasets, individual points visible |
+| Violin | Large datasets, smooth distribution shape |
+| Boxplot | Summary statistics, outlier detection |
+| Ridgeline | Comparing many distributions over time |
 
 ---
 

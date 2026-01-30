@@ -28,3 +28,6 @@ export type { StatSummaryParams, SummaryResult, SummaryFun } from './summary'
 
 export { stat_qq, stat_qq_line, computeQQ, computeQQLine } from './qq'
 export type { StatQQParams, QQResult } from './qq'
+
+export { stat_beeswarm, computeBeeswarm } from './beeswarm'
+export type { StatBeeswarmParams, BeeswarmResult } from './beeswarm'

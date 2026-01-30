@@ -24,6 +24,7 @@ import {
   geom_boxplot,
   geom_violin,
   geom_ridgeline,
+  geom_beeswarm,
   geom_area,
   geom_ribbon,
   geom_rug,
@@ -64,7 +65,8 @@ import { handleInit } from './init'
 
 const GEOM_TYPES = [
   'point', 'line', 'path', 'step', 'bar', 'col', 'histogram', 'freqpoly',
-  'boxplot', 'violin', 'ridgeline', 'joy', 'area', 'ribbon', 'rug', 'errorbar', 'errorbarh',
+  'boxplot', 'violin', 'ridgeline', 'joy', 'beeswarm', 'quasirandom',
+  'area', 'ribbon', 'rug', 'errorbar', 'errorbarh',
   'crossbar', 'linerange', 'pointrange', 'smooth', 'segment', 'rect',
   'raster', 'tile', 'bin2d', 'text', 'label', 'contour', 'contour_filled',
   'density_2d', 'qq'
@@ -548,7 +550,7 @@ function validateGeomType(geomType: string): void {
     // Group by category for readability
     console.error(`  Points/Lines: point, line, path, step, smooth, segment`)
     console.error(`  Bars/Areas:   bar, col, histogram, freqpoly, area, ribbon`)
-    console.error(`  Distributions: boxplot, violin, ridgeline, joy, qq, density_2d`)
+    console.error(`  Distributions: boxplot, violin, ridgeline, joy, beeswarm, quasirandom, qq, density_2d`)
     console.error(`  Uncertainty:  errorbar, errorbarh, crossbar, linerange, pointrange`)
     console.error(`  2D:           tile, rect, raster, bin2d, contour, contour_filled`)
     console.error(`  Text:         text, label`)
@@ -712,6 +714,10 @@ function handlePlot(args: string[]): void {
     case 'ridgeline':
     case 'joy':
       plot = plot.geom(geom_ridgeline())
+      break
+    case 'beeswarm':
+    case 'quasirandom':
+      plot = plot.geom(geom_beeswarm())
       break
     case 'bar':
       plot = plot.geom(geom_bar())

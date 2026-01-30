@@ -88,6 +88,9 @@ export {
   // Ridgeline (joy plots)
   geom_ridgeline,
   geom_joy,
+  // Beeswarm plots
+  geom_beeswarm,
+  geom_quasirandom,
 } from './geoms'
 export type {
   PathOptions,
@@ -105,6 +108,7 @@ export type {
   QQLineOptions,
   FreqpolyOptions,
   RidgelineOptions,
+  BeeswarmOptions,
 } from './geoms'
 
 // Position adjustments
@@ -146,6 +150,8 @@ export {
   computeSummary,
   computeQQ,
   computeQQLine,
+  stat_beeswarm,
+  computeBeeswarm,
 } from './stats'
 export type {
   StatBinParams,
@@ -163,6 +169,8 @@ export type {
   SummaryFun,
   StatQQParams,
   QQResult,
+  StatBeeswarmParams,
+  BeeswarmResult,
 } from './stats'
 
 // Scales

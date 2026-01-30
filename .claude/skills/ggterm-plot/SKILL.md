@@ -80,6 +80,7 @@ $ARGUMENTS
 | Distribution by group | `geom_boxplot()` | Compare medians |
 | Density shape | `geom_violin()` | Distribution shape |
 | Stacked distributions | `geom_ridgeline()` | Joy plot / ridgeline |
+| Individual points | `geom_beeswarm()` | Avoid overlap in groups |
 | Category comparison | `geom_bar()` | Counts per category |
 | Known values per category | `geom_col()` | Bar heights from data |
 | Trend with uncertainty | `geom_smooth()` | Fitted line |
@@ -248,7 +249,7 @@ For detailed examples, see [examples/basic-plots.md](examples/basic-plots.md).
 
 Point/line: `geom_point`, `geom_line`, `geom_path`, `geom_step`
 Bar: `geom_bar`, `geom_col`, `geom_histogram`, `geom_freqpoly`
-Distribution: `geom_boxplot`, `geom_violin`, `geom_ridgeline`, `geom_joy`, `geom_density_2d`, `geom_qq`, `geom_qq_line`
+Distribution: `geom_boxplot`, `geom_violin`, `geom_ridgeline`, `geom_joy`, `geom_beeswarm`, `geom_quasirandom`, `geom_density_2d`, `geom_qq`, `geom_qq_line`
 Area: `geom_area`, `geom_ribbon`
 Reference: `geom_hline`, `geom_vline`, `geom_abline`, `geom_segment`
 Text: `geom_text`, `geom_label`

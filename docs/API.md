@@ -727,6 +727,49 @@ bun packages/core/src/cli-plot.ts data.csv temp month - "Temperatures" ridgeline
 bun packages/core/src/cli-plot.ts data.csv value category - "Distribution" joy
 ```
 
+### geom_beeswarm() / geom_quasirandom()
+
+Beeswarm plots arrange points to avoid overlap while showing individual data points. Combines the benefits of jitter plots and violin plots.
+
+```typescript
+import { geom_beeswarm, geom_quasirandom } from '@ggterm/core'
+
+// Basic beeswarm plot
+gg(data)
+  .aes({ x: 'group', y: 'value' })
+  .geom(geom_beeswarm())
+  .labs({ title: 'Treatment Response' })
+
+// Using quasirandom alias (uses center method)
+gg(data)
+  .aes({ x: 'treatment', y: 'response', color: 'treatment' })
+  .geom(geom_quasirandom())
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `method` | string | 'swarm' | Arrangement method: 'swarm' (compact), 'center' (alternating), 'square' (grid) |
+| `size` | number | 1 | Point size multiplier |
+| `cex` | number | 1 | Point size for collision detection |
+| `alpha` | number | 1 | Opacity (0-1) |
+| `color` | string | null | Fixed point color |
+| `shape` | string | 'circle' | Point shape |
+| `side` | number | 0 | Side to place points: 0 (both), -1 (left), 1 (right) |
+| `priority` | string | 'ascending' | Order to place points: 'ascending', 'descending', 'density', 'random' |
+| `dodge` | number | 0.8 | Width for categorical spacing |
+
+#### CLI Usage
+
+```bash
+# Basic beeswarm plot
+bun packages/core/src/cli-plot.ts data.csv group value - "Comparison" beeswarm
+
+# Using quasirandom alias
+bun packages/core/src/cli-plot.ts data.csv treatment response - "Response" quasirandom
+```
+
 ---
 
 ## Annotations
