@@ -36,7 +36,7 @@ Arguments:
 - `y` - Column name for y-axis (use `-` for histogram)
 - `color` - Column name for color (optional, use `-` to skip)
 - `title` - Plot title (optional, use `-` to skip)
-- `geom` - Geometry type: `point` (default), `line`, `path`, `step`, `bar`, `histogram`, `freqpoly`, `boxplot`, `violin`, `ridgeline`, `joy`, `area`, `rug`, `errorbar`, `smooth`, `segment`, `rect`, `tile`, `text`, `contour`, `density_2d`, `qq`
+- `geom` - Geometry type: `point` (default), `line`, `path`, `step`, `bar`, `histogram`, `freqpoly`, `boxplot`, `violin`, `ridgeline`, `joy`, `beeswarm`, `quasirandom`, `dumbbell`, `lollipop`, `waffle`, `sparkline`, `bullet`, `braille`, `area`, `rug`, `errorbar`, `smooth`, `segment`, `rect`, `tile`, `text`, `contour`, `density_2d`, `qq`
 
 ## Examples
 
@@ -81,6 +81,12 @@ $ARGUMENTS
 | Density shape | `geom_violin()` | Distribution shape |
 | Stacked distributions | `geom_ridgeline()` | Joy plot / ridgeline |
 | Individual points | `geom_beeswarm()` | Avoid overlap in groups |
+| Before/after comparison | `geom_dumbbell()` | Two connected points |
+| Sparse rankings | `geom_lollipop()` | Clean bar alternative |
+| Part-of-whole | `geom_waffle()` | Grid-based pie alternative |
+| Inline trends | `geom_sparkline()` | Word-sized charts |
+| KPI progress | `geom_bullet()` | Progress with target |
+| High resolution | `geom_braille()` | 8x detail using braille |
 | Category comparison | `geom_bar()` | Counts per category |
 | Known values per category | `geom_col()` | Bar heights from data |
 | Trend with uncertainty | `geom_smooth()` | Fitted line |

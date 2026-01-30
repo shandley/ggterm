@@ -25,6 +25,12 @@ import {
   geom_violin,
   geom_ridgeline,
   geom_beeswarm,
+  geom_dumbbell,
+  geom_lollipop,
+  geom_waffle,
+  geom_sparkline,
+  geom_bullet,
+  geom_braille,
   geom_area,
   geom_ribbon,
   geom_rug,
@@ -66,6 +72,7 @@ import { handleInit } from './init'
 const GEOM_TYPES = [
   'point', 'line', 'path', 'step', 'bar', 'col', 'histogram', 'freqpoly',
   'boxplot', 'violin', 'ridgeline', 'joy', 'beeswarm', 'quasirandom',
+  'dumbbell', 'lollipop', 'waffle', 'sparkline', 'bullet', 'braille',
   'area', 'ribbon', 'rug', 'errorbar', 'errorbarh',
   'crossbar', 'linerange', 'pointrange', 'smooth', 'segment', 'rect',
   'raster', 'tile', 'bin2d', 'text', 'label', 'contour', 'contour_filled',
@@ -718,6 +725,24 @@ function handlePlot(args: string[]): void {
     case 'beeswarm':
     case 'quasirandom':
       plot = plot.geom(geom_beeswarm())
+      break
+    case 'dumbbell':
+      plot = plot.geom(geom_dumbbell())
+      break
+    case 'lollipop':
+      plot = plot.geom(geom_lollipop())
+      break
+    case 'waffle':
+      plot = plot.geom(geom_waffle())
+      break
+    case 'sparkline':
+      plot = plot.geom(geom_sparkline())
+      break
+    case 'bullet':
+      plot = plot.geom(geom_bullet())
+      break
+    case 'braille':
+      plot = plot.geom(geom_braille())
       break
     case 'bar':
       plot = plot.geom(geom_bar())

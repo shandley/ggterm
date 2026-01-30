@@ -770,6 +770,238 @@ bun packages/core/src/cli-plot.ts data.csv group value - "Comparison" beeswarm
 bun packages/core/src/cli-plot.ts data.csv treatment response - "Response" quasirandom
 ```
 
+### geom_dumbbell()
+
+Dumbbell charts show two points connected by a line. Perfect for before/after comparisons, paired data, or showing ranges.
+
+```typescript
+import { geom_dumbbell } from '@ggterm/core'
+
+// Before/after comparison
+const data = [
+  { category: 'A', before: 10, xend: 25 },
+  { category: 'B', before: 15, xend: 20 },
+  { category: 'C', before: 8, xend: 30 },
+]
+
+gg(data)
+  .aes({ x: 'before', y: 'category' })
+  .geom(geom_dumbbell())
+  .labs({ title: 'Before vs After' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `size` | number | 2 | Size of start points |
+| `sizeEnd` | number | size | Size of end points |
+| `color` | string | null | Color of start points |
+| `colorEnd` | string | color | Color of end points |
+| `lineColor` | string | '#666666' | Color of connecting line |
+| `lineWidth` | number | 1 | Width of connecting line |
+| `alpha` | number | 1 | Opacity (0-1) |
+| `shape` | string | 'circle' | Point shape |
+
+#### CLI Usage
+
+```bash
+# Dumbbell plot with xend in data
+bun packages/core/src/cli-plot.ts data.csv start category - "Comparison" dumbbell
+```
+
+### geom_lollipop()
+
+Lollipop charts show a line from baseline to a point with a dot at the end. A cleaner alternative to bar charts, especially for sparse data.
+
+```typescript
+import { geom_lollipop } from '@ggterm/core'
+
+// Product sales comparison
+const data = [
+  { product: 'Apple', sales: 150 },
+  { product: 'Banana', sales: 200 },
+  { product: 'Cherry', sales: 80 },
+]
+
+gg(data)
+  .aes({ x: 'product', y: 'sales' })
+  .geom(geom_lollipop())
+  .labs({ title: 'Product Sales' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `size` | number | 2 | Size of the point |
+| `color` | string | null | Color of the point |
+| `lineColor` | string | null | Color of the line (defaults to dimmer point color) |
+| `lineWidth` | number | 1 | Width of the line |
+| `alpha` | number | 1 | Opacity (0-1) |
+| `shape` | string | 'circle' | Point shape |
+| `direction` | string | 'vertical' | 'vertical' or 'horizontal' |
+| `baseline` | number | 0 | Baseline value for the lines |
+
+#### CLI Usage
+
+```bash
+# Vertical lollipop
+bun packages/core/src/cli-plot.ts data.csv category value - "Sales" lollipop
+
+# With custom baseline
+bun packages/core/src/cli-plot.ts data.csv product profit - "Profit vs Target" lollipop
+```
+
+---
+
+## Terminal-Native Geoms
+
+These geoms are specifically designed for terminal display using Unicode characters.
+
+### geom_waffle()
+
+Grid-based part-of-whole visualization. A more readable alternative to pie charts.
+
+```typescript
+import { geom_waffle } from '@ggterm/core'
+
+const data = [
+  { company: 'Apple', share: 45 },
+  { company: 'Samsung', share: 30 },
+  { company: 'Other', share: 25 },
+]
+
+gg(data)
+  .aes({ fill: 'company', y: 'share' })
+  .geom(geom_waffle())
+  .labs({ title: 'Market Share' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `rows` | number | 10 | Number of rows in the grid |
+| `cols` | number | 10 | Number of columns in the grid |
+| `n_total` | number | 100 | Total units to represent |
+| `fill_char` | string | '█' | Character for filled cells |
+| `empty_char` | string | '░' | Character for empty cells |
+| `show_legend` | boolean | true | Show category legend |
+| `flip` | boolean | false | Fill by row instead of column |
+| `gap` | number | 0 | Gap between cells |
+
+### geom_sparkline()
+
+Inline mini-charts showing trends. Uses Unicode block characters for compact visualization.
+
+```typescript
+import { geom_sparkline, SPARK_BARS } from '@ggterm/core'
+
+const data = [
+  { month: 1, value: 10 },
+  { month: 2, value: 15 },
+  { month: 3, value: 12 },
+  // ...
+]
+
+gg(data)
+  .aes({ x: 'month', y: 'value' })
+  .geom(geom_sparkline())
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `type` | string | 'bar' | Sparkline type: 'bar', 'line', 'dot' |
+| `width` | number | 20 | Width in characters |
+| `height` | number | 1 | Height (for line type) |
+| `show_minmax` | boolean | false | Highlight min/max points |
+| `color` | string | null | Sparkline color |
+| `min_color` | string | '#e74c3c' | Minimum point color |
+| `max_color` | string | '#2ecc71' | Maximum point color |
+| `normalize` | boolean | true | Normalize to 0-1 range |
+
+#### Available Characters
+
+```typescript
+import { SPARK_BARS, SPARK_DOTS } from '@ggterm/core'
+
+// Bar characters: ▁▂▃▄▅▆▇█
+SPARK_BARS // ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
+
+// Dot characters for smoother lines
+SPARK_DOTS // ['⠀', '⢀', '⢠', '⢰', '⢸', '⣸', '⣾', '⣿']
+```
+
+### geom_bullet()
+
+Bullet charts - compact progress bars with target markers. Stephen Few's alternative to gauges.
+
+```typescript
+import { geom_bullet } from '@ggterm/core'
+
+const data = [
+  { metric: 'Revenue', value: 85, target: 90 },
+  { metric: 'Profit', value: 70, target: 80 },
+  { metric: 'Growth', value: 95, target: 75 },
+]
+
+gg(data)
+  .aes({ x: 'metric', y: 'value' })
+  .geom(geom_bullet())
+  .labs({ title: 'KPI Dashboard' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `width` | number | 40 | Width of chart in characters |
+| `height` | number | 1 | Height per bullet |
+| `target_char` | string | '│' | Target marker character |
+| `bar_char` | string | '█' | Bar character |
+| `range_chars` | array | ['░','▒','▓'] | Background range characters |
+| `show_values` | boolean | true | Show numeric values |
+| `target_color` | string | '#e74c3c' | Target marker color |
+| `orientation` | string | 'horizontal' | 'horizontal' or 'vertical' |
+
+### geom_braille()
+
+High-resolution plots using Unicode Braille patterns. Each character contains a 2x4 grid of dots for 8x the resolution.
+
+```typescript
+import { geom_braille, BRAILLE_BASE, BRAILLE_DOTS } from '@ggterm/core'
+
+gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_braille({ type: 'line' }))
+  .labs({ title: 'High-Resolution Plot' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `type` | string | 'point' | Plot type: 'point' or 'line' |
+| `color` | string | null | Dot/line color |
+| `fill` | boolean | false | Fill area under line |
+| `alpha` | number | 1 | Opacity (0-1) |
+| `dot_size` | number | 1 | Dots per data point (1-4) |
+
+#### Braille Constants
+
+```typescript
+import { BRAILLE_BASE, BRAILLE_DOTS } from '@ggterm/core'
+
+// Base Unicode point for braille
+BRAILLE_BASE // 0x2800
+
+// Dot bit positions: [col][row]
+BRAILLE_DOTS // [[0x01,0x02,0x04,0x40], [0x08,0x10,0x20,0x80]]
+```
+
 ---
 
 ## Annotations

@@ -2165,6 +2165,707 @@ export function renderGeomBeeswarm(
 }
 
 /**
+ * Render geom_dumbbell (two points connected by a line)
+ * For before/after comparisons or showing ranges
+ * Requires x (start), xend (end), y (category) aesthetics
+ */
+export function renderGeomDumbbell(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  // Note: size and sizeEnd params available for future use with larger point characters
+  const lineColor = parseColorToRgba(geom.params.lineColor ?? '#666666')
+  const alpha = (geom.params.alpha as number) ?? 1
+  const shape = getPointShape(geom.params.shape as string | undefined)
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Color palette for groups
+  const defaultColors: RGBA[] = [
+    { r: 79, g: 169, b: 238, a: 1 },   // Blue
+    { r: 238, g: 136, b: 102, a: 1 },  // Orange
+    { r: 102, g: 204, b: 153, a: 1 },  // Green
+    { r: 204, g: 102, b: 204, a: 1 },  // Purple
+  ]
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i]
+
+    // Get start and end x values
+    const xVal = row[aes.x]
+    const xendVal = row['xend'] ?? row[aes.x]
+    const yVal = row[aes.y]
+
+    if (xVal === null || xVal === undefined || yVal === null || yVal === undefined) {
+      continue
+    }
+
+    // Map to canvas coordinates
+    const x1 = Math.round(scales.x.map(xVal))
+    const x2 = Math.round(scales.x.map(xendVal))
+    const cy = Math.round(scales.y.map(yVal))
+
+    // Get colors
+    let startColor: RGBA
+    let endColor: RGBA
+
+    if (geom.params.color) {
+      startColor = parseColorToRgba(geom.params.color)
+    } else if (scales.color && aes.color) {
+      startColor = getPointColor(row, aes, scales.color)
+    } else {
+      startColor = defaultColors[0]
+    }
+
+    if (geom.params.colorEnd) {
+      endColor = parseColorToRgba(geom.params.colorEnd)
+    } else {
+      endColor = geom.params.color ? startColor : defaultColors[1]
+    }
+
+    // Apply alpha
+    if (alpha < 1) {
+      startColor = { ...startColor, a: alpha }
+      endColor = { ...endColor, a: alpha }
+    }
+
+    // Draw connecting line first (behind points)
+    if (cy >= plotTop && cy <= plotBottom) {
+      const left = Math.max(plotLeft, Math.min(x1, x2))
+      const right = Math.min(plotRight, Math.max(x1, x2))
+      for (let x = left; x <= right; x++) {
+        canvas.drawChar(x, cy, '─', lineColor)
+      }
+    }
+
+    // Draw start point
+    if (x1 >= plotLeft && x1 <= plotRight && cy >= plotTop && cy <= plotBottom) {
+      canvas.drawChar(x1, cy, shape, startColor)
+    }
+
+    // Draw end point
+    if (x2 >= plotLeft && x2 <= plotRight && cy >= plotTop && cy <= plotBottom) {
+      canvas.drawChar(x2, cy, shape, endColor)
+    }
+  }
+}
+
+/**
+ * Render geom_lollipop (line from baseline to point with dot at end)
+ * A cleaner alternative to bar charts, especially for sparse data
+ */
+export function renderGeomLollipop(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  // Note: size param available for future use with larger point characters
+  const alpha = (geom.params.alpha as number) ?? 1
+  const baseline = (geom.params.baseline as number) ?? 0
+  const direction = (geom.params.direction as string) ?? 'vertical'
+  const shape = getPointShape(geom.params.shape as string | undefined)
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Color palette for categories
+  const defaultColors: RGBA[] = [
+    { r: 79, g: 169, b: 238, a: 1 },   // Blue
+    { r: 238, g: 136, b: 102, a: 1 },  // Orange
+    { r: 102, g: 204, b: 153, a: 1 },  // Green
+    { r: 204, g: 102, b: 204, a: 1 },  // Purple
+    { r: 255, g: 200, b: 87, a: 1 },   // Yellow
+    { r: 138, g: 201, b: 222, a: 1 },  // Cyan
+  ]
+
+  // Get unique x categories if discrete
+  const xValues = [...new Set(data.map(row => row[aes.x]))]
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i]
+
+    const xVal = row[aes.x]
+    const yVal = row[aes.y]
+
+    if (xVal === null || xVal === undefined || yVal === null || yVal === undefined) {
+      continue
+    }
+
+    // Map to canvas coordinates
+    const cx = Math.round(scales.x.map(xVal))
+    const cy = Math.round(scales.y.map(yVal))
+
+    // Get color
+    let color: RGBA
+    if (geom.params.color) {
+      color = parseColorToRgba(geom.params.color)
+    } else if (scales.color && aes.color) {
+      color = getPointColor(row, aes, scales.color)
+    } else {
+      // Color by x category index
+      const categoryIdx = xValues.indexOf(xVal)
+      color = defaultColors[categoryIdx % defaultColors.length]
+    }
+
+    // Get line color (same as point or slightly dimmer)
+    let lineColor: RGBA
+    if (geom.params.lineColor) {
+      lineColor = parseColorToRgba(geom.params.lineColor)
+    } else {
+      // Slightly dimmer version of point color
+      lineColor = {
+        r: Math.round(color.r * 0.7),
+        g: Math.round(color.g * 0.7),
+        b: Math.round(color.b * 0.7),
+        a: color.a,
+      }
+    }
+
+    // Apply alpha
+    if (alpha < 1) {
+      color = { ...color, a: alpha }
+      lineColor = { ...lineColor, a: alpha }
+    }
+
+    if (direction === 'vertical') {
+      // Vertical lollipop: line from baseline to y, point at y
+      let baselineY = Math.round(scales.y.map(baseline))
+      baselineY = Math.max(plotTop, Math.min(plotBottom, baselineY))
+
+      // Draw the stem (line from baseline to point)
+      if (cx >= plotLeft && cx <= plotRight) {
+        const top = Math.min(cy, baselineY)
+        const bottom = Math.max(cy, baselineY)
+        for (let y = top; y <= bottom; y++) {
+          if (y >= plotTop && y <= plotBottom) {
+            canvas.drawChar(cx, y, '│', lineColor)
+          }
+        }
+      }
+
+      // Draw the point at the end
+      if (cx >= plotLeft && cx <= plotRight && cy >= plotTop && cy <= plotBottom) {
+        canvas.drawChar(cx, cy, shape, color)
+      }
+    } else {
+      // Horizontal lollipop: line from baseline to x, point at x
+      let baselineX = Math.round(scales.x.map(baseline))
+      baselineX = Math.max(plotLeft, Math.min(plotRight, baselineX))
+
+      // Draw the stem (line from baseline to point)
+      if (cy >= plotTop && cy <= plotBottom) {
+        const left = Math.min(cx, baselineX)
+        const right = Math.max(cx, baselineX)
+        for (let x = left; x <= right; x++) {
+          if (x >= plotLeft && x <= plotRight) {
+            canvas.drawChar(x, cy, '─', lineColor)
+          }
+        }
+      }
+
+      // Draw the point at the end
+      if (cx >= plotLeft && cx <= plotRight && cy >= plotTop && cy <= plotBottom) {
+        canvas.drawChar(cx, cy, shape, color)
+      }
+    }
+  }
+}
+
+/**
+ * Render geom_waffle (grid-based part-of-whole visualization)
+ * Data should have fill/category and value columns
+ */
+export function renderGeomWaffle(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const rows = (geom.params.rows as number) ?? 10
+  const cols = (geom.params.cols as number) ?? 10
+  // n_total param available for custom total values
+  const fillChar = (geom.params.fill_char as string) ?? '█'
+  const emptyChar = (geom.params.empty_char as string) ?? '░'
+  const showLegend = (geom.params.show_legend as boolean) ?? true
+  const flip = (geom.params.flip as boolean) ?? false
+  const gap = (geom.params.gap as number) ?? 0
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Color palette for categories
+  const defaultColors: RGBA[] = [
+    { r: 79, g: 169, b: 238, a: 1 },   // Blue
+    { r: 238, g: 136, b: 102, a: 1 },  // Orange
+    { r: 102, g: 204, b: 153, a: 1 },  // Green
+    { r: 204, g: 102, b: 204, a: 1 },  // Purple
+    { r: 255, g: 200, b: 87, a: 1 },   // Yellow
+    { r: 138, g: 201, b: 222, a: 1 },  // Cyan
+    { r: 255, g: 153, b: 153, a: 1 },  // Pink
+    { r: 170, g: 170, b: 170, a: 1 },  // Gray
+  ]
+
+  // Calculate values and proportions
+  const fillField = aes.fill || aes.color || 'category'
+  const valueField = aes.y || 'value'
+
+  // Group data by category
+  const categories = new Map<string, number>()
+  let totalValue = 0
+
+  for (const row of data) {
+    const cat = String(row[fillField] ?? 'default')
+    const val = Number(row[valueField]) || 1
+    categories.set(cat, (categories.get(cat) ?? 0) + val)
+    totalValue += val
+  }
+
+  // Calculate cells per category
+  const cellsPerCategory: Array<{ category: string; cells: number; color: RGBA }> = []
+  const categoryList = [...categories.keys()]
+  let cellsAssigned = 0
+
+  for (let i = 0; i < categoryList.length; i++) {
+    const cat = categoryList[i]
+    const val = categories.get(cat)!
+    const proportion = val / totalValue
+    const cells = Math.round(proportion * rows * cols)
+    const color = scales.color?.map(cat) ?? defaultColors[i % defaultColors.length]
+    cellsPerCategory.push({ category: cat, cells, color })
+    cellsAssigned += cells
+  }
+
+  // Adjust for rounding errors
+  if (cellsAssigned < rows * cols && cellsPerCategory.length > 0) {
+    cellsPerCategory[0].cells += (rows * cols - cellsAssigned)
+  }
+
+  // Build the grid
+  const grid: Array<{ char: string; color: RGBA }> = []
+  for (const { cells, color } of cellsPerCategory) {
+    for (let i = 0; i < cells; i++) {
+      grid.push({ char: fillChar, color })
+    }
+  }
+
+  // Fill remaining with empty
+  const emptyColor: RGBA = { r: 80, g: 80, b: 80, a: 0.3 }
+  while (grid.length < rows * cols) {
+    grid.push({ char: emptyChar, color: emptyColor })
+  }
+
+  // Calculate cell size in canvas coordinates
+  const availableWidth = plotRight - plotLeft - (showLegend ? 15 : 0)
+  const availableHeight = plotBottom - plotTop
+  const cellWidth = Math.max(1, Math.floor(availableWidth / cols)) + gap
+  const cellHeight = Math.max(1, Math.floor(availableHeight / rows)) + gap
+
+  // Draw the waffle
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      let idx: number
+      if (flip) {
+        idx = row * cols + col
+      } else {
+        idx = col * rows + (rows - 1 - row)
+      }
+
+      if (idx >= grid.length) continue
+
+      const cell = grid[idx]
+      const x = plotLeft + col * cellWidth
+      const y = plotTop + row * cellHeight
+
+      if (x >= plotLeft && x < plotRight - (showLegend ? 15 : 0) && y >= plotTop && y <= plotBottom) {
+        canvas.drawChar(x, y, cell.char, cell.color)
+      }
+    }
+  }
+
+  // Draw legend
+  if (showLegend) {
+    const legendX = plotRight - 12
+    let legendY = plotTop
+
+    for (let i = 0; i < cellsPerCategory.length && legendY < plotBottom; i++) {
+      const { category, cells, color } = cellsPerCategory[i]
+      const pct = Math.round((cells / (rows * cols)) * 100)
+      const label = `${category.slice(0, 6)} ${pct}%`
+
+      canvas.drawChar(legendX, legendY, '█', color)
+      canvas.drawString(legendX + 2, legendY, label, { r: 180, g: 180, b: 180, a: 1 })
+      legendY += 2
+    }
+  }
+}
+
+/**
+ * Render geom_sparkline (inline mini chart)
+ * Creates compact trend visualizations
+ */
+export function renderGeomSparkline(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const sparkType = (geom.params.sparkType as string) ?? 'bar'
+  const width = (geom.params.width as number) ?? 20
+  const showMinmax = (geom.params.show_minmax as boolean) ?? false
+  const normalize = (geom.params.normalize as boolean) ?? true
+  const minColor = parseColorToRgba(geom.params.min_color ?? '#e74c3c')
+  const maxColor = parseColorToRgba(geom.params.max_color ?? '#2ecc71')
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Spark bar characters (8 levels)
+  const SPARK_CHARS = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
+
+  // Default color
+  const defaultColor: RGBA = { r: 79, g: 169, b: 238, a: 1 }
+
+  // Group data if there's a group aesthetic
+  const groupField = aes.group || aes.color
+  const groups = new Map<string, DataSource>()
+
+  if (groupField) {
+    for (const row of data) {
+      const key = String(row[groupField] ?? 'default')
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(row)
+    }
+  } else {
+    groups.set('default', [...data])
+  }
+
+  let currentY = plotTop
+
+  for (const [groupKey, groupData] of groups) {
+    // Sort by x if present
+    const sorted = aes.x
+      ? [...groupData].sort((a, b) => Number(a[aes.x]) - Number(b[aes.x]))
+      : groupData
+
+    // Extract y values
+    const values = sorted.map(row => Number(row[aes.y]) || 0)
+
+    if (values.length === 0) continue
+
+    // Find min/max
+    const minVal = Math.min(...values)
+    const maxVal = Math.max(...values)
+    const minIdx = values.indexOf(minVal)
+    const maxIdx = values.indexOf(maxVal)
+    const range = maxVal - minVal || 1
+
+    // Get color for this group
+    const color = scales.color?.map(groupKey) ?? defaultColor
+
+    // Sample or interpolate values to fit width
+    const sparkValues: number[] = []
+    if (values.length <= width) {
+      sparkValues.push(...values)
+    } else {
+      // Downsample
+      for (let i = 0; i < width; i++) {
+        const idx = Math.floor(i * values.length / width)
+        sparkValues.push(values[idx])
+      }
+    }
+
+    // Draw the sparkline
+    for (let i = 0; i < sparkValues.length; i++) {
+      const val = sparkValues[i]
+      const normalized = normalize ? (val - minVal) / range : val / (maxVal || 1)
+      const charIdx = Math.min(7, Math.max(0, Math.floor(normalized * 8)))
+      const char = sparkType === 'dot' ? '•' : SPARK_CHARS[charIdx]
+
+      const x = plotLeft + i
+      const y = currentY
+
+      // Determine color (highlight min/max if enabled)
+      let pointColor = color
+      if (showMinmax) {
+        const origIdx = Math.floor(i * values.length / sparkValues.length)
+        if (origIdx === minIdx) pointColor = minColor
+        else if (origIdx === maxIdx) pointColor = maxColor
+      }
+
+      if (x < plotLeft + width && y >= plotTop && y <= plotBottom) {
+        canvas.drawChar(x, y, char, pointColor)
+      }
+    }
+
+    // Draw label if grouped
+    if (groupField && groups.size > 1) {
+      const labelX = plotLeft + width + 1
+      canvas.drawString(labelX, currentY, groupKey.slice(0, 8), { r: 180, g: 180, b: 180, a: 1 })
+    }
+
+    currentY += 2
+  }
+}
+
+/**
+ * Render geom_bullet (bullet chart with target)
+ * Stephen Few's compact progress visualization
+ */
+export function renderGeomBullet(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const width = (geom.params.width as number) ?? 40
+  const targetChar = (geom.params.target_char as string) ?? '│'
+  const barChar = (geom.params.bar_char as string) ?? '█'
+  const rangeChars = (geom.params.range_chars as [string, string, string]) ?? ['░', '▒', '▓']
+  const showValues = (geom.params.show_values as boolean) ?? true
+  const targetColor = parseColorToRgba(geom.params.target_color ?? '#e74c3c')
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  // Default colors
+  const defaultColors: RGBA[] = [
+    { r: 79, g: 169, b: 238, a: 1 },   // Blue
+    { r: 238, g: 136, b: 102, a: 1 },  // Orange
+    { r: 102, g: 204, b: 153, a: 1 },  // Green
+  ]
+
+  // Range colors (light to dark gray)
+  const rangeColors: RGBA[] = [
+    { r: 60, g: 60, b: 60, a: 1 },     // Poor (darkest)
+    { r: 90, g: 90, b: 90, a: 1 },     // Satisfactory
+    { r: 120, g: 120, b: 120, a: 1 },  // Good (lightest)
+  ]
+
+  let currentY = plotTop
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i]
+
+    // Get values
+    const label = aes.x ? String(row[aes.x]).slice(0, 10) : `Item ${i + 1}`
+    const value = Number(row[aes.y]) || 0
+    const target = Number(row['target']) || null
+    const maxValue = Number(row['max']) || Math.max(value, target || 0) * 1.2
+
+    // Get ranges if specified (default: 60%, 80%, 100% of max)
+    const ranges = row['ranges'] as number[] ?? [maxValue * 0.6, maxValue * 0.8, maxValue]
+
+    const color = scales.color?.map(label) ?? defaultColors[i % defaultColors.length]
+
+    // Draw label
+    const labelWidth = 12
+    canvas.drawString(plotLeft, currentY, label.padEnd(labelWidth), { r: 180, g: 180, b: 180, a: 1 })
+
+    const barStart = plotLeft + labelWidth
+    const barWidth = Math.min(width, scales.x.range[1] - barStart - (showValues ? 8 : 0))
+
+    // Draw background ranges
+    for (let r = ranges.length - 1; r >= 0; r--) {
+      const rangeWidth = Math.round((ranges[r] / maxValue) * barWidth)
+      for (let x = 0; x < rangeWidth; x++) {
+        if (barStart + x <= scales.x.range[1]) {
+          canvas.drawChar(barStart + x, currentY, rangeChars[r], rangeColors[r])
+        }
+      }
+    }
+
+    // Draw actual value bar
+    const valueWidth = Math.round((value / maxValue) * barWidth)
+    for (let x = 0; x < valueWidth; x++) {
+      if (barStart + x <= scales.x.range[1]) {
+        canvas.drawChar(barStart + x, currentY, barChar, color)
+      }
+    }
+
+    // Draw target marker
+    if (target !== null) {
+      const targetX = barStart + Math.round((target / maxValue) * barWidth)
+      if (targetX >= barStart && targetX <= barStart + barWidth) {
+        canvas.drawChar(targetX, currentY, targetChar, targetColor)
+      }
+    }
+
+    // Draw value label
+    if (showValues) {
+      const valueStr = value.toFixed(0)
+      canvas.drawString(barStart + barWidth + 2, currentY, valueStr, { r: 180, g: 180, b: 180, a: 1 })
+    }
+
+    currentY += 2
+    if (currentY > plotBottom) break
+  }
+}
+
+/**
+ * Render geom_braille (high-resolution braille plot)
+ * Uses Unicode braille patterns for 8x resolution
+ */
+export function renderGeomBraille(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const brailleType = (geom.params.brailleType as string) ?? 'point'
+  const fill = (geom.params.fill as boolean) ?? false
+  const alpha = (geom.params.alpha as number) ?? 1
+
+  // Braille constants
+  const BRAILLE_BASE = 0x2800
+  // Dot positions: [col][row] -> bit
+  // Each cell is 2 cols x 4 rows
+  const DOTS: number[][] = [
+    [0x01, 0x02, 0x04, 0x40], // Left column
+    [0x08, 0x10, 0x20, 0x80], // Right column
+  ]
+
+  // Get plot area boundaries
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+  const plotBottom = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+  const plotWidth = plotRight - plotLeft
+  const plotHeight = plotBottom - plotTop
+
+  // Create braille buffer (each cell is 2x4 dots)
+  const brailleWidth = plotWidth
+  const brailleHeight = plotHeight
+  const buffer: number[][] = []
+  for (let y = 0; y < brailleHeight; y++) {
+    buffer[y] = new Array(brailleWidth).fill(0)
+  }
+
+  // Default color
+  const defaultColor: RGBA = { r: 79, g: 169, b: 238, a: 1 }
+  const color = geom.params.color
+    ? parseColorToRgba(geom.params.color)
+    : defaultColor
+
+  // Apply alpha
+  const finalColor: RGBA = alpha < 1
+    ? { ...color, a: alpha }
+    : color
+
+  // Sort data by x for line drawing
+  const sorted = aes.x
+    ? [...data].sort((a, b) => Number(a[aes.x]) - Number(b[aes.x]))
+    : data
+
+  // Set dots in the buffer
+  const setDot = (canvasX: number, canvasY: number) => {
+    // Convert canvas coordinates to braille sub-coordinates
+    // Each character cell = 2 dots wide x 4 dots tall
+    const subX = (canvasX - plotLeft) * 2
+    const subY = (canvasY - plotTop) * 4
+
+    // Calculate which character cell and which dot within it
+    const cellX = Math.floor(subX / 2)
+    const cellY = Math.floor(subY / 4)
+    const dotCol = subX % 2
+    const dotRow = subY % 4
+
+    if (cellX >= 0 && cellX < brailleWidth && cellY >= 0 && cellY < brailleHeight) {
+      if (dotCol >= 0 && dotCol < 2 && dotRow >= 0 && dotRow < 4) {
+        buffer[cellY][cellX] |= DOTS[dotCol][dotRow]
+      }
+    }
+  }
+
+  // Plot points
+  let prevCx: number | null = null
+  let prevCy: number | null = null
+
+  for (const row of sorted) {
+    const xVal = row[aes.x]
+    const yVal = row[aes.y]
+
+    if (xVal === null || xVal === undefined || yVal === null || yVal === undefined) {
+      prevCx = null
+      prevCy = null
+      continue
+    }
+
+    const cx = Math.round(scales.x.map(xVal))
+    const cy = Math.round(scales.y.map(yVal))
+
+    if (brailleType === 'line' && prevCx !== null && prevCy !== null) {
+      // Draw line between points using Bresenham's algorithm
+      const dx = Math.abs(cx - prevCx)
+      const dy = Math.abs(cy - prevCy)
+      const sx = prevCx < cx ? 1 : -1
+      const sy = prevCy < cy ? 1 : -1
+      let err = dx - dy
+      let x: number = prevCx
+      let y: number = prevCy
+
+      while (true) {
+        if (x >= plotLeft && x < plotRight && y >= plotTop && y < plotBottom) {
+          setDot(x, y)
+          if (fill) {
+            // Fill down to bottom
+            for (let fy = y; fy < plotBottom; fy++) {
+              setDot(x, fy)
+            }
+          }
+        }
+
+        if (x === cx && y === cy) break
+        const e2 = 2 * err
+        if (e2 > -dy) { err -= dy; x += sx; }
+        if (e2 < dx) { err += dx; y += sy; }
+      }
+    } else {
+      // Just plot the point
+      if (cx >= plotLeft && cx < plotRight && cy >= plotTop && cy < plotBottom) {
+        setDot(cx, cy)
+      }
+    }
+
+    prevCx = cx
+    prevCy = cy
+  }
+
+  // Render the buffer to canvas
+  for (let y = 0; y < brailleHeight; y++) {
+    for (let x = 0; x < brailleWidth; x++) {
+      if (buffer[y][x] > 0) {
+        const char = String.fromCharCode(BRAILLE_BASE + buffer[y][x])
+        canvas.drawChar(plotLeft + x, plotTop + y, char, finalColor)
+      }
+    }
+  }
+}
+
+/**
  * Geometry renderer dispatch
  */
 export function renderGeom(
@@ -2259,6 +2960,25 @@ export function renderGeom(
     case 'beeswarm':
     case 'quasirandom':
       renderGeomBeeswarm(data, geom, aes, scales, canvas)
+      break
+    case 'dumbbell':
+      renderGeomDumbbell(data, geom, aes, scales, canvas)
+      break
+    case 'lollipop':
+      renderGeomLollipop(data, geom, aes, scales, canvas)
+      break
+    // Terminal-native geoms
+    case 'waffle':
+      renderGeomWaffle(data, geom, aes, scales, canvas)
+      break
+    case 'sparkline':
+      renderGeomSparkline(data, geom, aes, scales, canvas)
+      break
+    case 'bullet':
+      renderGeomBullet(data, geom, aes, scales, canvas)
+      break
+    case 'braille':
+      renderGeomBraille(data, geom, aes, scales, canvas)
       break
     default:
       // Unknown geom type, skip

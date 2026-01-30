@@ -14,6 +14,12 @@ A visual guide to all plot types available in ggterm.
 - [Box Plots](#box-plots)
 - [Ridgeline Plots](#ridgeline-plots)
 - [Beeswarm Plots](#beeswarm-plots)
+- [Dumbbell Charts](#dumbbell-charts)
+- [Lollipop Charts](#lollipop-charts)
+- [Waffle Charts](#waffle-charts)
+- [Sparklines](#sparklines)
+- [Bullet Charts](#bullet-charts)
+- [Braille Plots](#braille-plots)
 - [2D Density Plots](#2d-density-plots)
 - [Heatmaps](#heatmaps)
 - [Error Bars](#error-bars)
@@ -644,6 +650,380 @@ bun packages/core/src/cli-plot.ts data.csv treatment response - "Responses" quas
 | Violin | Large datasets, smooth distribution shape |
 | Boxplot | Summary statistics, outlier detection |
 | Ridgeline | Comparing many distributions over time |
+
+---
+
+## Dumbbell Charts
+
+Dumbbell charts display two points connected by a line. Ideal for before/after comparisons, paired data, or showing ranges between two values.
+
+### Basic Dumbbell
+
+```typescript
+import { gg, geom_dumbbell } from '@ggterm/core'
+
+const data = [
+  { category: 'Product A', before: 45, xend: 72 },
+  { category: 'Product B', before: 38, xend: 58 },
+  { category: 'Product C', before: 55, xend: 48 },
+  { category: 'Product D', before: 29, xend: 67 },
+]
+
+const plot = gg(data)
+  .aes({ x: 'before', y: 'category' })
+  .geom(geom_dumbbell())
+  .labs({ title: 'Before vs After', x: 'Value', y: 'Category' })
+
+console.log(plot.render({ width: 60, height: 12 }))
+```
+
+**Output:**
+```
+                    Before vs After
+
+  Product D │    ●───────────────────────────────●
+  Product C │                     ●────────●
+  Product B │         ●───────────────────●
+  Product A │              ●────────────────────●
+            └┬──────────┬──────────┬──────────┬──
+             25         40         55         75
+                           Value
+```
+
+### Customized Dumbbell
+
+```typescript
+const plot = gg(data)
+  .aes({ x: 'before', y: 'category' })
+  .geom(geom_dumbbell({
+    color: '#3498db',      // Start point color
+    colorEnd: '#e74c3c',   // End point color
+    lineColor: '#95a5a6',  // Connecting line color
+    size: 3,
+    shape: 'diamond'
+  }))
+  .labs({ title: 'Satisfaction Change' })
+```
+
+### Dumbbell via CLI
+
+```bash
+# Basic dumbbell (data needs xend column)
+bun packages/core/src/cli-plot.ts data.csv start category - "Comparison" dumbbell
+```
+
+### When to Use Dumbbell Charts
+
+- **Before/after comparisons**: Show changes between two time points
+- **Paired data**: Compare two related measurements
+- **Range visualization**: Display min/max or start/end values
+- **Gap analysis**: Highlight differences between two values
+
+---
+
+## Lollipop Charts
+
+Lollipop charts show a line from baseline to a point with a dot at the end. A cleaner, more modern alternative to bar charts, especially effective for sparse or ranked data.
+
+### Basic Lollipop
+
+```typescript
+import { gg, geom_lollipop } from '@ggterm/core'
+
+const data = [
+  { product: 'Apple', sales: 150 },
+  { product: 'Banana', sales: 200 },
+  { product: 'Cherry', sales: 80 },
+  { product: 'Date', sales: 120 },
+  { product: 'Elderberry', sales: 50 },
+]
+
+const plot = gg(data)
+  .aes({ x: 'product', y: 'sales' })
+  .geom(geom_lollipop())
+  .labs({ title: 'Product Sales', x: 'Product', y: 'Sales ($)' })
+
+console.log(plot.render({ width: 60, height: 15 }))
+```
+
+**Output:**
+```
+                      Product Sales
+
+  200 ┤              ●
+      │              │
+  150 ┤     ●        │
+      │     │        │
+  120 ┤     │        │        ●
+      │     │        │        │
+   80 ┤     │        │        │        ●
+      │     │        │        │        │
+   50 ┤     │        │        │        │        ●
+      │     │        │        │        │        │
+    0 ├─────┴────────┴────────┴────────┴────────┴
+      Apple   Banana   Cherry    Date  Elderberry
+                        Product
+```
+
+### Customized Lollipop
+
+```typescript
+const plot = gg(data)
+  .aes({ x: 'product', y: 'sales' })
+  .geom(geom_lollipop({
+    color: '#9b59b6',     // Point color
+    lineColor: '#8e44ad', // Line color
+    size: 3,
+    baseline: 100         // Custom baseline
+  }))
+  .labs({ title: 'Sales vs Target (100)' })
+```
+
+### Horizontal Lollipop
+
+```typescript
+const plot = gg(data)
+  .aes({ x: 'product', y: 'sales' })
+  .geom(geom_lollipop({ direction: 'horizontal' }))
+  .labs({ title: 'Horizontal Lollipop' })
+```
+
+### Lollipop via CLI
+
+```bash
+# Basic lollipop
+bun packages/core/src/cli-plot.ts data.csv product sales - "Sales" lollipop
+```
+
+### When to Use Lollipop Charts
+
+- **Sparse data**: Cleaner than bar charts with few data points
+- **Rankings**: Show ordered values with clear endpoints
+- **Comparisons**: Emphasize the dot values rather than the bar area
+- **Modern design**: More contemporary look than traditional bar charts
+
+### Lollipop vs Bar Chart
+
+| Feature | Lollipop | Bar Chart |
+|---------|----------|-----------|
+| Visual weight | Light | Heavy |
+| Data focus | Endpoint values | Area/magnitude |
+| Best for | Sparse data, rankings | Dense data, comparisons |
+| Space efficiency | Better | More ink |
+
+---
+
+## Waffle Charts
+
+Waffle charts display part-of-whole relationships using a grid of characters. More readable than pie charts, especially for terminal display.
+
+### Basic Waffle
+
+```typescript
+import { gg, geom_waffle } from '@ggterm/core'
+
+const data = [
+  { company: 'Apple', share: 45 },
+  { company: 'Samsung', share: 30 },
+  { company: 'Other', share: 25 },
+]
+
+const plot = gg(data)
+  .aes({ fill: 'company', y: 'share' })
+  .geom(geom_waffle())
+  .labs({ title: 'Market Share' })
+
+console.log(plot.render({ width: 50, height: 15 }))
+```
+
+**Output:**
+```
+                Market Share
+
+  ██████████  Apple 45%
+  ██████████
+  ██████████
+  ██████████
+  ████▒▒▒▒▒▒  Samsung 30%
+  ▒▒▒▒▒▒▒▒▒▒
+  ▒▒▒▒▒▒░░░░  Other 25%
+  ░░░░░░░░░░
+```
+
+### Waffle via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts data.csv category value category "Market Share" waffle
+```
+
+### When to Use Waffle Charts
+
+- **Part-of-whole**: Showing percentages or proportions
+- **Comparisons**: Easy to compare segment sizes
+- **Terminal display**: Characters render clearly
+- **Pie chart alternative**: More precise than pie slices
+
+---
+
+## Sparklines
+
+Sparklines are word-sized inline graphics that show trends at a glance. Perfect for dashboards and data tables.
+
+### Basic Sparkline
+
+```typescript
+import { gg, geom_sparkline, SPARK_BARS } from '@ggterm/core'
+
+const data = [
+  { month: 1, value: 10 },
+  { month: 2, value: 15 },
+  { month: 3, value: 12 },
+  { month: 4, value: 20 },
+  { month: 5, value: 18 },
+  { month: 6, value: 25 },
+]
+
+const plot = gg(data)
+  .aes({ x: 'month', y: 'value' })
+  .geom(geom_sparkline())
+
+console.log(plot.render({ width: 30, height: 3 }))
+```
+
+**Output:**
+```
+▂▄▃▆▅█
+```
+
+### Grouped Sparklines
+
+```typescript
+const salesData = [
+  { month: 1, sales: 100, product: 'A' },
+  { month: 2, sales: 120, product: 'A' },
+  // ...
+  { month: 1, sales: 80, product: 'B' },
+  { month: 2, sales: 95, product: 'B' },
+  // ...
+]
+
+const plot = gg(salesData)
+  .aes({ x: 'month', y: 'sales', group: 'product' })
+  .geom(geom_sparkline({ show_minmax: true }))
+```
+
+### Sparkline via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts data.csv month value product "Trends" sparkline
+```
+
+### Sparkline Characters
+
+```
+▁▂▃▄▅▆▇█  - 8 levels of bar height
+```
+
+---
+
+## Bullet Charts
+
+Bullet charts are compact progress bars with target markers. Stephen Few's alternative to gauges and meters.
+
+### Basic Bullet
+
+```typescript
+import { gg, geom_bullet } from '@ggterm/core'
+
+const kpiData = [
+  { metric: 'Revenue', value: 85, target: 90 },
+  { metric: 'Profit', value: 70, target: 80 },
+  { metric: 'Growth', value: 95, target: 75 },
+]
+
+const plot = gg(kpiData)
+  .aes({ x: 'metric', y: 'value' })
+  .geom(geom_bullet())
+  .labs({ title: 'KPI Dashboard' })
+
+console.log(plot.render({ width: 60, height: 10 }))
+```
+
+**Output:**
+```
+                KPI Dashboard
+
+  Revenue  ████████████████████████████████░░│░░░░  85
+  Profit   ███████████████████████████░░░░░░░│░░░░  70
+  Growth   █████████████████████████████████████│██  95
+```
+
+### Bullet Chart Anatomy
+
+- **Bar**: Actual value (solid fill)
+- **Target marker**: `│` indicates target
+- **Background ranges**: `░▒▓` show poor/satisfactory/good ranges
+
+### Bullet via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts data.csv metric value - "KPIs" bullet
+```
+
+---
+
+## Braille Plots
+
+Braille plots use Unicode Braille patterns for 8x resolution. Each character cell contains a 2x4 grid of dots.
+
+### Basic Braille Scatter
+
+```typescript
+import { gg, geom_braille } from '@ggterm/core'
+
+const data = Array.from({ length: 50 }, (_, i) => ({
+  x: Math.sin(i * 0.2) * 10 + 10,
+  y: Math.cos(i * 0.2) * 10 + 10,
+}))
+
+const plot = gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_braille())
+  .labs({ title: 'High-Resolution Scatter' })
+
+console.log(plot.render({ width: 50, height: 15 }))
+```
+
+### Braille Line Plot
+
+```typescript
+const lineData = Array.from({ length: 30 }, (_, i) => ({
+  x: i,
+  y: Math.sin(i * 0.3) * 5 + 5,
+}))
+
+const plot = gg(lineData)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_braille({ type: 'line' }))
+```
+
+### Braille via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts data.csv x y - "High-Res" braille
+```
+
+### How Braille Works
+
+Each Braille character encodes 8 dots in a 2x4 grid:
+```
+⠁⠂  (dots 1,2)
+⠄⠈  (dots 3,4)
+⠐⠠  (dots 5,6)
+⡀⢀  (dots 7,8)
+```
+
+This allows sub-character positioning for smoother curves and higher detail.
 
 ---
 

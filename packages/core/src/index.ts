@@ -91,6 +91,18 @@ export {
   // Beeswarm plots
   geom_beeswarm,
   geom_quasirandom,
+  // Dumbbell and lollipop
+  geom_dumbbell,
+  geom_lollipop,
+  // Terminal-native geoms
+  geom_waffle,
+  geom_sparkline,
+  geom_bullet,
+  geom_braille,
+  SPARK_BARS,
+  SPARK_DOTS,
+  BRAILLE_BASE,
+  BRAILLE_DOTS,
 } from './geoms'
 export type {
   PathOptions,
@@ -109,6 +121,12 @@ export type {
   FreqpolyOptions,
   RidgelineOptions,
   BeeswarmOptions,
+  DumbbellOptions,
+  LollipopOptions,
+  WaffleOptions,
+  SparklineOptions,
+  BulletOptions,
+  BrailleOptions,
 } from './geoms'
 
 // Position adjustments
