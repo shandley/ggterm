@@ -49,21 +49,21 @@ Contains:
 
 ```bash
 # After npm install (use npx):
-npx ggterm-plot data.csv x y
-npx ggterm-plot data.json x y color "Title" point
-npx ggterm-plot data.jsonl x y - - histogram
+bun packages/core/src/cli-plot.ts data.csv x y
+bun packages/core/src/cli-plot.ts data.json x y color "Title" point
+bun packages/core/src/cli-plot.ts data.jsonl x y - - histogram
 
 # Reference lines
-npx ggterm-plot data.csv x y - - point+hline@50+vline@2
+bun packages/core/src/cli-plot.ts data.csv x y - - point+hline@50+vline@2
 
 # History and export
-npx ggterm-plot history
-npx ggterm-plot show 2024-01-26-001
-npx ggterm-plot export 2024-01-26-001 output.html
+bun packages/core/src/cli-plot.ts history
+bun packages/core/src/cli-plot.ts show 2024-01-26-001
+bun packages/core/src/cli-plot.ts export 2024-01-26-001 output.html
 
 # Inspect and suggest
-npx ggterm-plot inspect data.csv
-npx ggterm-plot suggest data.csv
+bun packages/core/src/cli-plot.ts inspect data.csv
+bun packages/core/src/cli-plot.ts suggest data.csv
 ```
 
 ## Testing

@@ -48,56 +48,43 @@ See our [example vignettes](./examples/) for complete workflows using real data:
 
 ## Getting Started
 
-### With an AI Assistant (Recommended)
+### With Claude Code (Recommended)
 
-If you're using Claude Code, Cursor, or another AI coding assistant:
-
-1. Make sure ggterm is available in your project:
-   ```bash
-   npm install @ggterm/core
-   ```
-
-2. Ask your AI to visualize data:
-   ```
-   "Load the iris dataset and show me how petal dimensions relate to species"
-   ```
-
-That's it. The AI handles the rest.
-
-### CLI Plotting
-
-Plot CSV, JSON, or JSONL files directly from the command line:
+ggterm is designed to work with Claude Code through natural language:
 
 ```bash
-# Install globally for npx usage
-npm install -g @ggterm/core
+# Clone the repository
+git clone https://github.com/shandley/ggterm.git
+cd ggterm
 
-# Or use npx directly
-npx ggterm-plot data.csv x_column y_column [color] [title] [geom]
+# Install dependencies
+bun install
 ```
 
-Examples:
+Now open Claude Code in the ggterm directory and start talking:
 
-```bash
-# Scatter plot
-npx ggterm-plot iris.csv sepal_length petal_length species "Iris" point
-
-# Histogram (use - for y)
-npx ggterm-plot iris.csv sepal_width - - "Sepal Width Distribution" histogram
-
-# Inspect data columns
-npx ggterm-plot inspect mydata.csv
-
-# Get plot suggestions
-npx ggterm-plot suggest mydata.csv
 ```
+You: Load the iris dataset and show me how petal dimensions relate to species
+
+Claude: [Creates scatter plot with automatic scales, legends, and color mapping]
+
+You: Color by species and add a trend line
+
+Claude: [Updates plot with color encoding and regression line]
+
+You: Export this for my paper
+
+Claude: [Generates publication-ready HTML with PNG/SVG download]
+```
+
+The `.claude/skills/` directory contains skills that teach Claude Code how to create visualizations, apply publication styles, and export figures.
 
 ### Interactive REPL
 
-For hands-on exploration:
+For hands-on exploration without AI:
 
 ```bash
-npx ggterm
+bun packages/core/src/cli.ts
 ```
 
 ```
