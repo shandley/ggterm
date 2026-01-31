@@ -111,6 +111,7 @@ export {
   geom_corrmat,
   geom_sankey,
   geom_treemap,
+  geom_volcano,
 } from './geoms'
 export type {
   PathOptions,
@@ -141,6 +142,7 @@ export type {
   CorrmatOptions,
   SankeyOptions,
   TreemapOptions,
+  VolcanoOptions,
 } from './geoms'
 
 // Position adjustments

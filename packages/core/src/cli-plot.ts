@@ -62,6 +62,7 @@ import {
   geom_corrmat,
   geom_sankey,
   geom_treemap,
+  geom_volcano,
   facet_wrap,
 } from './index'
 import { readFileSync, writeFileSync } from 'fs'
@@ -83,7 +84,7 @@ const GEOM_TYPES = [
   'area', 'ribbon', 'rug', 'errorbar', 'errorbarh',
   'crossbar', 'linerange', 'pointrange', 'smooth', 'segment', 'rect',
   'raster', 'tile', 'bin2d', 'text', 'label', 'contour', 'contour_filled',
-  'density_2d', 'qq', 'calendar', 'flame', 'icicle', 'corrmat', 'sankey', 'treemap'
+  'density_2d', 'qq', 'calendar', 'flame', 'icicle', 'corrmat', 'sankey', 'treemap', 'volcano'
 ]
 
 // Date pattern: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
@@ -838,6 +839,9 @@ function handlePlot(args: string[]): void {
       break
     case 'treemap':
       plot = plot.geom(geom_treemap())
+      break
+    case 'volcano':
+      plot = plot.geom(geom_volcano())
       break
     case 'point':
     default:

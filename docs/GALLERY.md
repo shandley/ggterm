@@ -1456,6 +1456,37 @@ bun packages/core/src/cli-plot.ts flows.csv source target value "Energy Flow" sa
 
 # Treemap
 bun packages/core/src/cli-plot.ts usage.csv name - value "Usage" treemap
+
+# Volcano plot
+bun packages/core/src/cli-plot.ts de_results.csv log2FC pvalue gene "Differential Expression" volcano
+```
+
+### Volcano Plot
+
+Differential expression visualization for genomics data.
+
+```typescript
+import { gg, geom_volcano } from '@ggterm/core'
+
+const deResults = [
+  { gene: 'IL6', log2FC: 4.2, pvalue: 1e-100 },
+  { gene: 'TNF', log2FC: 3.1, pvalue: 1e-80 },
+  { gene: 'CXCL8', log2FC: 5.5, pvalue: 1e-120 },
+  { gene: 'STAT3', log2FC: -2.1, pvalue: 1e-40 },
+  { gene: 'SOCS3', log2FC: -1.8, pvalue: 1e-30 },
+  { gene: 'GAPDH', log2FC: 0.1, pvalue: 0.8 },
+]
+
+const plot = gg(deResults)
+  .aes({ x: 'log2FC', y: 'pvalue', label: 'gene' })
+  .geom(geom_volcano({
+    fc_threshold: 1,
+    p_threshold: 0.05,
+    n_labels: 5,
+  }))
+  .labs({ title: 'Differential Gene Expression' })
+
+console.log(plot.render({ width: 80, height: 25 }))
 ```
 
 ---

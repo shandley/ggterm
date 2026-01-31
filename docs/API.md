@@ -1527,6 +1527,54 @@ gg(data)
 | `max_depth` | number | unlimited | Maximum hierarchy depth to show |
 | `aspect_ratio` | number | 1.618 | Target aspect ratio (golden ratio) |
 
+### geom_volcano()
+
+Volcano plot for differential expression analysis. Visualizes statistical significance vs magnitude of change, commonly used in genomics.
+
+```typescript
+import { geom_volcano } from '@ggterm/core'
+
+const data = [
+  { gene: 'TP53', log2FC: 3.5, pvalue: 1e-50 },
+  { gene: 'BRCA1', log2FC: -2.8, pvalue: 1e-40 },
+  { gene: 'MYC', log2FC: 2.1, pvalue: 1e-30 },
+  { gene: 'GAPDH', log2FC: 0.1, pvalue: 0.5 },
+]
+
+gg(data)
+  .aes({ x: 'log2FC', y: 'pvalue', label: 'gene' })
+  .geom(geom_volcano({
+    fc_threshold: 1,
+    p_threshold: 0.05,
+    n_labels: 5,
+  }))
+  .labs({ title: 'Differential Expression' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `fc_threshold` | number | 1 | Log2 fold change threshold (1 = 2-fold) |
+| `p_threshold` | number | 0.05 | P-value threshold for significance |
+| `y_is_neglog10` | boolean | false | If true, y values are already -log10 transformed |
+| `up_color` | string | '#e41a1c' | Color for up-regulated points (red) |
+| `down_color` | string | '#377eb8' | Color for down-regulated points (blue) |
+| `ns_color` | string | '#999999' | Color for non-significant points (gray) |
+| `show_thresholds` | boolean | true | Show threshold reference lines |
+| `threshold_linetype` | string | 'dashed' | Line type for thresholds |
+| `n_labels` | number | 0 | Number of top significant points to label |
+| `size` | number | 1 | Point size |
+| `alpha` | number | 0.6 | Point opacity |
+| `point_char` | string | '●' | Character for points |
+
+#### Classification
+
+Points are automatically classified as:
+- **Up-regulated**: log2FC > fc_threshold AND p < p_threshold
+- **Down-regulated**: log2FC < -fc_threshold AND p < p_threshold
+- **Not significant**: everything else
+
 ---
 
 ## Annotations

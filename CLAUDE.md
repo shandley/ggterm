@@ -17,7 +17,7 @@ Single package: `@ggterm/core` in `packages/core/`
 
 Contains:
 - Grammar engine with fluent API
-- 52 geometry types (including specialized: calendar, flame, sankey, treemap, corrmat)
+- 53 geometry types (including specialized: calendar, flame, sankey, treemap, corrmat, volcano)
 - 50+ scales (continuous, discrete, color)
 - CLI for plotting CSV/JSON/JSONL files
 - Vega-Lite export for publication-quality output

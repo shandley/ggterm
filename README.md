@@ -137,7 +137,8 @@ ggterm> gg(data).aes({x: "sepal_length", y: "petal_length", color: "species"}).g
 - **Sankey diagrams** - Flow visualization between nodes
 - **Treemaps** - Hierarchical data as nested rectangles
 - **Correlation matrices** - Pairwise variable relationships
-- **And more** - 52 geometry types available
+- **Volcano plots** - Differential expression for genomics
+- **And more** - 53 geometry types available
 
 ## Export Options
 

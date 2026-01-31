@@ -36,7 +36,7 @@ Arguments:
 - `y` - Column name for y-axis (use `-` for histogram)
 - `color` - Column name for color (optional, use `-` to skip)
 - `title` - Plot title (optional, use `-` to skip)
-- `geom` - Geometry type: `point` (default), `line`, `path`, `step`, `bar`, `col`, `histogram`, `freqpoly`, `density`, `boxplot`, `violin`, `ridgeline`, `joy`, `beeswarm`, `quasirandom`, `dumbbell`, `lollipop`, `waffle`, `sparkline`, `bullet`, `braille`, `calendar`, `flame`, `icicle`, `corrmat`, `sankey`, `treemap`, `area`, `ribbon`, `rug`, `errorbar`, `errorbarh`, `crossbar`, `linerange`, `pointrange`, `smooth`, `segment`, `curve`, `rect`, `tile`, `raster`, `bin2d`, `text`, `label`, `contour`, `contour_filled`, `density_2d`, `qq`, `qq_line`, `hline`, `vline`, `abline`
+- `geom` - Geometry type: `point` (default), `line`, `path`, `step`, `bar`, `col`, `histogram`, `freqpoly`, `density`, `boxplot`, `violin`, `ridgeline`, `joy`, `beeswarm`, `quasirandom`, `dumbbell`, `lollipop`, `waffle`, `sparkline`, `bullet`, `braille`, `calendar`, `flame`, `icicle`, `corrmat`, `sankey`, `treemap`, `volcano`, `area`, `ribbon`, `rug`, `errorbar`, `errorbarh`, `crossbar`, `linerange`, `pointrange`, `smooth`, `segment`, `curve`, `rect`, `tile`, `raster`, `bin2d`, `text`, `label`, `contour`, `contour_filled`, `density_2d`, `qq`, `qq_line`, `hline`, `vline`, `abline`
 
 ## Examples
 
@@ -257,14 +257,14 @@ plot.render({
 
 For detailed examples, see [examples/basic-plots.md](examples/basic-plots.md).
 
-### All Available Geoms (52 total)
+### All Available Geoms (53 total)
 
 Point/line: `geom_point`, `geom_line`, `geom_path`, `geom_step`
 Bar: `geom_bar`, `geom_col`, `geom_histogram`, `geom_freqpoly`, `geom_density`
 Distribution: `geom_boxplot`, `geom_violin`, `geom_ridgeline`, `geom_joy`, `geom_beeswarm`, `geom_quasirandom`, `geom_density_2d`, `geom_qq`, `geom_qq_line`
 Comparison: `geom_dumbbell`, `geom_lollipop`
 Terminal-native: `geom_waffle`, `geom_sparkline`, `geom_bullet`, `geom_braille`
-Specialized: `geom_calendar`, `geom_flame`, `geom_icicle`, `geom_corrmat`, `geom_sankey`, `geom_treemap`
+Specialized: `geom_calendar`, `geom_flame`, `geom_icicle`, `geom_corrmat`, `geom_sankey`, `geom_treemap`, `geom_volcano`
 Area: `geom_area`, `geom_ribbon`
 Reference: `geom_hline`, `geom_vline`, `geom_abline`, `geom_segment`, `geom_curve`
 Text: `geom_text`, `geom_label`

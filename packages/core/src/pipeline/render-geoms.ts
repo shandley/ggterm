@@ -4006,6 +4006,146 @@ export function renderGeomTreemap(
 }
 
 /**
+ * Render geom_volcano - Volcano plot for differential expression
+ */
+export function renderGeomVolcano(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const fcThreshold = (geom.params.fc_threshold as number) ?? 1
+  const pThreshold = (geom.params.p_threshold as number) ?? 0.05
+  const yIsNegLog10 = (geom.params.y_is_neglog10 as boolean) ?? false
+  const upColor = parseColorToRgba(geom.params.up_color as string ?? '#e41a1c')
+  const downColor = parseColorToRgba(geom.params.down_color as string ?? '#377eb8')
+  const nsColor = parseColorToRgba(geom.params.ns_color as string ?? '#999999')
+  const showThresholds = (geom.params.show_thresholds as boolean) ?? true
+  const nLabels = (geom.params.n_labels as number) ?? 0
+  const pointChar = (geom.params.point_char as string) ?? '●'
+
+  // Calculate -log10(p) threshold
+  const negLog10PThreshold = -Math.log10(pThreshold)
+
+  // Classify and render each point
+  interface ClassifiedPoint {
+    row: Record<string, unknown>
+    x: number
+    y: number
+    significance: number  // for sorting top hits
+    status: 'up' | 'down' | 'ns'
+    label?: string
+  }
+
+  const points: ClassifiedPoint[] = []
+
+  for (const row of data) {
+    const xVal = Number(row[aes.x])
+    let yVal = Number(row[aes.y])
+
+    if (isNaN(xVal) || isNaN(yVal) || yVal <= 0) continue
+
+    // Transform p-value to -log10 if needed
+    if (!yIsNegLog10) {
+      yVal = -Math.log10(yVal)
+    }
+
+    // Classify the point
+    let status: 'up' | 'down' | 'ns' = 'ns'
+    if (yVal >= negLog10PThreshold) {
+      if (xVal >= fcThreshold) {
+        status = 'up'
+      } else if (xVal <= -fcThreshold) {
+        status = 'down'
+      }
+    }
+
+    const label = aes.label ? String(row[aes.label] ?? '') : undefined
+
+    points.push({
+      row,
+      x: xVal,
+      y: yVal,
+      significance: yVal,  // higher -log10(p) = more significant
+      status,
+      label,
+    })
+  }
+
+  // Draw threshold lines first (below points)
+  if (showThresholds) {
+    const thresholdColor: RGBA = { r: 150, g: 150, b: 150, a: 0.7 }
+
+    // Horizontal line at p-value threshold
+    const cy = Math.round(scales.y.map(negLog10PThreshold))
+    const startX = Math.round(scales.x.range[0])
+    const endX = Math.round(scales.x.range[1])
+
+    // Draw dashed horizontal line
+    for (let x = startX; x <= endX; x += 2) {
+      canvas.drawChar(x, cy, '─', thresholdColor)
+    }
+
+    // Vertical lines at fold change thresholds
+    const cxPos = Math.round(scales.x.map(fcThreshold))
+    const cxNeg = Math.round(scales.x.map(-fcThreshold))
+    const startY = Math.round(Math.min(scales.y.range[0], scales.y.range[1]))
+    const endY = Math.round(Math.max(scales.y.range[0], scales.y.range[1]))
+
+    // Draw dashed vertical lines
+    for (let y = startY; y <= endY; y += 2) {
+      canvas.drawChar(cxPos, y, '│', thresholdColor)
+      canvas.drawChar(cxNeg, y, '│', thresholdColor)
+    }
+  }
+
+  // Draw non-significant points first (background)
+  for (const point of points) {
+    if (point.status === 'ns') {
+      const cx = Math.round(scales.x.map(point.x))
+      const cy = Math.round(scales.y.map(point.y))
+      canvas.drawPoint(cx, cy, nsColor, pointChar)
+    }
+  }
+
+  // Draw significant points on top
+  for (const point of points) {
+    if (point.status !== 'ns') {
+      const cx = Math.round(scales.x.map(point.x))
+      const cy = Math.round(scales.y.map(point.y))
+      const color = point.status === 'up' ? upColor : downColor
+      canvas.drawPoint(cx, cy, color, pointChar)
+    }
+  }
+
+  // Label top N significant points
+  if (nLabels > 0 && aes.label) {
+    // Get top hits by significance (highest -log10(p))
+    const significantPoints = points
+      .filter(p => p.status !== 'ns' && p.label)
+      .sort((a, b) => b.significance - a.significance)
+      .slice(0, nLabels)
+
+    const labelColor: RGBA = { r: 50, g: 50, b: 50, a: 1 }
+
+    for (const point of significantPoints) {
+      const cx = Math.round(scales.x.map(point.x))
+      const cy = Math.round(scales.y.map(point.y))
+      const label = point.label!
+
+      // Position label to the right of the point
+      const labelX = cx + 1
+      const labelY = cy
+
+      for (let i = 0; i < label.length; i++) {
+        canvas.drawChar(labelX + i, labelY, label[i], labelColor)
+      }
+    }
+  }
+}
+
+/**
  * Geometry renderer dispatch
  */
 export function renderGeom(
@@ -4142,6 +4282,9 @@ export function renderGeom(
       break
     case 'treemap':
       renderGeomTreemap(data, geom, aes, scales, canvas)
+      break
+    case 'volcano':
+      renderGeomVolcano(data, geom, aes, scales, canvas)
       break
     default:
       // Unknown geom type, skip
