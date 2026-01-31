@@ -64,6 +64,9 @@ import {
   geom_treemap,
   geom_volcano,
   geom_ma,
+  geom_manhattan,
+  geom_heatmap,
+  geom_biplot,
   facet_wrap,
 } from './index'
 import { readFileSync, writeFileSync } from 'fs'
@@ -85,7 +88,8 @@ const GEOM_TYPES = [
   'area', 'ribbon', 'rug', 'errorbar', 'errorbarh',
   'crossbar', 'linerange', 'pointrange', 'smooth', 'segment', 'rect',
   'raster', 'tile', 'bin2d', 'text', 'label', 'contour', 'contour_filled',
-  'density_2d', 'qq', 'calendar', 'flame', 'icicle', 'corrmat', 'sankey', 'treemap', 'volcano', 'ma'
+  'density_2d', 'qq', 'calendar', 'flame', 'icicle', 'corrmat', 'sankey', 'treemap', 'volcano', 'ma',
+  'manhattan', 'heatmap', 'biplot'
 ]
 
 // Date pattern: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
@@ -846,6 +850,15 @@ function handlePlot(args: string[]): void {
       break
     case 'ma':
       plot = plot.geom(geom_ma())
+      break
+    case 'manhattan':
+      plot = plot.geom(geom_manhattan())
+      break
+    case 'heatmap':
+      plot = plot.geom(geom_heatmap())
+      break
+    case 'biplot':
+      plot = plot.geom(geom_biplot())
       break
     case 'point':
     default:

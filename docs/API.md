@@ -1626,6 +1626,124 @@ Points are classified as:
 - **Down-regulated**: log2FC < -fc_threshold (AND p < p_threshold if p_col specified)
 - **Not significant**: everything else
 
+### geom_manhattan()
+
+Manhattan plot for GWAS (Genome-Wide Association Study) visualization. Shows genomic position vs -log10(p-value) with significance thresholds.
+
+```typescript
+import { geom_manhattan } from '@ggterm/core'
+
+const data = [
+  { snp: 'rs123', chr: '1', pos: 1000000, pvalue: 1e-9 },
+  { snp: 'rs456', chr: '2', pos: 2000000, pvalue: 1e-6 },
+  { snp: 'rs789', chr: '6', pos: 3000000, pvalue: 5e-8 },
+]
+
+gg(data)
+  .aes({ x: 'pos', y: 'pvalue', color: 'chr', label: 'snp' })
+  .geom(geom_manhattan({
+    genome_wide_threshold: 5e-8,
+    suggestive_threshold: 1e-5,
+    n_labels: 5,
+  }))
+  .labs({ title: 'GWAS Results' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `suggestive_threshold` | number | 1e-5 | Suggestive significance threshold |
+| `genome_wide_threshold` | number | 5e-8 | Genome-wide significance threshold |
+| `y_is_neglog10` | boolean | false | If true, y values are already -log10 transformed |
+| `chr_colors` | string[] | ['#1f78b4', '#a6cee3'] | Alternating chromosome colors |
+| `highlight_color` | string | '#e41a1c' | Color for genome-wide significant points |
+| `suggestive_color` | string | '#ff7f00' | Color for suggestive points |
+| `show_thresholds` | boolean | true | Show significance threshold lines |
+| `n_labels` | number | 0 | Number of top SNPs to label |
+| `chr_gap` | number | 0.02 | Gap between chromosomes as fraction |
+
+### geom_heatmap()
+
+Heatmap for matrix visualization with optional hierarchical clustering. Commonly used for gene expression matrices.
+
+```typescript
+import { geom_heatmap } from '@ggterm/core'
+
+const data = [
+  { gene: 'IL6', sample: 'Control', expression: 0.5 },
+  { gene: 'IL6', sample: 'Treatment', expression: 3.2 },
+  { gene: 'TNF', sample: 'Control', expression: 1.0 },
+  { gene: 'TNF', sample: 'Treatment', expression: 2.5 },
+]
+
+gg(data)
+  .aes({ x: 'sample', y: 'gene', fill: 'expression' })
+  .geom(geom_heatmap({
+    cluster_rows: true,
+    cluster_cols: true,
+    scale: 'row',
+  }))
+  .labs({ title: 'Gene Expression' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `low_color` | string | '#313695' | Color for low values (blue) |
+| `mid_color` | string | '#ffffbf' | Color for mid values (yellow) |
+| `high_color` | string | '#a50026' | Color for high values (red) |
+| `na_color` | string | '#808080' | Color for missing values |
+| `cluster_rows` | boolean | false | Cluster rows hierarchically |
+| `cluster_cols` | boolean | false | Cluster columns hierarchically |
+| `clustering_method` | string | 'complete' | 'complete', 'single', or 'average' |
+| `scale` | string | 'none' | 'none', 'row', or 'column' |
+| `show_row_labels` | boolean | true | Show row labels |
+| `show_col_labels` | boolean | true | Show column labels |
+
+### geom_biplot()
+
+PCA biplot showing both samples (scores) and variables (loadings) together.
+
+```typescript
+import { geom_biplot } from '@ggterm/core'
+
+const scores = [
+  { sample: 'A', species: 'setosa', PC1: -2.5, PC2: 0.5 },
+  { sample: 'B', species: 'versicolor', PC1: 0.5, PC2: -0.5 },
+  { sample: 'C', species: 'virginica', PC1: 2.5, PC2: 0.2 },
+]
+
+const loadings = [
+  { variable: 'Sepal.L', pc1: 0.52, pc2: -0.38 },
+  { variable: 'Petal.L', pc1: 0.58, pc2: 0.02 },
+]
+
+gg(scores)
+  .aes({ x: 'PC1', y: 'PC2', color: 'species' })
+  .geom(geom_biplot({
+    loadings,
+    var_explained: [0.73, 0.23],
+  }))
+  .labs({ title: 'PCA Biplot', x: 'PC1 (73%)', y: 'PC2 (23%)' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `pc1_col` | string | 'PC1' | Column name for PC1 scores |
+| `pc2_col` | string | 'PC2' | Column name for PC2 scores |
+| `loadings` | array | undefined | Array of {variable, pc1, pc2} for arrows |
+| `var_explained` | [number, number] | undefined | Variance explained by PC1, PC2 |
+| `show_scores` | boolean | true | Show sample points |
+| `show_loadings` | boolean | true | Show loading arrows |
+| `loading_color` | string | '#e41a1c' | Color for loading arrows |
+| `loading_scale` | number | auto | Scale factor for arrows |
+| `show_origin` | boolean | true | Show origin crosshairs |
+| `show_loading_labels` | boolean | true | Show variable names |
+
 ---
 
 ## Annotations

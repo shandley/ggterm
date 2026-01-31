@@ -139,7 +139,10 @@ ggterm> gg(data).aes({x: "sepal_length", y: "petal_length", color: "species"}).g
 - **Correlation matrices** - Pairwise variable relationships
 - **Volcano plots** - Differential expression for genomics
 - **MA plots** - Companion to volcano for DE analysis
-- **And more** - 54 geometry types available
+- **Manhattan plots** - GWAS visualization across chromosomes
+- **Heatmaps** - Matrix visualization with clustering
+- **PCA biplots** - Scores and loadings together
+- **And more** - 57 geometry types available
 
 ## Export Options
 

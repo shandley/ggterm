@@ -4291,6 +4291,711 @@ export function renderGeomMA(
 }
 
 /**
+ * Render Manhattan plot for GWAS data
+ */
+function renderGeomManhattan(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const suggestiveThreshold = Number(params.suggestive_threshold ?? 1e-5)
+  const genomeWideThreshold = Number(params.genome_wide_threshold ?? 5e-8)
+  const yIsNegLog10 = Boolean(params.y_is_neglog10 ?? false)
+  const chrColors = (params.chr_colors ?? ['#1f78b4', '#a6cee3']) as string[]
+  const highlightColor = String(params.highlight_color ?? '#e41a1c')
+  const suggestiveColor = String(params.suggestive_color ?? '#ff7f00')
+  const showThresholds = Boolean(params.show_thresholds ?? true)
+  const nLabels = Number(params.n_labels ?? 0)
+  const pointChar = String(params.point_char ?? '●')
+  const chrGap = Number(params.chr_gap ?? 0.02)
+
+  if (!Array.isArray(data) || data.length === 0) return
+
+  // Parse colors
+  const parseHex = (hex: string): RGBA => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b, a: 1 }
+  }
+
+  const chrColorsParsed = chrColors.map((c) => parseHex(c))
+  const highlightColorParsed = parseHex(highlightColor)
+  const suggestiveColorParsed = parseHex(suggestiveColor)
+
+  // Calculate -log10 thresholds for drawing lines
+  const suggestiveLine = -Math.log10(suggestiveThreshold)
+  const genomeWideLine = -Math.log10(genomeWideThreshold)
+
+  // Process data: get chromosome and position info
+  const xField = aes.x as string
+  const yField = aes.y as string
+  const labelField = aes.label as string | undefined
+
+  // Group data by chromosome to assign cumulative positions
+  interface ProcessedPoint {
+    chr: string | number
+    pos: number
+    pval: number
+    negLogP: number
+    cumPos: number
+    label?: string
+    chrIndex: number
+  }
+
+  const points: ProcessedPoint[] = []
+  const chrMap = new Map<string | number, ProcessedPoint[]>()
+
+  for (const row of data) {
+    // Try to extract chromosome - could be in color aesthetic or x contains "chr:pos" format
+    let chr: string | number
+    let pos: number
+    const rawX = row[xField]
+    const rawY = row[yField]
+
+    // Check if x contains chromosome info (e.g., "1:12345" or just position)
+    if (typeof rawX === 'string' && rawX.includes(':')) {
+      const parts = rawX.split(':')
+      chr = parts[0]
+      pos = parseFloat(parts[1])
+    } else {
+      // Use color field as chromosome if available
+      chr = aes.color ? String(row[aes.color as string] ?? '1') : '1'
+      pos = typeof rawX === 'number' ? rawX : parseFloat(String(rawX))
+    }
+
+    const pval = typeof rawY === 'number' ? rawY : parseFloat(String(rawY))
+    if (isNaN(pos) || isNaN(pval) || pval <= 0) continue
+
+    const negLogP = yIsNegLog10 ? pval : -Math.log10(pval)
+    const label = labelField ? String(row[labelField] ?? '') : undefined
+
+    const point: ProcessedPoint = {
+      chr,
+      pos,
+      pval: yIsNegLog10 ? Math.pow(10, -pval) : pval,
+      negLogP,
+      cumPos: 0,
+      label,
+      chrIndex: 0,
+    }
+
+    if (!chrMap.has(chr)) {
+      chrMap.set(chr, [])
+    }
+    chrMap.get(chr)!.push(point)
+    points.push(point)
+  }
+
+  if (points.length === 0) return
+
+  // Sort chromosomes naturally (1, 2, ... 22, X, Y)
+  const chrOrder = Array.from(chrMap.keys()).sort((a, b) => {
+    const aNum = parseInt(String(a).replace(/^chr/i, ''))
+    const bNum = parseInt(String(b).replace(/^chr/i, ''))
+    if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum
+    if (!isNaN(aNum)) return -1
+    if (!isNaN(bNum)) return 1
+    return String(a).localeCompare(String(b))
+  })
+
+  // Calculate cumulative positions
+  let cumOffset = 0
+  const chrOffsets = new Map<string | number, number>()
+
+  for (let i = 0; i < chrOrder.length; i++) {
+    const chr = chrOrder[i]
+    chrOffsets.set(chr, cumOffset)
+
+    const chrPoints = chrMap.get(chr)!
+    const maxPos = Math.max(...chrPoints.map(p => p.pos))
+
+    for (const point of chrPoints) {
+      point.cumPos = cumOffset + point.pos
+      point.chrIndex = i
+    }
+
+    cumOffset += maxPos * (1 + chrGap)
+  }
+
+  // Find data ranges
+  const minX = Math.min(...points.map(p => p.cumPos))
+  const maxX = Math.max(...points.map(p => p.cumPos))
+  const minY = 0
+  const maxY = Math.max(...points.map(p => p.negLogP)) * 1.1
+
+  // Create local scale mappers using scales range
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  const mapX = (v: number) => plotLeft + ((v - minX) / (maxX - minX)) * (plotRight - plotLeft)
+  const mapY = (v: number) => plotBottom - ((v - minY) / (maxY - minY)) * (plotBottom - plotTop)
+
+  // Draw threshold lines
+  if (showThresholds) {
+    const lineColor: RGBA = { r: 150, g: 150, b: 150, a: 1 }
+
+    // Suggestive threshold
+    if (suggestiveLine <= maxY) {
+      const sy = Math.round(mapY(suggestiveLine))
+      for (let x = plotLeft; x <= plotRight; x += 2) {
+        canvas.drawChar(x, sy, '─', lineColor)
+      }
+    }
+
+    // Genome-wide threshold
+    if (genomeWideLine <= maxY) {
+      const gy = Math.round(mapY(genomeWideLine))
+      for (let x = plotLeft; x <= plotRight; x += 2) {
+        canvas.drawChar(x, gy, '─', highlightColorParsed)
+      }
+    }
+  }
+
+  // Draw points by significance level
+  // First pass: non-significant points
+  for (const point of points) {
+    if (point.pval >= suggestiveThreshold) {
+      const cx = Math.round(mapX(point.cumPos))
+      const cy = Math.round(mapY(point.negLogP))
+      const color = chrColorsParsed[point.chrIndex % chrColorsParsed.length]
+      canvas.drawPoint(cx, cy, color, pointChar)
+    }
+  }
+
+  // Second pass: suggestive points
+  for (const point of points) {
+    if (point.pval < suggestiveThreshold && point.pval >= genomeWideThreshold) {
+      const cx = Math.round(mapX(point.cumPos))
+      const cy = Math.round(mapY(point.negLogP))
+      canvas.drawPoint(cx, cy, suggestiveColorParsed, pointChar)
+    }
+  }
+
+  // Third pass: genome-wide significant points
+  for (const point of points) {
+    if (point.pval < genomeWideThreshold) {
+      const cx = Math.round(mapX(point.cumPos))
+      const cy = Math.round(mapY(point.negLogP))
+      canvas.drawPoint(cx, cy, highlightColorParsed, pointChar)
+    }
+  }
+
+  // Label top N significant points
+  if (nLabels > 0) {
+    const labelColor: RGBA = { r: 50, g: 50, b: 50, a: 1 }
+    const topPoints = points
+      .filter(p => p.label && p.pval < suggestiveThreshold)
+      .sort((a, b) => a.pval - b.pval)
+      .slice(0, nLabels)
+
+    for (const point of topPoints) {
+      const cx = Math.round(mapX(point.cumPos))
+      const cy = Math.round(mapY(point.negLogP))
+      const label = point.label!
+
+      for (let i = 0; i < label.length; i++) {
+        canvas.drawChar(cx + 1 + i, cy, label[i], labelColor)
+      }
+    }
+  }
+}
+
+/**
+ * Render heatmap with optional clustering
+ */
+function renderGeomHeatmap(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const valueCol = String(params.value_col ?? 'value')
+  const lowColor = String(params.low_color ?? '#313695')
+  const midColor = String(params.mid_color ?? '#ffffbf')
+  const highColor = String(params.high_color ?? '#a50026')
+  const naColor = String(params.na_color ?? '#808080')
+  const clusterRows = Boolean(params.cluster_rows ?? false)
+  const clusterCols = Boolean(params.cluster_cols ?? false)
+  const showRowLabels = Boolean(params.show_row_labels ?? true)
+  const showColLabels = Boolean(params.show_col_labels ?? true)
+  const cellChar = String(params.cell_char ?? '█')
+  const scaleMethod = String(params.scale ?? 'none') as 'none' | 'row' | 'column'
+
+  if (!Array.isArray(data) || data.length === 0) return
+
+  const xField = typeof aes.x === 'string' ? aes.x : 'x'
+  const yField = typeof aes.y === 'string' ? aes.y : 'y'
+  const fillField = typeof aes.fill === 'string' ? aes.fill : valueCol
+
+  // Parse colors
+  const parseHex = (hex: string): RGBA => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b, a: 1 }
+  }
+
+  const lowRgb = parseHex(lowColor)
+  const midRgb = parseHex(midColor)
+  const highRgb = parseHex(highColor)
+  const naRgb = parseHex(naColor)
+
+  // Build matrix from data
+  const rowSet = new Set<string>()
+  const colSet = new Set<string>()
+  const valueMap = new Map<string, number>()
+
+  for (const row of data) {
+    const rowKey = String(row[yField as keyof typeof row] ?? '')
+    const colKey = String(row[xField as keyof typeof row] ?? '')
+    const val = row[fillField as keyof typeof row]
+
+    if (rowKey && colKey) {
+      rowSet.add(rowKey)
+      colSet.add(colKey)
+      if (typeof val === 'number' && !isNaN(val)) {
+        valueMap.set(`${rowKey}|${colKey}`, val)
+      }
+    }
+  }
+
+  let rowKeys = Array.from(rowSet)
+  let colKeys = Array.from(colSet)
+
+  if (rowKeys.length === 0 || colKeys.length === 0) return
+
+  // Simple hierarchical clustering (complete linkage)
+  const clusterOrder = (keys: string[], getDistance: (a: string, b: string) => number): string[] => {
+    if (keys.length <= 2) return keys
+
+    // Build distance matrix and do greedy clustering
+    const remaining = [...keys]
+    const result: string[] = []
+
+    // Start with the item that has minimum average distance to others
+    let minAvg = Infinity
+    let startIdx = 0
+    for (let i = 0; i < remaining.length; i++) {
+      let sum = 0
+      for (let j = 0; j < remaining.length; j++) {
+        if (i !== j) sum += getDistance(remaining[i], remaining[j])
+      }
+      const avg = sum / (remaining.length - 1)
+      if (avg < minAvg) {
+        minAvg = avg
+        startIdx = i
+      }
+    }
+
+    result.push(remaining.splice(startIdx, 1)[0])
+
+    // Greedily add closest item
+    while (remaining.length > 0) {
+      let minDist = Infinity
+      let minIdx = 0
+      for (let i = 0; i < remaining.length; i++) {
+        const dist = getDistance(result[result.length - 1], remaining[i])
+        if (dist < minDist) {
+          minDist = dist
+          minIdx = i
+        }
+      }
+      result.push(remaining.splice(minIdx, 1)[0])
+    }
+
+    return result
+  }
+
+  // Clustering
+  if (clusterRows) {
+    const rowDistance = (a: string, b: string): number => {
+      let sum = 0
+      let count = 0
+      for (const col of colKeys) {
+        const va = valueMap.get(`${a}|${col}`)
+        const vb = valueMap.get(`${b}|${col}`)
+        if (va !== undefined && vb !== undefined) {
+          sum += (va - vb) ** 2
+          count++
+        }
+      }
+      return count > 0 ? Math.sqrt(sum / count) : Infinity
+    }
+    rowKeys = clusterOrder(rowKeys, rowDistance)
+  }
+
+  if (clusterCols) {
+    const colDistance = (a: string, b: string): number => {
+      let sum = 0
+      let count = 0
+      for (const row of rowKeys) {
+        const va = valueMap.get(`${row}|${a}`)
+        const vb = valueMap.get(`${row}|${b}`)
+        if (va !== undefined && vb !== undefined) {
+          sum += (va - vb) ** 2
+          count++
+        }
+      }
+      return count > 0 ? Math.sqrt(sum / count) : Infinity
+    }
+    colKeys = clusterOrder(colKeys, colDistance)
+  }
+
+  // Get value range
+  const values = Array.from(valueMap.values())
+  let minVal = Math.min(...values)
+  let maxVal = Math.max(...values)
+  // midpoint is available via params.midpoint if needed for asymmetric color scales
+
+  // Scale data if requested
+  const scaledValues = new Map<string, number>()
+  if (scaleMethod === 'row') {
+    for (const rowKey of rowKeys) {
+      const rowVals = colKeys.map(c => valueMap.get(`${rowKey}|${c}`)).filter((v): v is number => v !== undefined)
+      if (rowVals.length > 0) {
+        const mean = rowVals.reduce((a, b) => a + b, 0) / rowVals.length
+        const std = Math.sqrt(rowVals.reduce((a, b) => a + (b - mean) ** 2, 0) / rowVals.length) || 1
+        for (const colKey of colKeys) {
+          const v = valueMap.get(`${rowKey}|${colKey}`)
+          if (v !== undefined) {
+            scaledValues.set(`${rowKey}|${colKey}`, (v - mean) / std)
+          }
+        }
+      }
+    }
+  } else if (scaleMethod === 'column') {
+    for (const colKey of colKeys) {
+      const colVals = rowKeys.map(r => valueMap.get(`${r}|${colKey}`)).filter((v): v is number => v !== undefined)
+      if (colVals.length > 0) {
+        const mean = colVals.reduce((a, b) => a + b, 0) / colVals.length
+        const std = Math.sqrt(colVals.reduce((a, b) => a + (b - mean) ** 2, 0) / colVals.length) || 1
+        for (const rowKey of rowKeys) {
+          const v = valueMap.get(`${rowKey}|${colKey}`)
+          if (v !== undefined) {
+            scaledValues.set(`${rowKey}|${colKey}`, (v - mean) / std)
+          }
+        }
+      }
+    }
+  }
+
+  const finalValues = scaleMethod === 'none' ? valueMap : scaledValues
+  if (scaleMethod !== 'none') {
+    const scaled = Array.from(finalValues.values())
+    minVal = Math.min(...scaled)
+    maxVal = Math.max(...scaled)
+  }
+
+  // Color interpolation
+  const interpolateColor = (val: number): RGBA => {
+    if (isNaN(val)) return naRgb
+
+    const t = (val - minVal) / (maxVal - minVal || 1)
+
+    // Two-segment interpolation: low -> mid -> high
+    if (t <= 0.5) {
+      const t2 = t * 2
+      return {
+        r: Math.round(lowRgb.r + (midRgb.r - lowRgb.r) * t2),
+        g: Math.round(lowRgb.g + (midRgb.g - lowRgb.g) * t2),
+        b: Math.round(lowRgb.b + (midRgb.b - lowRgb.b) * t2),
+        a: 1,
+      }
+    } else {
+      const t2 = (t - 0.5) * 2
+      return {
+        r: Math.round(midRgb.r + (highRgb.r - midRgb.r) * t2),
+        g: Math.round(midRgb.g + (highRgb.g - midRgb.g) * t2),
+        b: Math.round(midRgb.b + (highRgb.b - midRgb.b) * t2),
+        a: 1,
+      }
+    }
+  }
+
+  // Calculate cell dimensions using scales range
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  const labelWidth = showRowLabels ? Math.min(10, Math.max(...rowKeys.map(k => k.length))) + 1 : 0
+  const labelHeight = showColLabels ? 1 : 0
+
+  const availWidth = plotRight - plotLeft - labelWidth
+  const availHeight = plotBottom - plotTop - labelHeight
+
+  const cellWidth = Math.max(1, Math.floor(availWidth / colKeys.length))
+  const cellHeight = Math.max(1, Math.floor(availHeight / rowKeys.length))
+
+  // Draw cells
+  for (let ri = 0; ri < rowKeys.length; ri++) {
+    const rowKey = rowKeys[ri]
+    const baseY = plotTop + labelHeight + ri * cellHeight
+
+    for (let ci = 0; ci < colKeys.length; ci++) {
+      const colKey = colKeys[ci]
+      const baseX = plotLeft + labelWidth + ci * cellWidth
+
+      const val = finalValues.get(`${rowKey}|${colKey}`)
+      const color = val !== undefined ? interpolateColor(val) : naRgb
+
+      // Fill cell
+      for (let dy = 0; dy < cellHeight; dy++) {
+        for (let dx = 0; dx < cellWidth; dx++) {
+          canvas.drawChar(baseX + dx, baseY + dy, cellChar, color)
+        }
+      }
+    }
+  }
+
+  // Draw row labels
+  if (showRowLabels) {
+    const labelColor: RGBA = { r: 180, g: 180, b: 180, a: 1 }
+    for (let ri = 0; ri < rowKeys.length; ri++) {
+      const label = rowKeys[ri].slice(0, labelWidth - 1)
+      const y = plotTop + labelHeight + ri * cellHeight + Math.floor(cellHeight / 2)
+      for (let i = 0; i < label.length; i++) {
+        canvas.drawChar(plotLeft + i, y, label[i], labelColor)
+      }
+    }
+  }
+
+  // Draw column labels (rotated/abbreviated)
+  if (showColLabels) {
+    const labelColor: RGBA = { r: 180, g: 180, b: 180, a: 1 }
+    for (let ci = 0; ci < colKeys.length; ci++) {
+      const label = colKeys[ci].slice(0, cellWidth)
+      const x = plotLeft + labelWidth + ci * cellWidth + Math.floor(cellWidth / 2)
+      for (let i = 0; i < Math.min(label.length, 1); i++) {
+        canvas.drawChar(x, plotTop + i, label[i], labelColor)
+      }
+    }
+  }
+}
+
+/**
+ * Render PCA biplot
+ */
+function renderGeomBiplot(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const pc1Col = params.pc1_col ?? 'PC1'
+  const pc2Col = params.pc2_col ?? 'PC2'
+  const loadings = params.loadings as Array<{ variable: string; pc1: number; pc2: number }> | undefined
+  // varExplained (params.var_explained) can be used for axis labels showing % variance
+  const showScores = params.show_scores ?? true
+  // scoreSize (params.score_size) can be used for point size variation
+  const scoreChar = String(params.score_char ?? '●')
+  const showScoreLabels = params.show_score_labels ?? false
+  const showLoadings = params.show_loadings ?? true
+  const loadingColor = String(params.loading_color ?? '#e41a1c')
+  const loadingScale = params.loading_scale as number | undefined
+  const showLoadingLabels = params.show_loading_labels ?? true
+  const showOrigin = params.show_origin ?? true
+  const originColor = String(params.origin_color ?? '#999999')
+
+  if (!Array.isArray(data) || data.length === 0) return
+
+  // Parse colors
+  const parseHex = (hex: string): RGBA => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b, a: 1 }
+  }
+
+  const loadingColorParsed = parseHex(loadingColor)
+  const originColorParsed = parseHex(originColor)
+
+  // Extract scores from data
+  interface ScorePoint {
+    pc1: number
+    pc2: number
+    label?: string
+    color?: RGBA
+  }
+
+  const scores: ScorePoint[] = []
+  const xField = typeof aes.x === 'string' ? aes.x : pc1Col
+  const yField = typeof aes.y === 'string' ? aes.y : pc2Col
+  const labelField = typeof aes.label === 'string' ? aes.label : undefined
+  const colorField = typeof aes.color === 'string' ? aes.color : undefined
+
+  for (const row of data) {
+    const rawPc1 = row[xField as keyof typeof row]
+    const rawPc2 = row[yField as keyof typeof row]
+    const pc1 = typeof rawPc1 === 'number' ? rawPc1 : parseFloat(String(rawPc1))
+    const pc2 = typeof rawPc2 === 'number' ? rawPc2 : parseFloat(String(rawPc2))
+
+    if (!isNaN(pc1) && !isNaN(pc2)) {
+      const point: ScorePoint = { pc1, pc2 }
+      if (labelField) point.label = String(row[labelField as keyof typeof row] ?? '')
+
+      // Get color from scale if available
+      if (colorField && scales.color) {
+        point.color = scales.color.map(row[colorField])
+      }
+
+      scores.push(point)
+    }
+  }
+
+  if (scores.length === 0) return
+
+  // Calculate data range (include loadings if present)
+  let minX = Math.min(...scores.map(s => s.pc1))
+  let maxX = Math.max(...scores.map(s => s.pc1))
+  let minY = Math.min(...scores.map(s => s.pc2))
+  let maxY = Math.max(...scores.map(s => s.pc2))
+
+  // Auto-calculate loading scale if needed
+  let actualLoadingScale = loadingScale
+  if (loadings && loadings.length > 0 && !actualLoadingScale) {
+    const maxLoading = Math.max(
+      ...loadings.map(l => Math.sqrt(l.pc1 ** 2 + l.pc2 ** 2))
+    )
+    const maxScore = Math.max(
+      Math.abs(minX), Math.abs(maxX), Math.abs(minY), Math.abs(maxY)
+    )
+    actualLoadingScale = (maxScore * 0.8) / (maxLoading || 1)
+  }
+
+  // Extend range to include loadings
+  if (loadings && actualLoadingScale) {
+    for (const l of loadings) {
+      const lx = l.pc1 * actualLoadingScale
+      const ly = l.pc2 * actualLoadingScale
+      minX = Math.min(minX, lx)
+      maxX = Math.max(maxX, lx)
+      minY = Math.min(minY, ly)
+      maxY = Math.max(maxY, ly)
+    }
+  }
+
+  // Add padding
+  const rangeX = maxX - minX || 1
+  const rangeY = maxY - minY || 1
+  minX -= rangeX * 0.1
+  maxX += rangeX * 0.1
+  minY -= rangeY * 0.1
+  maxY += rangeY * 0.1
+
+  // Create local scale mappers using scales range
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  const mapX = (v: number) => plotLeft + ((v - minX) / (maxX - minX)) * (plotRight - plotLeft)
+  const mapY = (v: number) => plotBottom - ((v - minY) / (maxY - minY)) * (plotBottom - plotTop)
+
+  // Draw origin crosshairs
+  if (showOrigin && minX <= 0 && maxX >= 0 && minY <= 0 && maxY >= 0) {
+    const originX = Math.round(mapX(0))
+    const originY = Math.round(mapY(0))
+
+    // Horizontal line
+    for (let x = plotLeft; x <= plotRight; x++) {
+      canvas.drawChar(x, originY, '─', originColorParsed)
+    }
+
+    // Vertical line
+    for (let y = plotTop; y <= plotBottom; y++) {
+      canvas.drawChar(originX, y, '│', originColorParsed)
+    }
+
+    // Center cross
+    canvas.drawChar(originX, originY, '┼', originColorParsed)
+  }
+
+  // Draw loading arrows
+  if (showLoadings && loadings && actualLoadingScale) {
+    for (const loading of loadings) {
+      const endX = loading.pc1 * actualLoadingScale
+      const endY = loading.pc2 * actualLoadingScale
+
+      const sx = Math.round(mapX(0))
+      const sy = Math.round(mapY(0))
+      const ex = Math.round(mapX(endX))
+      const ey = Math.round(mapY(endY))
+
+      // Draw line from origin to loading
+      const steps = Math.max(Math.abs(ex - sx), Math.abs(ey - sy))
+      for (let i = 0; i <= steps; i++) {
+        const t = steps > 0 ? i / steps : 0
+        const px = Math.round(sx + (ex - sx) * t)
+        const py = Math.round(sy + (ey - sy) * t)
+
+        // Choose character based on direction
+        const dx = ex - sx
+        const dy = ey - sy
+        let char = '·'
+        if (Math.abs(dx) > Math.abs(dy) * 2) {
+          char = dx > 0 ? '─' : '─'
+        } else if (Math.abs(dy) > Math.abs(dx) * 2) {
+          char = '│'
+        } else if ((dx > 0 && dy < 0) || (dx < 0 && dy > 0)) {
+          char = '/'
+        } else {
+          char = '\\'
+        }
+
+        canvas.drawChar(px, py, char, loadingColorParsed)
+      }
+
+      // Draw arrow head
+      const angle = Math.atan2(ey - sy, ex - sx)
+      let arrowChar = '→'
+      if (angle > Math.PI * 3 / 4 || angle < -Math.PI * 3 / 4) arrowChar = '←'
+      else if (angle > Math.PI / 4) arrowChar = '↓'
+      else if (angle < -Math.PI / 4) arrowChar = '↑'
+      canvas.drawChar(ex, ey, arrowChar, loadingColorParsed)
+
+      // Draw variable label
+      if (showLoadingLabels) {
+        const labelX = ex + (ex >= sx ? 1 : -loading.variable.length)
+        for (let i = 0; i < loading.variable.length; i++) {
+          canvas.drawChar(labelX + i, ey, loading.variable[i], loadingColorParsed)
+        }
+      }
+    }
+  }
+
+  // Draw score points
+  if (showScores) {
+    const defaultColor: RGBA = { r: 31, g: 120, b: 180, a: 1 }
+
+    for (const score of scores) {
+      const cx = Math.round(mapX(score.pc1))
+      const cy = Math.round(mapY(score.pc2))
+      const color = score.color ?? defaultColor
+      canvas.drawPoint(cx, cy, color, scoreChar)
+
+      // Draw label if requested
+      if (showScoreLabels && score.label) {
+        const labelColor: RGBA = { r: 50, g: 50, b: 50, a: 1 }
+        for (let i = 0; i < score.label.length; i++) {
+          canvas.drawChar(cx + 1 + i, cy, score.label[i], labelColor)
+        }
+      }
+    }
+  }
+}
+
+/**
  * Geometry renderer dispatch
  */
 export function renderGeom(
@@ -4433,6 +5138,15 @@ export function renderGeom(
       break
     case 'ma':
       renderGeomMA(data, geom, aes, scales, canvas)
+      break
+    case 'manhattan':
+      renderGeomManhattan(data, geom, aes, scales, canvas)
+      break
+    case 'heatmap':
+      renderGeomHeatmap(data, geom, aes, scales, canvas)
+      break
+    case 'biplot':
+      renderGeomBiplot(data, geom, aes, scales, canvas)
       break
     default:
       // Unknown geom type, skip

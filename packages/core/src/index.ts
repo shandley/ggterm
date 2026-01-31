@@ -113,6 +113,9 @@ export {
   geom_treemap,
   geom_volcano,
   geom_ma,
+  geom_manhattan,
+  geom_heatmap,
+  geom_biplot,
 } from './geoms'
 export type {
   PathOptions,
@@ -145,6 +148,9 @@ export type {
   TreemapOptions,
   VolcanoOptions,
   MAOptions,
+  ManhattanOptions,
+  HeatmapOptions,
+  BiplotOptions,
 } from './geoms'
 
 // Position adjustments

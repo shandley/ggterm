@@ -1518,6 +1518,93 @@ const plot = gg(deResults)
 console.log(plot.render({ width: 80, height: 25 }))
 ```
 
+### Manhattan Plot
+
+GWAS visualization showing genomic position vs significance across chromosomes.
+
+```typescript
+import { gg, geom_manhattan } from '@ggterm/core'
+
+const gwasResults = [
+  { snp: 'rs123', chr: '1', pos: 1e7, pvalue: 1e-9 },
+  { snp: 'rs456', chr: '2', pos: 2e7, pvalue: 1e-6 },
+  { snp: 'rs789', chr: '6', pos: 3e7, pvalue: 5e-8 },
+  { snp: 'rs111', chr: '11', pos: 5e7, pvalue: 1e-10 },
+  // ... more SNPs
+]
+
+const plot = gg(gwasResults)
+  .aes({ x: 'pos', y: 'pvalue', color: 'chr', label: 'snp' })
+  .geom(geom_manhattan({
+    genome_wide_threshold: 5e-8,
+    n_labels: 3,
+  }))
+  .labs({ title: 'GWAS Manhattan Plot' })
+
+console.log(plot.render({ width: 100, height: 25 }))
+```
+
+### Heatmap
+
+Gene expression matrix with hierarchical clustering.
+
+```typescript
+import { gg, geom_heatmap } from '@ggterm/core'
+
+const expressionData = [
+  { gene: 'IL6', sample: 'Control1', expression: 0.5 },
+  { gene: 'IL6', sample: 'Control2', expression: 0.7 },
+  { gene: 'IL6', sample: 'Treat1', expression: 3.2 },
+  { gene: 'IL6', sample: 'Treat2', expression: 3.5 },
+  { gene: 'TNF', sample: 'Control1', expression: 1.0 },
+  { gene: 'TNF', sample: 'Control2', expression: 1.2 },
+  { gene: 'TNF', sample: 'Treat1', expression: 2.5 },
+  { gene: 'TNF', sample: 'Treat2', expression: 2.8 },
+]
+
+const plot = gg(expressionData)
+  .aes({ x: 'sample', y: 'gene', fill: 'expression' })
+  .geom(geom_heatmap({
+    cluster_rows: true,
+    cluster_cols: true,
+    scale: 'row',
+  }))
+  .labs({ title: 'Gene Expression Heatmap' })
+
+console.log(plot.render({ width: 70, height: 20 }))
+```
+
+### PCA Biplot
+
+Principal component analysis showing samples and variable loadings.
+
+```typescript
+import { gg, geom_biplot } from '@ggterm/core'
+
+const pcaScores = [
+  { sample: 'setosa1', species: 'setosa', PC1: -2.5, PC2: 0.5 },
+  { sample: 'setosa2', species: 'setosa', PC1: -2.3, PC2: 0.3 },
+  { sample: 'versicolor1', species: 'versicolor', PC1: 0.5, PC2: -0.5 },
+  { sample: 'versicolor2', species: 'versicolor', PC1: 0.7, PC2: -0.3 },
+  { sample: 'virginica1', species: 'virginica', PC1: 2.5, PC2: 0.2 },
+  { sample: 'virginica2', species: 'virginica', PC1: 2.3, PC2: 0.4 },
+]
+
+const loadings = [
+  { variable: 'Sepal.L', pc1: 0.52, pc2: -0.38 },
+  { variable: 'Sepal.W', pc1: -0.27, pc2: 0.92 },
+  { variable: 'Petal.L', pc1: 0.58, pc2: 0.02 },
+  { variable: 'Petal.W', pc1: 0.57, pc2: 0.07 },
+]
+
+const plot = gg(pcaScores)
+  .aes({ x: 'PC1', y: 'PC2', color: 'species' })
+  .geom(geom_biplot({ loadings }))
+  .labs({ title: 'Iris PCA Biplot', x: 'PC1 (73%)', y: 'PC2 (23%)' })
+
+console.log(plot.render({ width: 80, height: 25 }))
+```
+
 ---
 
 ## Annotated Plots
