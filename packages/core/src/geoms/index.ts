@@ -30,7 +30,7 @@ export {
   type ErrorbarOptions,
 } from './errorbar'
 export { geom_rect, geom_abline, type RectOptions, type AblineOptions } from './rect'
-export { geom_qq, geom_qq_line, type QQOptions, type QQLineOptions } from './qq'
+export { geom_qq, type QQOptions } from './qq'
 export { geom_ridgeline, geom_joy, type RidgelineOptions } from './ridgeline'
 export { geom_beeswarm, geom_quasirandom, type BeeswarmOptions } from './beeswarm'
 export { geom_dumbbell, type DumbbellOptions } from './dumbbell'
@@ -57,3 +57,9 @@ export { geom_kaplan_meier, type KaplanMeierOptions } from './kaplan-meier'
 export { geom_forest, type ForestOptions } from './forest'
 export { geom_roc, type RocOptions } from './roc'
 export { geom_bland_altman, type BlandAltmanOptions } from './bland-altman'
+
+// Statistical diagnostic geoms
+export { geom_ecdf, type ECDFOptions } from './ecdf'
+export { geom_funnel, type FunnelOptions } from './funnel'
+export { geom_control, type ControlOptions } from './control'
+export { geom_scree, type ScreeOptions } from './scree'

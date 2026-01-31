@@ -1,96 +1,90 @@
 /**
- * geom_qq - Q-Q plot geometry
+ * Q-Q Plot Geometry
  *
- * Creates Q-Q (quantile-quantile) plots to assess whether data
- * follows a particular distribution (typically normal).
+ * Creates quantile-quantile plots for comparing data distributions
+ * against theoretical distributions or other samples.
  *
  * @example
- * ```ts
- * // Basic Q-Q plot to check normality
+ * // Basic Q-Q plot against normal distribution
  * gg(data)
- *   .aes({ x: 'values' })
+ *   .aes({ sample: 'values' })
  *   .geom(geom_qq())
- *   .geom(geom_qq_line())
  *
- * // With custom distribution
+ * @example
+ * // Q-Q plot with reference line
  * gg(data)
- *   .aes({ x: 'values' })
- *   .geom(geom_qq({ distribution: 'uniform' }))
- * ```
+ *   .aes({ sample: 'values' })
+ *   .geom(geom_qq({ show_line: true }))
+ *
+ * @example
+ * // Q-Q plot with confidence band
+ * gg(data)
+ *   .aes({ sample: 'values' })
+ *   .geom(geom_qq({ show_ci: true, conf_level: 0.95 }))
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types';
 
 export interface QQOptions {
-  /** Distribution to compare against (default: 'norm') */
-  distribution?: 'norm' | 'uniform' | 'exp'
-  /** Distribution parameters */
-  dparams?: { mean?: number; sd?: number; rate?: number }
-  /** Point size */
-  size?: number
-  /** Point shape */
-  shape?: string
-  /** Point color */
-  color?: string
-  /** Alpha transparency */
-  alpha?: number
-}
+  /**
+   * Distribution to compare against
+   * @default 'normal'
+   */
+  distribution?: 'normal' | 'uniform' | 'exponential';
 
-export interface QQLineOptions {
-  /** Distribution to compare against (default: 'norm') */
-  distribution?: 'norm' | 'uniform' | 'exp'
-  /** Distribution parameters */
-  dparams?: { mean?: number; sd?: number; rate?: number }
-  /** Line color */
-  color?: string
-  /** Line type */
-  linetype?: 'solid' | 'dashed' | 'dotted'
-  /** Alpha transparency */
-  alpha?: number
+  /**
+   * Show reference line (y = x for perfect fit)
+   * @default true
+   */
+  show_line?: boolean;
+
+  /**
+   * Show confidence band around reference line
+   * @default false
+   */
+  show_ci?: boolean;
+
+  /**
+   * Confidence level for CI band
+   * @default 0.95
+   */
+  conf_level?: number;
+
+  /**
+   * Line color for reference line
+   * @default '#ff0000'
+   */
+  line_color?: string;
+
+  /**
+   * Point character
+   * @default '●'
+   */
+  point_char?: string;
+
+  /**
+   * Use standardized residuals
+   * @default true
+   */
+  standardize?: boolean;
 }
 
 /**
- * Q-Q plot points
- *
- * Plots sample quantiles against theoretical quantiles.
- * If the points fall approximately on the diagonal reference line,
- * the data follows the reference distribution.
- *
- * The x aesthetic should be the variable to test.
- * Output uses x = theoretical quantile, y = sample quantile.
+ * Create a Q-Q plot geometry
  */
 export function geom_qq(options: QQOptions = {}): Geom {
   return {
-    type: 'point',
-    stat: 'qq',
+    type: 'qq',
+    stat: 'identity',
+    position: 'identity',
     params: {
-      distribution: options.distribution ?? 'norm',
-      dparams: options.dparams,
-      size: options.size ?? 1,
-      shape: options.shape ?? '●',
-      color: options.color,
-      alpha: options.alpha ?? 1,
+      distribution: options.distribution ?? 'normal',
+      show_line: options.show_line ?? true,
+      show_ci: options.show_ci ?? false,
+      conf_level: options.conf_level ?? 0.95,
+      line_color: options.line_color ?? '#ff0000',
+      point_char: options.point_char ?? '●',
+      standardize: options.standardize ?? true,
     },
-  }
-}
-
-/**
- * Q-Q plot reference line
- *
- * Draws a line through the first and third quartiles of the
- * theoretical vs sample distribution. Points should fall on
- * this line if the data follows the reference distribution.
- */
-export function geom_qq_line(options: QQLineOptions = {}): Geom {
-  return {
-    type: 'segment',
-    stat: 'qq_line',
-    params: {
-      distribution: options.distribution ?? 'norm',
-      dparams: options.dparams,
-      color: options.color ?? 'gray',
-      linetype: options.linetype ?? 'dashed',
-      alpha: options.alpha ?? 1,
-    },
-  }
+  };
 }

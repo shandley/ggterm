@@ -52,7 +52,6 @@ import {
   geom_contour_filled,
   geom_density_2d,
   geom_qq,
-  geom_qq_line,
   geom_hline,
   geom_vline,
   geom_abline,
@@ -72,6 +71,11 @@ import {
   geom_forest,
   geom_roc,
   geom_bland_altman,
+  // Statistical diagnostics
+  geom_ecdf,
+  geom_funnel,
+  geom_control,
+  geom_scree,
   facet_wrap,
 } from './index'
 import { readFileSync, writeFileSync } from 'fs'
@@ -96,7 +100,9 @@ const GEOM_TYPES = [
   'density_2d', 'qq', 'calendar', 'flame', 'icicle', 'corrmat', 'sankey', 'treemap', 'volcano', 'ma',
   'manhattan', 'heatmap', 'biplot',
   // Clinical/Statistical
-  'kaplan_meier', 'forest', 'roc', 'bland_altman'
+  'kaplan_meier', 'forest', 'roc', 'bland_altman',
+  // Statistical diagnostics
+  'qq', 'ecdf', 'funnel', 'control', 'scree'
 ]
 
 // Date pattern: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
@@ -847,7 +853,6 @@ function handlePlot(args: string[]): void {
       break
     case 'qq':
       plot = plot.geom(geom_qq())
-      plot = plot.geom(geom_qq_line())
       break
     case 'calendar':
       plot = plot.geom(geom_calendar())
@@ -895,6 +900,22 @@ function handlePlot(args: string[]): void {
     case 'bland_altman':
       plot = plot.geom(geom_bland_altman())
       break
+    // Statistical diagnostics
+    case 'qq':
+      plot = plot.geom(geom_qq())
+      break
+    case 'ecdf':
+      plot = plot.geom(geom_ecdf())
+      break
+    case 'funnel':
+      plot = plot.geom(geom_funnel())
+      break
+    case 'control':
+      plot = plot.geom(geom_control())
+      break
+    case 'scree':
+      plot = plot.geom(geom_scree())
+      break
     case 'point':
     default:
       plot = plot.geom(geom_point())
@@ -934,6 +955,18 @@ function handlePlot(args: string[]): void {
   if (geomType === 'bland_altman') {
     yLabel = 'Difference (Method1 - Method2)'
   }
+  if (geomType === 'ecdf') {
+    yLabel = 'Cumulative Probability'
+  }
+  if (geomType === 'funnel') {
+    yLabel = 'Standard Error'
+  }
+  if (geomType === 'control') {
+    yLabel = 'Measurement'
+  }
+  if (geomType === 'scree') {
+    yLabel = 'Variance Explained'
+  }
 
   // Determine x-axis label
   let xLabel: string = x
@@ -954,6 +987,15 @@ function handlePlot(args: string[]): void {
   }
   if (geomType === 'forest') {
     xLabel = 'Effect Size'
+  }
+  if (geomType === 'funnel') {
+    xLabel = 'Effect Size'
+  }
+  if (geomType === 'control') {
+    xLabel = 'Sample Number'
+  }
+  if (geomType === 'scree') {
+    xLabel = 'Component'
   }
 
   // Add labels

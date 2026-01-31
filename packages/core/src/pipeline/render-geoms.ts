@@ -5488,6 +5488,704 @@ function renderGeomBlandAltman(
 }
 
 /**
+ * Q-Q Plot renderer
+ */
+function renderGeomQQ(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const showLine = params.show_line ?? true
+  const lineColor = (params.line_color as string) ?? '#ff0000'
+  const pointChar = (params.point_char as string) ?? '●'
+  const standardize = params.standardize ?? true
+
+  const parseHex = (hex: string): RGBA => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b, a: 1 }
+  }
+  const lineColorParsed = parseHex(lineColor)
+
+  // Get sample values from x aesthetic
+  const sampleField = typeof aes.x === 'string' ? aes.x : 'x'
+
+  const values: number[] = []
+  for (const row of data) {
+    const v = Number(row[sampleField as keyof typeof row])
+    if (!isNaN(v)) values.push(v)
+  }
+
+  if (values.length === 0) return
+
+  // Sort values
+  values.sort((a, b) => a - b)
+  const n = values.length
+
+  // Compute sample quantiles and theoretical quantiles
+  const mean = values.reduce((a, b) => a + b, 0) / n
+  const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (n - 1)
+  const sd = Math.sqrt(variance)
+
+  // Standard normal quantile function (approximation using Abramowitz and Stegun)
+  const qnorm = (p: number): number => {
+    if (p <= 0) return -Infinity
+    if (p >= 1) return Infinity
+    if (p === 0.5) return 0
+
+    const a = [
+      -3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2,
+      1.383577518672690e2, -3.066479806614716e1, 2.506628277459239e0
+    ]
+    const b = [
+      -5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2,
+      6.680131188771972e1, -1.328068155288572e1
+    ]
+    const c = [
+      -7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838e0,
+      -2.549732539343734e0, 4.374664141464968e0, 2.938163982698783e0
+    ]
+    const d = [
+      7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996e0,
+      3.754408661907416e0
+    ]
+
+    const pLow = 0.02425
+    const pHigh = 1 - pLow
+    let q: number
+
+    if (p < pLow) {
+      q = Math.sqrt(-2 * Math.log(p))
+      return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+    } else if (p <= pHigh) {
+      q = p - 0.5
+      const r = q * q
+      return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+        (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1)
+    } else {
+      q = Math.sqrt(-2 * Math.log(1 - p))
+      return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+    }
+  }
+
+  // Compute theoretical quantiles
+  interface QQPoint {
+    theoretical: number
+    sample: number
+  }
+
+  const points: QQPoint[] = []
+  for (let i = 0; i < n; i++) {
+    const p = (i + 0.5) / n
+    const theoretical = qnorm(p)
+    const sample = standardize ? (values[i] - mean) / sd : values[i]
+    points.push({ theoretical, sample })
+  }
+
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  // Find ranges
+  const minT = Math.min(...points.map(p => p.theoretical))
+  const maxT = Math.max(...points.map(p => p.theoretical))
+  const minS = Math.min(...points.map(p => p.sample))
+  const maxS = Math.max(...points.map(p => p.sample))
+
+  // Use same range for both axes for proper comparison
+  const minVal = Math.min(minT, minS)
+  const maxVal = Math.max(maxT, maxS)
+
+  const mapX = (v: number) => plotLeft + ((v - minVal) / (maxVal - minVal)) * (plotRight - plotLeft)
+  const mapY = (v: number) => plotBottom - ((v - minVal) / (maxVal - minVal)) * (plotBottom - plotTop)
+
+  // Draw reference line (y = x)
+  if (showLine) {
+    const steps = plotRight - plotLeft
+    for (let i = 0; i <= steps; i++) {
+      const v = minVal + (i / steps) * (maxVal - minVal)
+      const x = Math.round(mapX(v))
+      const y = Math.round(mapY(v))
+      if (y >= plotTop && y <= plotBottom) {
+        canvas.drawChar(x, y, '─', lineColorParsed)
+      }
+    }
+  }
+
+  // Draw points
+  const pointColor: RGBA = { r: 31, g: 119, b: 180, a: 1 }
+  for (const p of points) {
+    const x = Math.round(mapX(p.theoretical))
+    const y = Math.round(mapY(p.sample))
+    canvas.drawChar(x, y, pointChar, pointColor)
+  }
+}
+
+/**
+ * ECDF (Empirical Cumulative Distribution Function) renderer
+ */
+function renderGeomECDF(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const complement = params.complement ?? false
+  const showPoints = params.show_points ?? false
+
+  const xField = typeof aes.x === 'string' ? aes.x : 'x'
+  const colorField = typeof aes.color === 'string' ? aes.color : null
+
+  // Group data by color if specified
+  const groups = new Map<string, number[]>()
+
+  for (const row of data) {
+    const v = Number(row[xField as keyof typeof row])
+    if (isNaN(v)) continue
+
+    const groupKey = colorField ? String(row[colorField as keyof typeof row] ?? 'default') : 'default'
+    if (!groups.has(groupKey)) groups.set(groupKey, [])
+    groups.get(groupKey)!.push(v)
+  }
+
+  if (groups.size === 0) return
+
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  // Find global x range
+  let globalMin = Infinity
+  let globalMax = -Infinity
+  for (const values of groups.values()) {
+    globalMin = Math.min(globalMin, ...values)
+    globalMax = Math.max(globalMax, ...values)
+  }
+
+  const mapX = (v: number) => plotLeft + ((v - globalMin) / (globalMax - globalMin)) * (plotRight - plotLeft)
+  const mapY = (v: number) => {
+    const ecdf = complement ? 1 - v : v
+    return plotBottom - ecdf * (plotBottom - plotTop)
+  }
+
+  const colors: RGBA[] = [
+    { r: 31, g: 119, b: 180, a: 1 },
+    { r: 255, g: 127, b: 14, a: 1 },
+    { r: 44, g: 160, b: 44, a: 1 },
+    { r: 214, g: 39, b: 40, a: 1 },
+    { r: 148, g: 103, b: 189, a: 1 },
+  ]
+
+  let colorIdx = 0
+  for (const [, values] of groups) {
+    const color = colors[colorIdx % colors.length]
+    colorIdx++
+
+    // Sort values
+    const sorted = [...values].sort((a, b) => a - b)
+    const n = sorted.length
+
+    // Draw step function
+    let prevX = plotLeft
+    let prevY = Math.round(mapY(0))
+
+    for (let i = 0; i < n; i++) {
+      const ecdfVal = (i + 1) / n
+      const x = Math.round(mapX(sorted[i]))
+      const y = Math.round(mapY(ecdfVal))
+
+      // Horizontal step to current x
+      for (let px = prevX; px <= x; px++) {
+        canvas.drawChar(px, prevY, '─', color)
+      }
+
+      // Vertical step
+      const stepDir = y < prevY ? -1 : 1
+      for (let py = prevY; stepDir > 0 ? py <= y : py >= y; py += stepDir) {
+        canvas.drawChar(x, py, '│', color)
+      }
+
+      if (showPoints) {
+        canvas.drawChar(x, y, '●', color)
+      }
+
+      prevX = x
+      prevY = y
+    }
+
+    // Extend to right edge
+    for (let px = prevX; px <= plotRight; px++) {
+      canvas.drawChar(px, prevY, '─', color)
+    }
+  }
+}
+
+/**
+ * Funnel Plot renderer (for meta-analysis publication bias)
+ */
+function renderGeomFunnel(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const showContours = params.show_contours ?? true
+  const showSummaryLine = params.show_summary_line ?? true
+  const summaryEffect = params.summary_effect as number | undefined
+  const pointChar = (params.point_char as string) ?? '●'
+  const contourColor = (params.contour_color as string) ?? '#888888'
+  const invertY = params.invert_y ?? true
+
+  const parseHex = (hex: string): RGBA => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b, a: 1 }
+  }
+  const contourColorParsed = parseHex(contourColor)
+
+  const xField = typeof aes.x === 'string' ? aes.x : 'effect'
+  const yField = typeof aes.y === 'string' ? aes.y : 'se'
+
+  interface FunnelPoint {
+    effect: number
+    se: number
+  }
+
+  const points: FunnelPoint[] = []
+  for (const row of data) {
+    const effect = Number(row[xField as keyof typeof row])
+    const se = Number(row[yField as keyof typeof row])
+    if (!isNaN(effect) && !isNaN(se)) {
+      points.push({ effect, se })
+    }
+  }
+
+  if (points.length === 0) return
+
+  // Calculate summary effect if not provided
+  const summary = summaryEffect ?? points.reduce((a, b) => a + b.effect, 0) / points.length
+
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  // Find ranges
+  const minEffect = Math.min(...points.map(p => p.effect))
+  const maxEffect = Math.max(...points.map(p => p.effect))
+  const maxSE = Math.max(...points.map(p => p.se))
+
+  // Pad effect range for contours
+  const effectPad = (maxEffect - minEffect) * 0.2
+  const effectMin = minEffect - effectPad
+  const effectMax = maxEffect + effectPad
+
+  const mapX = (v: number) => plotLeft + ((v - effectMin) / (effectMax - effectMin)) * (plotRight - plotLeft)
+  const mapY = (v: number) => {
+    if (invertY) {
+      return plotTop + (v / maxSE) * (plotBottom - plotTop)
+    }
+    return plotBottom - (v / maxSE) * (plotBottom - plotTop)
+  }
+
+  // Draw funnel contours (95% CI)
+  if (showContours) {
+    const z = 1.96 // 95% CI
+    // Draw from SE=0 (top) to maxSE (bottom)
+    for (let se = 0; se <= maxSE; se += maxSE / 40) {
+      const leftBound = summary - z * se
+      const rightBound = summary + z * se
+
+      const y = Math.round(mapY(se))
+      const leftX = Math.round(mapX(leftBound))
+      const rightX = Math.round(mapX(rightBound))
+
+      if (leftX >= plotLeft && leftX <= plotRight) {
+        canvas.drawChar(leftX, y, '·', contourColorParsed)
+      }
+      if (rightX >= plotLeft && rightX <= plotRight) {
+        canvas.drawChar(rightX, y, '·', contourColorParsed)
+      }
+    }
+  }
+
+  // Draw summary effect line
+  if (showSummaryLine) {
+    const summaryX = Math.round(mapX(summary))
+    for (let y = plotTop; y <= plotBottom; y += 2) {
+      canvas.drawChar(summaryX, y, '│', contourColorParsed)
+    }
+  }
+
+  // Draw points
+  const pointColor: RGBA = { r: 31, g: 119, b: 180, a: 1 }
+  for (const p of points) {
+    const x = Math.round(mapX(p.effect))
+    const y = Math.round(mapY(p.se))
+    canvas.drawChar(x, y, pointChar, pointColor)
+  }
+}
+
+/**
+ * Control Chart (Shewhart Chart) renderer
+ */
+function renderGeomControl(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const sigma = (params.sigma as number) ?? 3
+  const showCenter = params.show_center ?? true
+  const showUCL = params.show_ucl ?? true
+  const showLCL = params.show_lcl ?? true
+  const showWarning = params.show_warning ?? false
+  const customCenter = params.center as number | undefined
+  const customUCL = params.ucl as number | undefined
+  const customLCL = params.lcl as number | undefined
+  const centerColor = (params.center_color as string) ?? '#0000ff'
+  const limitColor = (params.limit_color as string) ?? '#ff0000'
+  const warningColor = (params.warning_color as string) ?? '#ffa500'
+  const connectPoints = params.connect_points ?? true
+  const highlightOOC = params.highlight_ooc ?? true
+  const oocChar = (params.ooc_char as string) ?? '◆'
+  const pointChar = (params.point_char as string) ?? '●'
+
+  const parseHex = (hex: string): RGBA => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b, a: 1 }
+  }
+  const centerColorParsed = parseHex(centerColor)
+  const limitColorParsed = parseHex(limitColor)
+  const warningColorParsed = parseHex(warningColor)
+
+  const xField = typeof aes.x === 'string' ? aes.x : 'x'
+  const yField = typeof aes.y === 'string' ? aes.y : 'y'
+
+  interface ControlPoint {
+    x: number
+    y: number
+  }
+
+  const points: ControlPoint[] = []
+  for (const row of data) {
+    const x = Number(row[xField as keyof typeof row])
+    const y = Number(row[yField as keyof typeof row])
+    if (!isNaN(x) && !isNaN(y)) {
+      points.push({ x, y })
+    }
+  }
+
+  if (points.length === 0) return
+
+  // Sort by x
+  points.sort((a, b) => a.x - b.x)
+
+  // Calculate control limits
+  const yValues = points.map(p => p.y)
+  const mean = customCenter ?? yValues.reduce((a, b) => a + b, 0) / yValues.length
+
+  // For I-chart, use moving range for sigma estimate
+  let sigmaEst: number
+  if (points.length > 1) {
+    const movingRanges: number[] = []
+    for (let i = 1; i < points.length; i++) {
+      movingRanges.push(Math.abs(points[i].y - points[i - 1].y))
+    }
+    const avgMR = movingRanges.reduce((a, b) => a + b, 0) / movingRanges.length
+    sigmaEst = avgMR / 1.128 // d2 constant for n=2
+  } else {
+    const variance = yValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (yValues.length - 1)
+    sigmaEst = Math.sqrt(variance)
+  }
+
+  const ucl = customUCL ?? mean + sigma * sigmaEst
+  const lcl = customLCL ?? mean - sigma * sigmaEst
+  const uwl = mean + 2 * sigmaEst // Warning limits at 2 sigma
+  const lwl = mean - 2 * sigmaEst
+
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  // Find ranges
+  const minX = Math.min(...points.map(p => p.x))
+  const maxX = Math.max(...points.map(p => p.x))
+  const minY = Math.min(...points.map(p => p.y), lcl)
+  const maxY = Math.max(...points.map(p => p.y), ucl)
+
+  const mapX = (v: number) => plotLeft + ((v - minX) / (maxX - minX)) * (plotRight - plotLeft)
+  const mapY = (v: number) => plotBottom - ((v - minY) / (maxY - minY)) * (plotBottom - plotTop)
+
+  // Draw center line
+  if (showCenter) {
+    const centerY = Math.round(mapY(mean))
+    for (let x = plotLeft; x <= plotRight; x++) {
+      canvas.drawChar(x, centerY, '─', centerColorParsed)
+    }
+  }
+
+  // Draw control limits
+  if (showUCL) {
+    const uclY = Math.round(mapY(ucl))
+    for (let x = plotLeft; x <= plotRight; x += 2) {
+      canvas.drawChar(x, uclY, '─', limitColorParsed)
+    }
+  }
+  if (showLCL) {
+    const lclY = Math.round(mapY(lcl))
+    for (let x = plotLeft; x <= plotRight; x += 2) {
+      canvas.drawChar(x, lclY, '─', limitColorParsed)
+    }
+  }
+
+  // Draw warning limits
+  if (showWarning) {
+    const uwlY = Math.round(mapY(uwl))
+    const lwlY = Math.round(mapY(lwl))
+    for (let x = plotLeft; x <= plotRight; x += 3) {
+      canvas.drawChar(x, uwlY, '·', warningColorParsed)
+      canvas.drawChar(x, lwlY, '·', warningColorParsed)
+    }
+  }
+
+  // Draw connecting lines
+  if (connectPoints && points.length > 1) {
+    const lineColor: RGBA = { r: 100, g: 100, b: 100, a: 1 }
+    for (let i = 1; i < points.length; i++) {
+      const x1 = Math.round(mapX(points[i - 1].x))
+      const y1 = Math.round(mapY(points[i - 1].y))
+      const x2 = Math.round(mapX(points[i].x))
+      const y2 = Math.round(mapY(points[i].y))
+
+      // Bresenham's line algorithm
+      const dx = Math.abs(x2 - x1)
+      const dy = Math.abs(y2 - y1)
+      const sx = x1 < x2 ? 1 : -1
+      const sy = y1 < y2 ? 1 : -1
+      let err = dx - dy
+      let x = x1
+      let y = y1
+
+      while (true) {
+        canvas.drawChar(x, y, '·', lineColor)
+        if (x === x2 && y === y2) break
+        const e2 = 2 * err
+        if (e2 > -dy) {
+          err -= dy
+          x += sx
+        }
+        if (e2 < dx) {
+          err += dx
+          y += sy
+        }
+      }
+    }
+  }
+
+  // Draw points
+  const inControlColor: RGBA = { r: 31, g: 119, b: 180, a: 1 }
+  const oocColor: RGBA = { r: 214, g: 39, b: 40, a: 1 }
+
+  for (const p of points) {
+    const x = Math.round(mapX(p.x))
+    const y = Math.round(mapY(p.y))
+    const isOOC = p.y > ucl || p.y < lcl
+
+    if (highlightOOC && isOOC) {
+      canvas.drawChar(x, y, oocChar, oocColor)
+    } else {
+      canvas.drawChar(x, y, pointChar, inControlColor)
+    }
+  }
+}
+
+/**
+ * Scree Plot renderer (for PCA variance)
+ */
+function renderGeomScree(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const showCumulative = params.show_cumulative ?? false
+  const showKaiser = params.show_kaiser ?? false
+  const connectPoints = params.connect_points ?? true
+  const showBars = params.show_bars ?? false
+  const pointChar = (params.point_char as string) ?? '●'
+  const cumulativeColor = (params.cumulative_color as string) ?? '#ff0000'
+  const kaiserColor = (params.kaiser_color as string) ?? '#888888'
+  const threshold = params.threshold as number | undefined
+  const thresholdColor = (params.threshold_color as string) ?? '#00aa00'
+
+  const parseHex = (hex: string): RGBA => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b, a: 1 }
+  }
+  const cumulativeColorParsed = parseHex(cumulativeColor)
+  const kaiserColorParsed = parseHex(kaiserColor)
+  const thresholdColorParsed = parseHex(thresholdColor)
+
+  const xField = typeof aes.x === 'string' ? aes.x : 'component'
+  const yField = typeof aes.y === 'string' ? aes.y : 'variance'
+
+  interface ScreePoint {
+    component: number
+    variance: number
+  }
+
+  const points: ScreePoint[] = []
+  for (const row of data) {
+    const component = Number(row[xField as keyof typeof row])
+    const variance = Number(row[yField as keyof typeof row])
+    if (!isNaN(component) && !isNaN(variance)) {
+      points.push({ component, variance })
+    }
+  }
+
+  if (points.length === 0) return
+
+  // Sort by component
+  points.sort((a, b) => a.component - b.component)
+
+  // Calculate cumulative variance
+  const total = points.reduce((a, b) => a + b.variance, 0)
+  let cumSum = 0
+  const cumulativePoints = points.map(p => {
+    cumSum += p.variance
+    return { component: p.component, cumulative: cumSum / total }
+  })
+
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  // Find ranges
+  const minX = Math.min(...points.map(p => p.component))
+  const maxX = Math.max(...points.map(p => p.component))
+  const maxY = Math.max(...points.map(p => p.variance))
+
+  // For cumulative, y goes to 1
+  const yMax = showCumulative ? Math.max(maxY, total) : maxY
+
+  const mapX = (v: number) => plotLeft + ((v - minX) / (maxX - minX)) * (plotRight - plotLeft)
+  const mapY = (v: number) => plotBottom - (v / yMax) * (plotBottom - plotTop)
+  const mapYCumulative = (v: number) => plotBottom - v * (plotBottom - plotTop)
+
+  // Draw Kaiser line (eigenvalue = 1)
+  if (showKaiser) {
+    const kaiserY = Math.round(mapY(1))
+    if (kaiserY >= plotTop && kaiserY <= plotBottom) {
+      for (let x = plotLeft; x <= plotRight; x += 2) {
+        canvas.drawChar(x, kaiserY, '─', kaiserColorParsed)
+      }
+    }
+  }
+
+  // Draw threshold line
+  if (threshold !== undefined) {
+    const thresholdY = Math.round(mapYCumulative(threshold))
+    for (let x = plotLeft; x <= plotRight; x += 2) {
+      canvas.drawChar(x, thresholdY, '─', thresholdColorParsed)
+    }
+  }
+
+  // Draw bars if requested
+  if (showBars) {
+    const barColor: RGBA = { r: 180, g: 180, b: 180, a: 1 }
+    const barWidth = Math.max(1, Math.floor((plotRight - plotLeft) / points.length / 2))
+
+    for (const p of points) {
+      const x = Math.round(mapX(p.component))
+      const y = Math.round(mapY(p.variance))
+
+      for (let bx = x - barWidth; bx <= x + barWidth; bx++) {
+        for (let by = y; by <= plotBottom; by++) {
+          canvas.drawChar(bx, by, '░', barColor)
+        }
+      }
+    }
+  }
+
+  // Draw connecting line for variance
+  if (connectPoints && points.length > 1) {
+    const lineColor: RGBA = { r: 31, g: 119, b: 180, a: 1 }
+    for (let i = 1; i < points.length; i++) {
+      const x1 = Math.round(mapX(points[i - 1].component))
+      const y1 = Math.round(mapY(points[i - 1].variance))
+      const x2 = Math.round(mapX(points[i].component))
+      const y2 = Math.round(mapY(points[i].variance))
+
+      // Simple line
+      const steps = Math.max(Math.abs(x2 - x1), 1)
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps
+        const x = Math.round(x1 + t * (x2 - x1))
+        const y = Math.round(y1 + t * (y2 - y1))
+        canvas.drawChar(x, y, '─', lineColor)
+      }
+    }
+  }
+
+  // Draw cumulative line
+  if (showCumulative && cumulativePoints.length > 1) {
+    for (let i = 1; i < cumulativePoints.length; i++) {
+      const x1 = Math.round(mapX(cumulativePoints[i - 1].component))
+      const y1 = Math.round(mapYCumulative(cumulativePoints[i - 1].cumulative))
+      const x2 = Math.round(mapX(cumulativePoints[i].component))
+      const y2 = Math.round(mapYCumulative(cumulativePoints[i].cumulative))
+
+      const steps = Math.max(Math.abs(x2 - x1), 1)
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps
+        const x = Math.round(x1 + t * (x2 - x1))
+        const y = Math.round(y1 + t * (y2 - y1))
+        canvas.drawChar(x, y, '─', cumulativeColorParsed)
+      }
+    }
+
+    // Draw cumulative points
+    for (const p of cumulativePoints) {
+      const x = Math.round(mapX(p.component))
+      const y = Math.round(mapYCumulative(p.cumulative))
+      canvas.drawChar(x, y, '○', cumulativeColorParsed)
+    }
+  }
+
+  // Draw variance points
+  const pointColor: RGBA = { r: 31, g: 119, b: 180, a: 1 }
+  for (const p of points) {
+    const x = Math.round(mapX(p.component))
+    const y = Math.round(mapY(p.variance))
+    canvas.drawChar(x, y, pointChar, pointColor)
+  }
+}
+
+/**
  * Geometry renderer dispatch
  */
 export function renderGeom(
@@ -5652,6 +6350,22 @@ export function renderGeom(
       break
     case 'bland_altman':
       renderGeomBlandAltman(data, geom, aes, scales, canvas)
+      break
+    // Statistical diagnostic geoms
+    case 'qq':
+      renderGeomQQ(data, geom, aes, scales, canvas)
+      break
+    case 'ecdf':
+      renderGeomECDF(data, geom, aes, scales, canvas)
+      break
+    case 'funnel':
+      renderGeomFunnel(data, geom, aes, scales, canvas)
+      break
+    case 'control':
+      renderGeomControl(data, geom, aes, scales, canvas)
+      break
+    case 'scree':
+      renderGeomScree(data, geom, aes, scales, canvas)
       break
     default:
       // Unknown geom type, skip

@@ -1,23 +1,28 @@
 /**
- * Tests for geom_qq, geom_qq_line, and geom_freqpoly
+ * Tests for geom_qq and geom_freqpoly
  */
 
 import { describe, expect, it } from 'bun:test'
 import { gg } from '../../grammar'
-import { geom_qq, geom_qq_line } from '../../geoms/qq'
+import { geom_qq } from '../../geoms/qq'
 import { geom_freqpoly, geom_histogram } from '../../geoms/histogram'
 import { renderToCanvas } from '../../pipeline'
 
 describe('geom_qq', () => {
   it('should create Q-Q plot geom', () => {
     const geom = geom_qq()
-    expect(geom.type).toBe('point')
-    expect(geom.stat).toBe('qq')
+    expect(geom.type).toBe('qq')
+    expect(geom.stat).toBe('identity')
   })
 
   it('should accept distribution option', () => {
     const geom = geom_qq({ distribution: 'uniform' })
-    expect(geom.params.distribution).toBe('uniform')
+    expect(geom.params?.distribution).toBe('uniform')
+  })
+
+  it('should accept show_line option', () => {
+    const geom = geom_qq({ show_line: false })
+    expect(geom.params?.show_line).toBe(false)
   })
 
   it('should render Q-Q plot', () => {
@@ -27,20 +32,12 @@ describe('geom_qq', () => {
     }))
 
     const spec = gg(data)
-      .aes({ x: 'value', y: 'value' })
+      .aes({ x: 'value' })
       .geom(geom_qq())
       .spec()
 
     const canvas = renderToCanvas(spec, { width: 40, height: 20 })
     expect(canvas).toBeDefined()
-  })
-})
-
-describe('geom_qq_line', () => {
-  it('should create Q-Q line geom', () => {
-    const geom = geom_qq_line()
-    expect(geom.type).toBe('segment')
-    expect(geom.stat).toBe('qq_line')
   })
 
   it('should render Q-Q plot with reference line', () => {
@@ -49,9 +46,8 @@ describe('geom_qq_line', () => {
     }))
 
     const spec = gg(data)
-      .aes({ x: 'value', y: 'value' })
-      .geom(geom_qq())
-      .geom(geom_qq_line())
+      .aes({ x: 'value' })
+      .geom(geom_qq({ show_line: true }))
       .spec()
 
     const canvas = renderToCanvas(spec, { width: 40, height: 20 })

@@ -83,7 +83,6 @@ export {
   geom_abline,
   // Q-Q plots
   geom_qq,
-  geom_qq_line,
   // Frequency polygon
   geom_freqpoly,
   // Ridgeline (joy plots)
@@ -121,6 +120,11 @@ export {
   geom_forest,
   geom_roc,
   geom_bland_altman,
+  // Statistical diagnostic geoms
+  geom_ecdf,
+  geom_funnel,
+  geom_control,
+  geom_scree,
 } from './geoms'
 export type {
   PathOptions,
@@ -135,7 +139,6 @@ export type {
   RectOptions,
   AblineOptions,
   QQOptions,
-  QQLineOptions,
   FreqpolyOptions,
   DensityOptions,
   RidgelineOptions,
@@ -160,6 +163,10 @@ export type {
   ForestOptions,
   RocOptions,
   BlandAltmanOptions,
+  ECDFOptions,
+  FunnelOptions,
+  ControlOptions,
+  ScreeOptions,
 } from './geoms'
 
 // Position adjustments
