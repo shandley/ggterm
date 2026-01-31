@@ -1744,6 +1744,125 @@ gg(scores)
 | `show_origin` | boolean | true | Show origin crosshairs |
 | `show_loading_labels` | boolean | true | Show variable names |
 
+### geom_kaplan_meier()
+
+Kaplan-Meier survival curves for time-to-event analysis.
+
+```typescript
+import { geom_kaplan_meier } from '@ggterm/core'
+
+const survivalData = [
+  { time: 10, status: 1, treatment: 'Control' },
+  { time: 20, status: 0, treatment: 'Control' }, // Censored
+  { time: 15, status: 1, treatment: 'Treatment' },
+]
+
+gg(survivalData)
+  .aes({ x: 'time', y: 'status', color: 'treatment' })
+  .geom(geom_kaplan_meier({ show_censored: true }))
+  .labs({ title: 'Survival by Treatment', x: 'Time', y: 'Survival Probability' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show_ci` | boolean | false | Show confidence intervals |
+| `conf_level` | number | 0.95 | Confidence level for CI |
+| `show_censored` | boolean | true | Show censored observations |
+| `censor_char` | string | '+' | Character for censored marks |
+| `show_median` | boolean | false | Show median survival line |
+| `step_type` | string | 'post' | Step style ('post' or 'pre') |
+
+### geom_forest()
+
+Forest plots for meta-analysis visualization.
+
+```typescript
+import { geom_forest } from '@ggterm/core'
+
+const metaData = [
+  { study: 'Smith 2020', estimate: 1.25, ci_lower: 0.95, ci_upper: 1.65 },
+  { study: 'Jones 2021', estimate: 1.45, ci_lower: 1.10, ci_upper: 1.90 },
+]
+
+gg(metaData)
+  .aes({ x: 'estimate', y: 'study', xmin: 'ci_lower', xmax: 'ci_upper' })
+  .geom(geom_forest({ null_line: 1 }))
+  .labs({ title: 'Meta-Analysis', x: 'Odds Ratio' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `null_line` | number | 1 | Position of null effect line |
+| `log_scale` | boolean | false | Use log scale for x-axis |
+| `show_summary` | boolean | false | Show diamond for pooled estimate |
+| `null_line_color` | string | '#888888' | Color for null line |
+| `point_char` | string | '■' | Character for point estimates |
+
+### geom_roc()
+
+ROC curves for classifier evaluation.
+
+```typescript
+import { geom_roc } from '@ggterm/core'
+
+const rocData = [
+  { fpr: 0.0, tpr: 0.0 },
+  { fpr: 0.1, tpr: 0.5 },
+  { fpr: 0.3, tpr: 0.8 },
+  { fpr: 1.0, tpr: 1.0 },
+]
+
+gg(rocData)
+  .aes({ x: 'fpr', y: 'tpr' })
+  .geom(geom_roc({ show_auc: true }))
+  .labs({ title: 'ROC Curve', x: 'FPR', y: 'TPR' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show_diagonal` | boolean | true | Show diagonal reference line |
+| `show_auc` | boolean | true | Show AUC value |
+| `show_optimal` | boolean | false | Show optimal threshold point |
+| `diagonal_color` | string | '#888888' | Color for diagonal line |
+| `fill_auc` | boolean | false | Fill area under curve |
+
+### geom_bland_altman()
+
+Bland-Altman plots for method comparison.
+
+```typescript
+import { geom_bland_altman } from '@ggterm/core'
+
+const comparisonData = [
+  { method1: 10.2, method2: 10.5 },
+  { method1: 15.3, method2: 15.1 },
+  { method1: 20.8, method2: 21.2 },
+]
+
+gg(comparisonData)
+  .aes({ x: 'method1', y: 'method2' })
+  .geom(geom_bland_altman())
+  .labs({ title: 'Method Comparison' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show_limits` | boolean | true | Show limits of agreement |
+| `show_bias` | boolean | true | Show mean bias line |
+| `limit_multiplier` | number | 1.96 | Multiplier for limits (1.96 = 95%) |
+| `bias_color` | string | '#0000ff' | Color for bias line |
+| `limit_color` | string | '#ff0000' | Color for limit lines |
+| `percent_diff` | boolean | false | Use percentage difference |
+| `precomputed` | boolean | false | Data has mean/diff columns |
+
 ---
 
 ## Annotations

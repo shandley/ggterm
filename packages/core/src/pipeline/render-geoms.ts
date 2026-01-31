@@ -4996,6 +4996,498 @@ function renderGeomBiplot(
 }
 
 /**
+ * Kaplan-Meier survival curve renderer
+ */
+function renderGeomKaplanMeier(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const showCensored = Boolean(params.show_censored ?? true)
+  const censorChar = String(params.censor_char ?? '+')
+  const showMedian = Boolean(params.show_median ?? false)
+
+  if (!Array.isArray(data) || data.length === 0) return
+
+  const xField = typeof aes.x === 'string' ? aes.x : 'time'
+  const yField = typeof aes.y === 'string' ? aes.y : 'status'
+  const colorField = typeof aes.color === 'string' ? aes.color : undefined
+
+  // Group data by color field for multiple curves
+  const groups = new Map<string, Array<{ time: number; status: number }>>()
+
+  for (const row of data) {
+    const time = Number(row[xField as keyof typeof row] ?? 0)
+    const status = Number(row[yField as keyof typeof row] ?? 0)
+    const group = colorField ? String(row[colorField as keyof typeof row] ?? 'default') : 'default'
+
+    if (!groups.has(group)) groups.set(group, [])
+    groups.get(group)!.push({ time, status })
+  }
+
+  // Color palette
+  const colors: RGBA[] = [
+    { r: 31, g: 119, b: 180, a: 1 },
+    { r: 255, g: 127, b: 14, a: 1 },
+    { r: 44, g: 160, b: 44, a: 1 },
+    { r: 214, g: 39, b: 40, a: 1 },
+    { r: 148, g: 103, b: 189, a: 1 },
+  ]
+
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  // Find overall time range
+  let maxTime = 0
+  for (const [, events] of groups) {
+    for (const e of events) {
+      if (e.time > maxTime) maxTime = e.time
+    }
+  }
+
+  const mapX = (t: number) => plotLeft + (t / maxTime) * (plotRight - plotLeft)
+  const mapY = (s: number) => plotBottom - s * (plotBottom - plotTop)
+
+  let colorIndex = 0
+  for (const [, events] of groups) {
+    const color = colors[colorIndex % colors.length]
+    colorIndex++
+
+    // Sort by time
+    events.sort((a, b) => a.time - b.time)
+
+    // Compute Kaplan-Meier estimate
+    const n = events.length
+    let survival = 1.0
+    let atRisk = n
+
+    const survivalCurve: Array<{ time: number; survival: number; censored: boolean }> = []
+    survivalCurve.push({ time: 0, survival: 1.0, censored: false })
+
+    for (const event of events) {
+      if (event.status === 1) {
+        // Event occurred
+        survival *= (atRisk - 1) / atRisk
+        survivalCurve.push({ time: event.time, survival, censored: false })
+      } else {
+        // Censored
+        survivalCurve.push({ time: event.time, survival, censored: true })
+      }
+      atRisk--
+    }
+
+    // Draw step function
+    for (let i = 0; i < survivalCurve.length; i++) {
+      const point = survivalCurve[i]
+      const x = Math.round(mapX(point.time))
+      const y = Math.round(mapY(point.survival))
+
+      if (i > 0) {
+        // Horizontal line from previous point
+        const prevPoint = survivalCurve[i - 1]
+        const px = Math.round(mapX(prevPoint.time))
+        const py = Math.round(mapY(prevPoint.survival))
+
+        // Draw horizontal segment
+        for (let hx = px; hx <= x; hx++) {
+          canvas.drawChar(hx, py, '─', color)
+        }
+
+        // Draw vertical drop (if survival changed)
+        if (py !== y) {
+          for (let vy = Math.min(py, y); vy <= Math.max(py, y); vy++) {
+            canvas.drawChar(x, vy, '│', color)
+          }
+        }
+      }
+
+      // Draw censored marks
+      if (point.censored && showCensored) {
+        canvas.drawChar(x, y, censorChar, color)
+      }
+    }
+
+    // Draw median survival line if requested
+    if (showMedian) {
+      const medianY = mapY(0.5)
+      for (let mx = plotLeft; mx <= plotRight; mx += 2) {
+        canvas.drawChar(mx, Math.round(medianY), '·', { r: 150, g: 150, b: 150, a: 1 })
+      }
+    }
+  }
+}
+
+/**
+ * Forest plot renderer for meta-analysis
+ */
+function renderGeomForest(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const nullLine = Number(params.null_line ?? 1)
+  const logScale = Boolean(params.log_scale ?? false)
+  const nullLineColor = String(params.null_line_color ?? '#888888')
+  const pointChar = String(params.point_char ?? '■')
+  // Size scaling could be added later with minSize/maxSize params
+
+  if (!Array.isArray(data) || data.length === 0) return
+
+  // Parse null line color
+  const parseHex = (hex: string): RGBA => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b, a: 1 }
+  }
+  const nullColor = parseHex(nullLineColor)
+
+  const xField = typeof aes.x === 'string' ? aes.x : 'estimate'
+  const yField = typeof aes.y === 'string' ? aes.y : 'study'
+  const xminField = typeof aes.xmin === 'string' ? aes.xmin : 'ci_lower'
+  const xmaxField = typeof aes.xmax === 'string' ? aes.xmax : 'ci_upper'
+  const sizeField = typeof aes.size === 'string' ? aes.size : undefined
+
+  // Extract data
+  interface ForestRow {
+    study: string
+    estimate: number
+    ci_lower: number
+    ci_upper: number
+    weight?: number
+  }
+
+  const rows: ForestRow[] = []
+  let minWeight = Infinity
+  let maxWeight = -Infinity
+
+  for (const row of data) {
+    const estimate = Number(row[xField as keyof typeof row] ?? 0)
+    const ci_lower = Number(row[xminField as keyof typeof row] ?? estimate)
+    const ci_upper = Number(row[xmaxField as keyof typeof row] ?? estimate)
+    const study = String(row[yField as keyof typeof row] ?? '')
+    const weight = sizeField ? Number(row[sizeField as keyof typeof row] ?? 1) : 1
+
+    if (weight < minWeight) minWeight = weight
+    if (weight > maxWeight) maxWeight = weight
+
+    rows.push({ study, estimate, ci_lower, ci_upper, weight })
+  }
+
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  // Find x range
+  let xMin = Math.min(...rows.map(r => r.ci_lower), nullLine)
+  let xMax = Math.max(...rows.map(r => r.ci_upper), nullLine)
+
+  if (logScale) {
+    xMin = Math.log10(Math.max(xMin, 0.001))
+    xMax = Math.log10(Math.max(xMax, 0.001))
+  }
+
+  const mapX = (v: number) => {
+    const val = logScale ? Math.log10(Math.max(v, 0.001)) : v
+    return plotLeft + ((val - xMin) / (xMax - xMin)) * (plotRight - plotLeft)
+  }
+
+  // Draw null line
+  const nullX = Math.round(mapX(nullLine))
+  for (let y = plotTop; y <= plotBottom; y++) {
+    if ((y - plotTop) % 2 === 0) {
+      canvas.drawChar(nullX, y, '│', nullColor)
+    }
+  }
+
+  // Draw each study
+  const rowHeight = (plotBottom - plotTop) / rows.length
+  const pointColor: RGBA = { r: 31, g: 119, b: 180, a: 1 }
+  const ciColor: RGBA = { r: 80, g: 80, b: 80, a: 1 }
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]
+    const y = Math.round(plotTop + (i + 0.5) * rowHeight)
+
+    // Draw CI line
+    const x1 = Math.round(mapX(row.ci_lower))
+    const x2 = Math.round(mapX(row.ci_upper))
+    for (let x = x1; x <= x2; x++) {
+      canvas.drawChar(x, y, '─', ciColor)
+    }
+
+    // Draw CI caps
+    canvas.drawChar(x1, y, '├', ciColor)
+    canvas.drawChar(x2, y, '┤', ciColor)
+
+    // Draw point estimate (size based on weight)
+    const px = Math.round(mapX(row.estimate))
+    canvas.drawChar(px, y, pointChar, pointColor)
+  }
+}
+
+/**
+ * ROC curve renderer
+ */
+function renderGeomRoc(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const showDiagonal = Boolean(params.show_diagonal ?? true)
+  const diagonalColor = String(params.diagonal_color ?? '#888888')
+  const showAuc = Boolean(params.show_auc ?? true)
+  const showOptimal = Boolean(params.show_optimal ?? false)
+  const optimalChar = String(params.optimal_char ?? '●')
+
+  if (!Array.isArray(data) || data.length === 0) return
+
+  // Parse diagonal color
+  const parseHex = (hex: string): RGBA => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b, a: 1 }
+  }
+  const diagColor = parseHex(diagonalColor)
+
+  const xField = typeof aes.x === 'string' ? aes.x : 'fpr'
+  const yField = typeof aes.y === 'string' ? aes.y : 'tpr'
+  const colorField = typeof aes.color === 'string' ? aes.color : undefined
+
+  // Group by color for multiple curves
+  const groups = new Map<string, Array<{ fpr: number; tpr: number }>>()
+
+  for (const row of data) {
+    const fpr = Number(row[xField as keyof typeof row] ?? 0)
+    const tpr = Number(row[yField as keyof typeof row] ?? 0)
+    const group = colorField ? String(row[colorField as keyof typeof row] ?? 'default') : 'default'
+
+    if (!groups.has(group)) groups.set(group, [])
+    groups.get(group)!.push({ fpr, tpr })
+  }
+
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  const mapX = (v: number) => plotLeft + v * (plotRight - plotLeft)
+  const mapY = (v: number) => plotBottom - v * (plotBottom - plotTop)
+
+  // Draw diagonal reference line (random classifier)
+  if (showDiagonal) {
+    const steps = plotRight - plotLeft
+    for (let i = 0; i <= steps; i += 2) {
+      const t = i / steps
+      const x = Math.round(mapX(t))
+      const y = Math.round(mapY(t))
+      canvas.drawChar(x, y, '·', diagColor)
+    }
+  }
+
+  // Color palette
+  const colors: RGBA[] = [
+    { r: 31, g: 119, b: 180, a: 1 },
+    { r: 255, g: 127, b: 14, a: 1 },
+    { r: 44, g: 160, b: 44, a: 1 },
+    { r: 214, g: 39, b: 40, a: 1 },
+  ]
+
+  let colorIndex = 0
+  for (const [, points] of groups) {
+    const color = colors[colorIndex % colors.length]
+    colorIndex++
+
+    // Sort by FPR
+    points.sort((a, b) => a.fpr - b.fpr)
+
+    // Calculate AUC using trapezoidal rule
+    let auc = 0
+    for (let i = 1; i < points.length; i++) {
+      const dx = points[i].fpr - points[i - 1].fpr
+      const avgY = (points[i].tpr + points[i - 1].tpr) / 2
+      auc += dx * avgY
+    }
+
+    // Find optimal point (maximum Youden's J = TPR - FPR)
+    let optimalPoint = points[0]
+    let maxJ = -Infinity
+    for (const p of points) {
+      const j = p.tpr - p.fpr
+      if (j > maxJ) {
+        maxJ = j
+        optimalPoint = p
+      }
+    }
+
+    // Draw curve
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i]
+      const x = Math.round(mapX(p.fpr))
+      const y = Math.round(mapY(p.tpr))
+
+      if (i > 0) {
+        const prev = points[i - 1]
+        const px = Math.round(mapX(prev.fpr))
+        const py = Math.round(mapY(prev.tpr))
+
+        // Draw line between points
+        const steps = Math.max(Math.abs(x - px), Math.abs(y - py))
+        for (let s = 0; s <= steps; s++) {
+          const t = steps > 0 ? s / steps : 0
+          const lx = Math.round(px + (x - px) * t)
+          const ly = Math.round(py + (y - py) * t)
+          canvas.drawChar(lx, ly, '─', color)
+        }
+      }
+
+      canvas.drawChar(x, y, '●', color)
+    }
+
+    // Draw optimal point
+    if (showOptimal) {
+      const ox = Math.round(mapX(optimalPoint.fpr))
+      const oy = Math.round(mapY(optimalPoint.tpr))
+      canvas.drawChar(ox, oy, optimalChar, { r: 255, g: 0, b: 0, a: 1 })
+    }
+
+    // Show AUC in legend area
+    if (showAuc && colorIndex === 1) {
+      const aucText = `AUC=${auc.toFixed(3)}`
+      const labelColor: RGBA = { r: 100, g: 100, b: 100, a: 1 }
+      for (let i = 0; i < aucText.length; i++) {
+        canvas.drawChar(plotRight - aucText.length + i, plotTop + 1, aucText[i], labelColor)
+      }
+    }
+  }
+}
+
+/**
+ * Bland-Altman plot renderer
+ */
+function renderGeomBlandAltman(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const showLimits = Boolean(params.show_limits ?? true)
+  const showBias = Boolean(params.show_bias ?? true)
+  const limitMultiplier = Number(params.limit_multiplier ?? 1.96)
+  const biasColor = String(params.bias_color ?? '#0000ff')
+  const limitColor = String(params.limit_color ?? '#ff0000')
+  const pointChar = String(params.point_char ?? '●')
+  const precomputed = Boolean(params.precomputed ?? false)
+
+  if (!Array.isArray(data) || data.length === 0) return
+
+  // Parse colors
+  const parseHex = (hex: string): RGBA => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b, a: 1 }
+  }
+  const biasColorParsed = parseHex(biasColor)
+  const limitColorParsed = parseHex(limitColor)
+
+  const xField = typeof aes.x === 'string' ? aes.x : 'method1'
+  const yField = typeof aes.y === 'string' ? aes.y : 'method2'
+
+  // Compute mean and difference for each point
+  interface BAPoint {
+    mean: number
+    diff: number
+  }
+
+  const points: BAPoint[] = []
+
+  if (precomputed) {
+    // Data already has mean and diff columns
+    for (const row of data) {
+      const mean = Number(row[xField as keyof typeof row] ?? 0)
+      const diff = Number(row[yField as keyof typeof row] ?? 0)
+      points.push({ mean, diff })
+    }
+  } else {
+    // Compute mean and difference from two methods
+    for (const row of data) {
+      const m1 = Number(row[xField as keyof typeof row] ?? 0)
+      const m2 = Number(row[yField as keyof typeof row] ?? 0)
+      const mean = (m1 + m2) / 2
+      const diff = m1 - m2
+      points.push({ mean, diff })
+    }
+  }
+
+  if (points.length === 0) return
+
+  // Calculate bias and limits of agreement
+  const diffs = points.map(p => p.diff)
+  const bias = diffs.reduce((a, b) => a + b, 0) / diffs.length
+  const variance = diffs.reduce((a, b) => a + Math.pow(b - bias, 2), 0) / (diffs.length - 1)
+  const sd = Math.sqrt(variance)
+  const upperLimit = bias + limitMultiplier * sd
+  const lowerLimit = bias - limitMultiplier * sd
+
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  // Find ranges
+  const minMean = Math.min(...points.map(p => p.mean))
+  const maxMean = Math.max(...points.map(p => p.mean))
+  const minDiff = Math.min(...points.map(p => p.diff), lowerLimit)
+  const maxDiff = Math.max(...points.map(p => p.diff), upperLimit)
+
+  const mapX = (v: number) => plotLeft + ((v - minMean) / (maxMean - minMean)) * (plotRight - plotLeft)
+  const mapY = (v: number) => plotBottom - ((v - minDiff) / (maxDiff - minDiff)) * (plotBottom - plotTop)
+
+  // Draw bias line
+  if (showBias) {
+    const biasY = Math.round(mapY(bias))
+    for (let x = plotLeft; x <= plotRight; x++) {
+      canvas.drawChar(x, biasY, '─', biasColorParsed)
+    }
+  }
+
+  // Draw limits of agreement
+  if (showLimits) {
+    const upperY = Math.round(mapY(upperLimit))
+    const lowerY = Math.round(mapY(lowerLimit))
+
+    for (let x = plotLeft; x <= plotRight; x += 2) {
+      canvas.drawChar(x, upperY, '─', limitColorParsed)
+      canvas.drawChar(x, lowerY, '─', limitColorParsed)
+    }
+  }
+
+  // Draw points
+  const pointColor: RGBA = { r: 31, g: 119, b: 180, a: 1 }
+  for (const p of points) {
+    const x = Math.round(mapX(p.mean))
+    const y = Math.round(mapY(p.diff))
+    canvas.drawChar(x, y, pointChar, pointColor)
+  }
+}
+
+/**
  * Geometry renderer dispatch
  */
 export function renderGeom(
@@ -5147,6 +5639,19 @@ export function renderGeom(
       break
     case 'biplot':
       renderGeomBiplot(data, geom, aes, scales, canvas)
+      break
+    // Clinical/Statistical visualizations
+    case 'kaplan_meier':
+      renderGeomKaplanMeier(data, geom, aes, scales, canvas)
+      break
+    case 'forest':
+      renderGeomForest(data, geom, aes, scales, canvas)
+      break
+    case 'roc':
+      renderGeomRoc(data, geom, aes, scales, canvas)
+      break
+    case 'bland_altman':
+      renderGeomBlandAltman(data, geom, aes, scales, canvas)
       break
     default:
       // Unknown geom type, skip

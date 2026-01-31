@@ -51,3 +51,9 @@ export { geom_ma, type MAOptions } from './ma'
 export { geom_manhattan, type ManhattanOptions } from './manhattan'
 export { geom_heatmap, type HeatmapOptions } from './heatmap'
 export { geom_biplot, type BiplotOptions } from './biplot'
+
+// Clinical/Statistical visualizations
+export { geom_kaplan_meier, type KaplanMeierOptions } from './kaplan-meier'
+export { geom_forest, type ForestOptions } from './forest'
+export { geom_roc, type RocOptions } from './roc'
+export { geom_bland_altman, type BlandAltmanOptions } from './bland-altman'

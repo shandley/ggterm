@@ -67,6 +67,11 @@ import {
   geom_manhattan,
   geom_heatmap,
   geom_biplot,
+  // Clinical/Statistical
+  geom_kaplan_meier,
+  geom_forest,
+  geom_roc,
+  geom_bland_altman,
   facet_wrap,
 } from './index'
 import { readFileSync, writeFileSync } from 'fs'
@@ -89,7 +94,9 @@ const GEOM_TYPES = [
   'crossbar', 'linerange', 'pointrange', 'smooth', 'segment', 'rect',
   'raster', 'tile', 'bin2d', 'text', 'label', 'contour', 'contour_filled',
   'density_2d', 'qq', 'calendar', 'flame', 'icicle', 'corrmat', 'sankey', 'treemap', 'volcano', 'ma',
-  'manhattan', 'heatmap', 'biplot'
+  'manhattan', 'heatmap', 'biplot',
+  // Clinical/Statistical
+  'kaplan_meier', 'forest', 'roc', 'bland_altman'
 ]
 
 // Date pattern: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
@@ -670,10 +677,20 @@ function handlePlot(args: string[]): void {
   }
 
   const [dataFile, x, y, color, title, geomSpec = 'point', facetVar] = args
-  const { headers, data } = loadData(dataFile)
+  let { headers, data } = loadData(dataFile)
 
   // Parse geom specification (may include reference lines like point+hline@50)
   const { baseGeom: geomType, refLines } = parseGeomSpec(geomSpec)
+
+  // For manhattan plots, transform p-values to -log10(p) for proper axis labels
+  if (geomType === 'manhattan' && y && y !== '-') {
+    data = data.map(row => {
+      const pval = Number(row[y])
+      const negLogP = pval > 0 ? -Math.log10(pval) : 0
+      return { ...row, [`_neglog10_${y}`]: negLogP }
+    })
+    // We'll use the transformed column for y
+  }
 
   // Validate geom type first
   validateGeomType(geomType)
@@ -696,7 +713,12 @@ function handlePlot(args: string[]): void {
   // Build plot
   // Note: y may be absent for histograms (stat computes it)
   const aes: Record<string, string> = { x }
-  if (y && y !== '-') aes.y = y
+  // For manhattan, use the transformed -log10(p) column
+  if (geomType === 'manhattan' && y && y !== '-') {
+    aes.y = `_neglog10_${y}`
+  } else if (y && y !== '-') {
+    aes.y = y
+  }
   // For heatmap geoms (tile, raster, bin2d), use fill instead of color
   if (color && color !== '-') {
     if (geomType === 'tile' || geomType === 'raster' || geomType === 'bin2d') {
@@ -852,13 +874,26 @@ function handlePlot(args: string[]): void {
       plot = plot.geom(geom_ma())
       break
     case 'manhattan':
-      plot = plot.geom(geom_manhattan())
+      plot = plot.geom(geom_manhattan({ y_is_neglog10: true }))
       break
     case 'heatmap':
       plot = plot.geom(geom_heatmap())
       break
     case 'biplot':
       plot = plot.geom(geom_biplot())
+      break
+    // Clinical/Statistical
+    case 'kaplan_meier':
+      plot = plot.geom(geom_kaplan_meier())
+      break
+    case 'forest':
+      plot = plot.geom(geom_forest())
+      break
+    case 'roc':
+      plot = plot.geom(geom_roc())
+      break
+    case 'bland_altman':
+      plot = plot.geom(geom_bland_altman())
       break
     case 'point':
     default:
@@ -887,11 +922,38 @@ function handlePlot(args: string[]): void {
   if (geomType === 'qq') {
     yLabel = 'Sample Quantiles'
   }
+  if (geomType === 'manhattan') {
+    yLabel = '-log10(p-value)'
+  }
+  if (geomType === 'kaplan_meier') {
+    yLabel = 'Survival Probability'
+  }
+  if (geomType === 'roc') {
+    yLabel = 'True Positive Rate (Sensitivity)'
+  }
+  if (geomType === 'bland_altman') {
+    yLabel = 'Difference (Method1 - Method2)'
+  }
 
   // Determine x-axis label
   let xLabel: string = x
   if (geomType === 'qq') {
     xLabel = 'Theoretical Quantiles'
+  }
+  if (geomType === 'manhattan') {
+    xLabel = 'Chromosome'
+  }
+  if (geomType === 'kaplan_meier') {
+    xLabel = 'Time'
+  }
+  if (geomType === 'roc') {
+    xLabel = 'False Positive Rate (1 - Specificity)'
+  }
+  if (geomType === 'bland_altman') {
+    xLabel = 'Mean of Methods'
+  }
+  if (geomType === 'forest') {
+    xLabel = 'Effect Size'
   }
 
   // Add labels

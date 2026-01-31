@@ -116,6 +116,11 @@ export {
   geom_manhattan,
   geom_heatmap,
   geom_biplot,
+  // Clinical/Statistical visualizations
+  geom_kaplan_meier,
+  geom_forest,
+  geom_roc,
+  geom_bland_altman,
 } from './geoms'
 export type {
   PathOptions,
@@ -151,6 +156,10 @@ export type {
   ManhattanOptions,
   HeatmapOptions,
   BiplotOptions,
+  KaplanMeierOptions,
+  ForestOptions,
+  RocOptions,
+  BlandAltmanOptions,
 } from './geoms'
 
 // Position adjustments

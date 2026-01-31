@@ -142,7 +142,11 @@ ggterm> gg(data).aes({x: "sepal_length", y: "petal_length", color: "species"}).g
 - **Manhattan plots** - GWAS visualization across chromosomes
 - **Heatmaps** - Matrix visualization with clustering
 - **PCA biplots** - Scores and loadings together
-- **And more** - 57 geometry types available
+- **Kaplan-Meier curves** - Survival analysis for clinical trials
+- **Forest plots** - Meta-analysis effect sizes with CI
+- **ROC curves** - Classifier performance evaluation
+- **Bland-Altman plots** - Method comparison and agreement
+- **And more** - 61 geometry types available
 
 ## Export Options
 
