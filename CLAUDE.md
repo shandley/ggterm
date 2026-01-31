@@ -17,7 +17,7 @@ Single package: `@ggterm/core` in `packages/core/`
 
 Contains:
 - Grammar engine with fluent API
-- 30 geometry types
+- 52 geometry types (including specialized: calendar, flame, sankey, treemap, corrmat)
 - 50+ scales (continuous, discrete, color)
 - CLI for plotting CSV/JSON/JSONL files
 - Vega-Lite export for publication-quality output
@@ -25,7 +25,7 @@ Contains:
 
 ## Current Status
 
-- **Version**: 0.2.7
+- **Version**: 0.2.15
 - **npm**: https://www.npmjs.com/package/@ggterm/core
 - **Repo**: https://github.com/shandley/ggterm (public)
 
@@ -69,7 +69,7 @@ bun packages/core/src/cli-plot.ts suggest data.csv
 ## Testing
 
 ```bash
-bun test             # Run all tests (~1843 tests)
+bun test             # Run all tests (~1969 tests)
 ```
 
 ## Claude Code Skills

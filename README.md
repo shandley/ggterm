@@ -127,11 +127,17 @@ ggterm> gg(data).aes({x: "sepal_length", y: "petal_length", color: "species"}).g
 
 - **Scatter plots** - Relationships between variables
 - **Line charts** - Trends over time
-- **Histograms** - Distributions of single variables
-- **Box plots** - Compare distributions across groups
-- **Bar charts** - Categorical comparisons
+- **Histograms & Density** - Distributions of single variables
+- **Box plots & Violin** - Compare distributions across groups
+- **Bar charts & Lollipops** - Categorical comparisons
 - **Faceted plots** - Small multiples for comparison
-- **And more** - 30+ geometry types available
+- **Ridgeline & Beeswarm** - Advanced distribution views
+- **Calendar heatmaps** - GitHub-style activity visualization
+- **Flame graphs** - Performance profiling visualization
+- **Sankey diagrams** - Flow visualization between nodes
+- **Treemaps** - Hierarchical data as nested rectangles
+- **Correlation matrices** - Pairwise variable relationships
+- **And more** - 52 geometry types available
 
 ## Export Options
 

@@ -35,6 +35,16 @@ Give your AI assistant access to ggterm, then use natural language:
 "Export for my paper"
 ```
 
+Or explore specialized visualizations:
+
+```
+"Show my GitHub commit activity as a calendar heatmap"
+
+"Create a sankey diagram showing user flow through the funnel"
+
+"Build a flame graph from my CPU profile data"
+```
+
 Or try with mtcars:
 
 ```
@@ -44,6 +54,21 @@ Or try with mtcars:
 
 "Which cars have the best efficiency for their weight?"
 ```
+
+## Specialized Visualizations
+
+Beyond standard charts, ggterm includes domain-specific visualizations:
+
+| Type | Use Case |
+|------|----------|
+| **Calendar heatmap** | GitHub-style activity over time |
+| **Flame graph** | Performance profiling, call stacks |
+| **Sankey diagram** | Flows between categories |
+| **Treemap** | Hierarchical data as nested rectangles |
+| **Correlation matrix** | Pairwise variable relationships |
+| **Ridgeline plots** | Distribution comparisons across groups |
+
+See the [Visual Gallery](../docs/GALLERY.md) for examples of all 52 geometry types.
 
 ## Requirements
 
