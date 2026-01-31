@@ -25,7 +25,7 @@ Contains:
 
 ## Current Status
 
-- **Version**: 0.2.18
+- **Version**: 0.2.19
 - **npm**: https://www.npmjs.com/package/@ggterm/core
 - **Repo**: https://github.com/shandley/ggterm (public)
 
