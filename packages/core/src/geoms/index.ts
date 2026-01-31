@@ -63,3 +63,7 @@ export { geom_ecdf, type ECDFOptions } from './ecdf'
 export { geom_funnel, type FunnelOptions } from './funnel'
 export { geom_control, type ControlOptions } from './control'
 export { geom_scree, type ScreeOptions } from './scree'
+
+// Set/hierarchical visualizations
+export { geom_upset, type UpsetOptions } from './upset'
+export { geom_dendrogram, type DendrogramOptions } from './dendrogram'

@@ -76,6 +76,9 @@ import {
   geom_funnel,
   geom_control,
   geom_scree,
+  // Set/hierarchical
+  geom_upset,
+  geom_dendrogram,
   facet_wrap,
 } from './index'
 import { readFileSync, writeFileSync } from 'fs'
@@ -102,7 +105,9 @@ const GEOM_TYPES = [
   // Clinical/Statistical
   'kaplan_meier', 'forest', 'roc', 'bland_altman',
   // Statistical diagnostics
-  'qq', 'ecdf', 'funnel', 'control', 'scree'
+  'qq', 'ecdf', 'funnel', 'control', 'scree',
+  // Set/hierarchical
+  'upset', 'dendrogram'
 ]
 
 // Date pattern: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
@@ -916,6 +921,12 @@ function handlePlot(args: string[]): void {
     case 'scree':
       plot = plot.geom(geom_scree())
       break
+    case 'upset':
+      plot = plot.geom(geom_upset())
+      break
+    case 'dendrogram':
+      plot = plot.geom(geom_dendrogram())
+      break
     case 'point':
     default:
       plot = plot.geom(geom_point())
@@ -967,6 +978,12 @@ function handlePlot(args: string[]): void {
   if (geomType === 'scree') {
     yLabel = 'Variance Explained'
   }
+  if (geomType === 'upset') {
+    yLabel = 'Intersection Size'
+  }
+  if (geomType === 'dendrogram') {
+    yLabel = 'Height'
+  }
 
   // Determine x-axis label
   let xLabel: string = x
@@ -996,6 +1013,12 @@ function handlePlot(args: string[]): void {
   }
   if (geomType === 'scree') {
     xLabel = 'Component'
+  }
+  if (geomType === 'upset') {
+    xLabel = 'Set Intersection'
+  }
+  if (geomType === 'dendrogram') {
+    xLabel = 'Cluster'
   }
 
   // Add labels

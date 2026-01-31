@@ -6367,8 +6367,588 @@ export function renderGeom(
     case 'scree':
       renderGeomScree(data, geom, aes, scales, canvas)
       break
+    case 'upset':
+      renderGeomUpset(data, geom, aes, scales, canvas)
+      break
+    case 'dendrogram':
+      renderGeomDendrogram(data, geom, aes, scales, canvas)
+      break
     default:
       // Unknown geom type, skip
       break
+  }
+}
+
+/**
+ * Render UpSet plot for set intersections
+ */
+function renderGeomUpset(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const sets = params.sets as string[] | undefined
+  const minSize = (params.min_size as number) ?? 1
+  const maxIntersections = (params.max_intersections as number) ?? 20
+  const sortBy = (params.sort_by as string) ?? 'size'
+  const sortOrder = (params.sort_order as string) ?? 'desc'
+  const showSetSizes = params.show_set_sizes ?? true
+  const dotChar = (params.dot_char as string) ?? '●'
+  const emptyChar = (params.empty_char as string) ?? '○'
+  const lineChar = (params.line_char as string) ?? '│'
+  const barChar = (params.bar_char as string) ?? '█'
+
+  // Detect set columns from data or params
+  let setNames: string[] = []
+  if (sets && sets.length > 0) {
+    setNames = sets
+  } else if (data.length > 0) {
+    // Try to detect binary columns (0/1 values)
+    const firstRow = data[0]
+    for (const key of Object.keys(firstRow)) {
+      const values = data.map(row => row[key as keyof typeof row])
+      const isBinary = values.every(v => v === 0 || v === 1 || v === '0' || v === '1')
+      if (isBinary && key !== 'id' && key !== 'name' && key !== 'element') {
+        setNames.push(key)
+      }
+    }
+    // If no binary columns, try 'sets' column with comma-separated values
+    if (setNames.length === 0) {
+      const setsField = typeof aes.x === 'string' ? aes.x : 'sets'
+      const allSets = new Set<string>()
+      for (const row of data) {
+        const val = row[setsField as keyof typeof row]
+        if (typeof val === 'string') {
+          val.split(',').forEach(s => allSets.add(s.trim()))
+        }
+      }
+      setNames = Array.from(allSets).sort()
+    }
+  }
+
+  if (setNames.length === 0) return
+
+  // Calculate intersections
+  interface Intersection {
+    sets: Set<string>
+    count: number
+    key: string
+  }
+
+  const intersectionMap = new Map<string, number>()
+
+  // Check if data has comma-separated 'sets' column
+  const setsField = typeof aes.x === 'string' ? aes.x : 'sets'
+  const hasListFormat = data.length > 0 && typeof data[0][setsField as keyof typeof data[0]] === 'string'
+
+  for (const row of data) {
+    let memberSets: string[]
+    if (hasListFormat) {
+      const val = row[setsField as keyof typeof row]
+      memberSets = typeof val === 'string' ? val.split(',').map(s => s.trim()).filter(s => setNames.includes(s)) : []
+    } else {
+      memberSets = setNames.filter(s => {
+        const v = row[s as keyof typeof row]
+        return v === 1 || v === '1'
+      })
+    }
+
+    if (memberSets.length > 0) {
+      const key = memberSets.sort().join('|')
+      intersectionMap.set(key, (intersectionMap.get(key) || 0) + 1)
+    }
+  }
+
+  // Convert to array and filter
+  let intersections: Intersection[] = Array.from(intersectionMap.entries())
+    .map(([key, count]) => ({
+      sets: new Set(key.split('|')),
+      count,
+      key,
+    }))
+    .filter(i => i.count >= minSize)
+
+  // Sort intersections
+  if (sortBy === 'size') {
+    intersections.sort((a, b) => sortOrder === 'desc' ? b.count - a.count : a.count - b.count)
+  } else if (sortBy === 'degree') {
+    intersections.sort((a, b) => sortOrder === 'desc' ? b.sets.size - a.sets.size : a.sets.size - b.sets.size)
+  }
+
+  // Limit intersections
+  intersections = intersections.slice(0, maxIntersections)
+
+  if (intersections.length === 0) return
+
+  // Calculate layout
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  const plotWidth = plotRight - plotLeft
+  const plotHeight = plotBottom - plotTop
+
+  // Layout: top part for bar chart, bottom part for matrix
+  const matrixHeight = Math.min(setNames.length * 2 + 2, Math.floor(plotHeight * 0.4))
+  const barHeight = plotHeight - matrixHeight - 2
+
+  const barTop = plotTop
+  const barBottom = plotTop + barHeight
+  const matrixTop = barBottom + 2
+
+  // Calculate column width
+  const setLabelWidth = showSetSizes ? Math.max(...setNames.map(s => s.length)) + 8 : 0
+  const colWidth = Math.max(2, Math.floor((plotWidth - setLabelWidth) / intersections.length))
+
+  const maxCount = Math.max(...intersections.map(i => i.count))
+
+  const barColor: RGBA = { r: 31, g: 119, b: 180, a: 1 }
+  const dotColor: RGBA = { r: 50, g: 50, b: 50, a: 1 }
+  const lineColor: RGBA = { r: 100, g: 100, b: 100, a: 1 }
+  const labelColor: RGBA = { r: 150, g: 150, b: 150, a: 1 }
+
+  // Draw bar chart
+  for (let i = 0; i < intersections.length; i++) {
+    const inter = intersections[i]
+    const x = plotLeft + setLabelWidth + i * colWidth + Math.floor(colWidth / 2)
+    const barHeightPx = Math.round((inter.count / maxCount) * barHeight)
+
+    for (let y = barBottom - barHeightPx; y <= barBottom; y++) {
+      canvas.drawChar(x, y, barChar, barColor)
+    }
+
+    // Draw count label above bar
+    const countStr = inter.count.toString()
+    const labelY = barBottom - barHeightPx - 1
+    if (labelY >= barTop) {
+      for (let ci = 0; ci < countStr.length; ci++) {
+        canvas.drawChar(x - Math.floor(countStr.length / 2) + ci, labelY, countStr[ci], labelColor)
+      }
+    }
+  }
+
+  // Draw matrix
+  const rowSpacing = Math.max(1, Math.floor(matrixHeight / setNames.length))
+
+  // Draw set labels on the left
+  if (showSetSizes) {
+    for (let si = 0; si < setNames.length; si++) {
+      const setName = setNames[si]
+      const y = matrixTop + si * rowSpacing + 1
+
+      // Count set size
+      let setSize = 0
+      for (const row of data) {
+        if (hasListFormat) {
+          const val = row[setsField as keyof typeof row]
+          if (typeof val === 'string' && val.split(',').map(s => s.trim()).includes(setName)) {
+            setSize++
+          }
+        } else {
+          const v = row[setName as keyof typeof row]
+          if (v === 1 || v === '1') setSize++
+        }
+      }
+
+      // Draw label
+      const label = `${setName.substring(0, 6)}`
+      for (let ci = 0; ci < label.length; ci++) {
+        canvas.drawChar(plotLeft + ci, y, label[ci], labelColor)
+      }
+
+      // Draw size bar
+      const sizeBarLen = Math.max(1, Math.round((setSize / data.length) * 5))
+      for (let bi = 0; bi < sizeBarLen; bi++) {
+        canvas.drawChar(plotLeft + label.length + 1 + bi, y, '▪', barColor)
+      }
+    }
+  }
+
+  // Draw matrix dots and lines
+  for (let i = 0; i < intersections.length; i++) {
+    const inter = intersections[i]
+    const x = plotLeft + setLabelWidth + i * colWidth + Math.floor(colWidth / 2)
+
+    const activeRows: number[] = []
+
+    for (let si = 0; si < setNames.length; si++) {
+      const setName = setNames[si]
+      const y = matrixTop + si * rowSpacing + 1
+      const isActive = inter.sets.has(setName)
+
+      if (isActive) {
+        canvas.drawChar(x, y, dotChar, dotColor)
+        activeRows.push(y)
+      } else {
+        canvas.drawChar(x, y, emptyChar, { r: 200, g: 200, b: 200, a: 1 })
+      }
+    }
+
+    // Draw connecting lines between active dots
+    if (activeRows.length > 1) {
+      const minY = Math.min(...activeRows)
+      const maxY = Math.max(...activeRows)
+      for (let y = minY + 1; y < maxY; y++) {
+        if (!activeRows.includes(y)) {
+          canvas.drawChar(x, y, lineChar, lineColor)
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Render dendrogram for hierarchical clustering visualization
+ */
+function renderGeomDendrogram(
+  data: DataSource,
+  geom: Geom,
+  _aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const params = geom.params || {}
+  const orientation = (params.orientation as string) ?? 'vertical'
+  const labels = params.labels as string[] | undefined
+  const showLabels = params.show_labels ?? true
+  const hang = params.hang ?? false
+  const hConnector = (params.h_connector as string) ?? '─'
+  const vConnector = (params.v_connector as string) ?? '│'
+  const cornerTR = (params.corner_tr as string) ?? '┐'
+  const cornerBL = (params.corner_bl as string) ?? '└'
+  const cornerBR = (params.corner_br as string) ?? '┘'
+  const leafChar = (params.leaf_char as string) ?? '○'
+  const parentCol = (params.parent_col as string) ?? 'parent'
+  const heightCol = (params.height_col as string) ?? 'height'
+  const idCol = (params.id_col as string) ?? 'id'
+
+  const plotLeft = Math.round(scales.x.range[0])
+  const plotRight = Math.round(scales.x.range[1])
+  const plotTop = Math.round(scales.y.range[1])
+  const plotBottom = Math.round(scales.y.range[0])
+
+  const plotWidth = plotRight - plotLeft
+  const plotHeight = plotBottom - plotTop
+
+  const lineColor: RGBA = { r: 50, g: 50, b: 50, a: 1 }
+  const leafColor: RGBA = { r: 31, g: 119, b: 180, a: 1 }
+  const labelColor: RGBA = { r: 100, g: 100, b: 100, a: 1 }
+
+  // Check data format
+  // Format 1: Linkage matrix (merge1, merge2, height, size)
+  // Format 2: Parent-child (id, parent, height)
+
+  const hasLinkageFormat = data.length > 0 &&
+    ('merge1' in data[0] || 'merge_1' in data[0])
+
+  if (hasLinkageFormat) {
+    // Linkage matrix format
+    interface LinkageRow {
+      merge1: number
+      merge2: number
+      height: number
+      size?: number
+    }
+
+    const linkage: LinkageRow[] = data.map(row => ({
+      merge1: Number(row['merge1' as keyof typeof row] ?? row['merge_1' as keyof typeof row]),
+      merge2: Number(row['merge2' as keyof typeof row] ?? row['merge_2' as keyof typeof row]),
+      height: Number(row[heightCol as keyof typeof row] ?? row['height' as keyof typeof row]),
+      size: Number(row['size' as keyof typeof row] ?? 2),
+    }))
+
+    if (linkage.length === 0) return
+
+    // Number of original observations
+    const n = linkage.length + 1
+
+    // Build tree structure
+    interface TreeNode {
+      id: number
+      left?: TreeNode
+      right?: TreeNode
+      height: number
+      x?: number  // Position for rendering
+      label?: string
+    }
+
+    const nodes: Map<number, TreeNode> = new Map()
+
+    // Initialize leaf nodes
+    for (let i = 0; i < n; i++) {
+      nodes.set(i, {
+        id: i,
+        height: 0,
+        label: labels?.[i] ?? `${i}`,
+      })
+    }
+
+    // Build internal nodes from linkage
+    for (let i = 0; i < linkage.length; i++) {
+      const row = linkage[i]
+      const newId = n + i
+
+      const leftNode = nodes.get(row.merge1 < n ? row.merge1 : row.merge1)
+      const rightNode = nodes.get(row.merge2 < n ? row.merge2 : row.merge2)
+
+      nodes.set(newId, {
+        id: newId,
+        left: leftNode,
+        right: rightNode,
+        height: row.height,
+      })
+    }
+
+    // Root is the last internal node
+    const root = nodes.get(n + linkage.length - 1)
+    if (!root) return
+
+    // Calculate x positions (in-order traversal)
+    let xPos = 0
+    const assignX = (node: TreeNode): void => {
+      if (!node.left && !node.right) {
+        // Leaf node
+        node.x = xPos++
+      } else {
+        if (node.left) assignX(node.left)
+        if (node.right) assignX(node.right)
+        // Internal node x is average of children
+        const leftX = node.left?.x ?? 0
+        const rightX = node.right?.x ?? 0
+        node.x = (leftX + rightX) / 2
+      }
+    }
+    assignX(root)
+
+    const maxHeight = root.height
+    const leafCount = xPos
+
+    // Map coordinates
+    const mapX = (x: number) => {
+      if (orientation === 'vertical') {
+        return plotLeft + (x / (leafCount - 1 || 1)) * plotWidth
+      } else {
+        return plotBottom - (x / (leafCount - 1 || 1)) * plotHeight
+      }
+    }
+
+    const mapY = (h: number) => {
+      if (orientation === 'vertical') {
+        return plotTop + (1 - h / maxHeight) * (plotHeight - 3)  // Leave space for labels
+      } else {
+        return plotLeft + (h / maxHeight) * plotWidth
+      }
+    }
+
+    // Draw tree
+    const drawNode = (node: TreeNode): void => {
+      if (node.x === undefined) return
+
+      if (node.left && node.right) {
+        const nodeY = mapY(node.height)
+        const leftX = mapX(node.left.x!)
+        const leftY = mapY(node.left.height)
+        const rightX = mapX(node.right.x!)
+        const rightY = mapY(node.right.height)
+
+        if (orientation === 'vertical') {
+          // Draw horizontal line connecting children
+          const hLineY = Math.round(nodeY)
+          const leftXRound = Math.round(leftX)
+          const rightXRound = Math.round(rightX)
+
+          for (let x = Math.min(leftXRound, rightXRound); x <= Math.max(leftXRound, rightXRound); x++) {
+            canvas.drawChar(x, hLineY, hConnector, lineColor)
+          }
+
+          // Draw corners
+          canvas.drawChar(leftXRound, hLineY, cornerBL, lineColor)
+          canvas.drawChar(rightXRound, hLineY, cornerBR, lineColor)
+
+          // Draw vertical lines down to children
+          const leftYRound = Math.round(leftY)
+          const rightYRound = Math.round(rightY)
+
+          for (let y = hLineY + 1; y < leftYRound; y++) {
+            canvas.drawChar(leftXRound, y, vConnector, lineColor)
+          }
+          for (let y = hLineY + 1; y < rightYRound; y++) {
+            canvas.drawChar(rightXRound, y, vConnector, lineColor)
+          }
+        } else {
+          // Horizontal orientation
+          const hLineX = Math.round(nodeY)
+          const leftYRound = Math.round(leftX)
+          const rightYRound = Math.round(rightX)
+
+          for (let y = Math.min(leftYRound, rightYRound); y <= Math.max(leftYRound, rightYRound); y++) {
+            canvas.drawChar(hLineX, y, vConnector, lineColor)
+          }
+
+          canvas.drawChar(hLineX, leftYRound, cornerTR, lineColor)
+          canvas.drawChar(hLineX, rightYRound, cornerBR, lineColor)
+
+          const leftXRound = Math.round(mapY(node.left.height))
+          const rightXRound = Math.round(mapY(node.right.height))
+
+          for (let x = hLineX + 1; x < leftXRound; x++) {
+            canvas.drawChar(x, leftYRound, hConnector, lineColor)
+          }
+          for (let x = hLineX + 1; x < rightXRound; x++) {
+            canvas.drawChar(x, rightYRound, hConnector, lineColor)
+          }
+        }
+
+        drawNode(node.left)
+        drawNode(node.right)
+      } else {
+        // Leaf node
+        if (orientation === 'vertical') {
+          const x = Math.round(mapX(node.x))
+          const y = hang ? plotBottom - 2 : Math.round(mapY(0))
+          canvas.drawChar(x, y, leafChar, leafColor)
+
+          // Draw label below
+          if (showLabels && node.label) {
+            const label = node.label.substring(0, 4)
+            for (let ci = 0; ci < label.length; ci++) {
+              canvas.drawChar(x - Math.floor(label.length / 2) + ci, y + 1, label[ci], labelColor)
+            }
+          }
+        } else {
+          const y = Math.round(mapX(node.x))
+          const x = Math.round(mapY(0))
+          canvas.drawChar(x, y, leafChar, leafColor)
+
+          if (showLabels && node.label) {
+            const label = node.label.substring(0, 6)
+            for (let ci = 0; ci < label.length; ci++) {
+              canvas.drawChar(x + 2 + ci, y, label[ci], labelColor)
+            }
+          }
+        }
+      }
+    }
+
+    drawNode(root)
+
+  } else {
+    // Parent-child format
+    interface TreeNode {
+      id: string
+      parent: string | null
+      height: number
+      children: TreeNode[]
+      x?: number
+    }
+
+    const nodeMap = new Map<string, TreeNode>()
+
+    // Build node map
+    for (const row of data) {
+      const id = String(row[idCol as keyof typeof row] ?? '')
+      const parent = row[parentCol as keyof typeof row]
+      const height = Number(row[heightCol as keyof typeof row] ?? 0)
+
+      nodeMap.set(id, {
+        id,
+        parent: parent === null || parent === '' || parent === 'null' ? null : String(parent),
+        height,
+        children: [],
+      })
+    }
+
+    // Build tree structure
+    let root: TreeNode | null = null
+    for (const node of nodeMap.values()) {
+      if (node.parent === null) {
+        root = node
+      } else {
+        const parentNode = nodeMap.get(node.parent)
+        if (parentNode) {
+          parentNode.children.push(node)
+        }
+      }
+    }
+
+    if (!root) return
+
+    // Calculate x positions
+    let xPos = 0
+    const assignX = (node: TreeNode): void => {
+      if (node.children.length === 0) {
+        node.x = xPos++
+      } else {
+        for (const child of node.children) {
+          assignX(child)
+        }
+        const childXs = node.children.map(c => c.x ?? 0)
+        node.x = childXs.reduce((a, b) => a + b, 0) / childXs.length
+      }
+    }
+    assignX(root)
+
+    // Find max height and leaf count
+    const findMaxHeight = (node: TreeNode): number => {
+      if (node.children.length === 0) return node.height
+      return Math.max(node.height, ...node.children.map(findMaxHeight))
+    }
+    const maxHeight = findMaxHeight(root) || 1
+    const leafCount = xPos || 1
+
+    // Map coordinates
+    const mapX = (x: number) => plotLeft + (x / (leafCount - 1 || 1)) * plotWidth
+    const mapY = (h: number) => plotTop + (1 - h / maxHeight) * (plotHeight - 3)
+
+    // Draw tree
+    const drawNode = (node: TreeNode): void => {
+      if (node.x === undefined) return
+
+      if (node.children.length > 0) {
+        const nodeY = Math.round(mapY(node.height))
+
+        // Draw horizontal line spanning all children
+        const childXs = node.children.map(c => Math.round(mapX(c.x ?? 0)))
+        const minX = Math.min(...childXs)
+        const maxX = Math.max(...childXs)
+
+        for (let x = minX; x <= maxX; x++) {
+          canvas.drawChar(x, nodeY, hConnector, lineColor)
+        }
+
+        // Draw corners and vertical lines
+        for (const child of node.children) {
+          const childX = Math.round(mapX(child.x ?? 0))
+          const childY = Math.round(mapY(child.height))
+
+          canvas.drawChar(childX, nodeY, child === node.children[0] ? cornerBL :
+                          child === node.children[node.children.length - 1] ? cornerBR : '┴', lineColor)
+
+          for (let y = nodeY + 1; y < childY; y++) {
+            canvas.drawChar(childX, y, vConnector, lineColor)
+          }
+
+          drawNode(child)
+        }
+      } else {
+        // Leaf
+        const x = Math.round(mapX(node.x))
+        const y = hang ? plotBottom - 2 : Math.round(mapY(node.height))
+        canvas.drawChar(x, y, leafChar, leafColor)
+
+        if (showLabels) {
+          const label = node.id.substring(0, 4)
+          for (let ci = 0; ci < label.length; ci++) {
+            canvas.drawChar(x - Math.floor(label.length / 2) + ci, y + 1, label[ci], labelColor)
+          }
+        }
+      }
+    }
+
+    drawNode(root)
   }
 }

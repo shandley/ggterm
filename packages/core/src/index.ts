@@ -125,6 +125,9 @@ export {
   geom_funnel,
   geom_control,
   geom_scree,
+  // Set/hierarchical visualizations
+  geom_upset,
+  geom_dendrogram,
 } from './geoms'
 export type {
   PathOptions,
@@ -167,6 +170,8 @@ export type {
   FunnelOptions,
   ControlOptions,
   ScreeOptions,
+  UpsetOptions,
+  DendrogramOptions,
 } from './geoms'
 
 // Position adjustments
