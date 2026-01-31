@@ -67,8 +67,12 @@ Beyond standard charts, ggterm includes domain-specific visualizations:
 | **Treemap** | Hierarchical data as nested rectangles |
 | **Correlation matrix** | Pairwise variable relationships |
 | **Ridgeline plots** | Distribution comparisons across groups |
+| **Kaplan-Meier curves** | Survival analysis |
+| **Forest plots** | Meta-analysis effect sizes |
+| **UpSet plots** | Modern set intersections |
+| **Dendrograms** | Hierarchical clustering |
 
-See the [Visual Gallery](../docs/GALLERY.md) for examples of all 52 geometry types.
+See the [Visual Gallery](../docs/GALLERY.md) for examples of all 68 geometry types.
 
 ## Requirements
 

@@ -36,7 +36,7 @@ Arguments:
 - `y` - Column name for y-axis (use `-` for histogram)
 - `color` - Column name for color (optional, use `-` to skip)
 - `title` - Plot title (optional, use `-` to skip)
-- `geom` - Geometry type: `point` (default), `line`, `path`, `step`, `bar`, `col`, `histogram`, `freqpoly`, `density`, `boxplot`, `violin`, `ridgeline`, `joy`, `beeswarm`, `quasirandom`, `dumbbell`, `lollipop`, `waffle`, `sparkline`, `bullet`, `braille`, `calendar`, `flame`, `icicle`, `corrmat`, `sankey`, `treemap`, `volcano`, `ma`, `manhattan`, `heatmap`, `biplot`, `kaplan_meier`, `forest`, `roc`, `bland_altman`, `area`, `ribbon`, `rug`, `errorbar`, `errorbarh`, `crossbar`, `linerange`, `pointrange`, `smooth`, `segment`, `curve`, `rect`, `tile`, `raster`, `bin2d`, `text`, `label`, `contour`, `contour_filled`, `density_2d`, `qq`, `qq_line`, `hline`, `vline`, `abline`
+- `geom` - Geometry type: `point` (default), `line`, `path`, `step`, `bar`, `col`, `histogram`, `freqpoly`, `density`, `boxplot`, `violin`, `ridgeline`, `joy`, `beeswarm`, `quasirandom`, `dumbbell`, `lollipop`, `waffle`, `sparkline`, `bullet`, `braille`, `calendar`, `flame`, `icicle`, `corrmat`, `sankey`, `treemap`, `volcano`, `ma`, `manhattan`, `heatmap`, `biplot`, `kaplan_meier`, `forest`, `roc`, `bland_altman`, `ecdf`, `funnel`, `control`, `scree`, `upset`, `dendrogram`, `area`, `ribbon`, `rug`, `errorbar`, `errorbarh`, `crossbar`, `linerange`, `pointrange`, `smooth`, `segment`, `curve`, `rect`, `tile`, `raster`, `bin2d`, `text`, `label`, `contour`, `contour_filled`, `density_2d`, `qq`, `hline`, `vline`, `abline`
 
 ## Examples
 
@@ -105,6 +105,12 @@ $ARGUMENTS
 | Meta-analysis | `geom_forest()` | Effect sizes with CI |
 | Classifier performance | `geom_roc()` | Sensitivity vs specificity |
 | Method comparison | `geom_bland_altman()` | Agreement between methods |
+| Cumulative distribution | `geom_ecdf()` | Empirical CDF |
+| Publication bias | `geom_funnel()` | Funnel plot for meta-analysis |
+| Process control | `geom_control()` | Shewhart control chart |
+| PCA variance | `geom_scree()` | Eigenvalue/variance plot |
+| Set intersections | `geom_upset()` | Modern Venn alternative |
+| Hierarchical clusters | `geom_dendrogram()` | Cluster tree visualization |
 
 ## Common Plot Types
 
@@ -261,15 +267,17 @@ plot.render({
 
 For detailed examples, see [examples/basic-plots.md](examples/basic-plots.md).
 
-### All Available Geoms (61 total)
+### All Available Geoms (68 total)
 
 Point/line: `geom_point`, `geom_line`, `geom_path`, `geom_step`
 Bar: `geom_bar`, `geom_col`, `geom_histogram`, `geom_freqpoly`, `geom_density`
-Distribution: `geom_boxplot`, `geom_violin`, `geom_ridgeline`, `geom_joy`, `geom_beeswarm`, `geom_quasirandom`, `geom_density_2d`, `geom_qq`, `geom_qq_line`
+Distribution: `geom_boxplot`, `geom_violin`, `geom_ridgeline`, `geom_joy`, `geom_beeswarm`, `geom_quasirandom`, `geom_density_2d`, `geom_qq`
 Comparison: `geom_dumbbell`, `geom_lollipop`
 Terminal-native: `geom_waffle`, `geom_sparkline`, `geom_bullet`, `geom_braille`
 Specialized: `geom_calendar`, `geom_flame`, `geom_icicle`, `geom_corrmat`, `geom_sankey`, `geom_treemap`, `geom_volcano`, `geom_ma`, `geom_manhattan`, `geom_heatmap`, `geom_biplot`
 Clinical/Statistical: `geom_kaplan_meier`, `geom_forest`, `geom_roc`, `geom_bland_altman`
+Statistical Diagnostics: `geom_ecdf`, `geom_funnel`, `geom_control`, `geom_scree`
+Set/Hierarchical: `geom_upset`, `geom_dendrogram`
 Area: `geom_area`, `geom_ribbon`
 Reference: `geom_hline`, `geom_vline`, `geom_abline`, `geom_segment`, `geom_curve`
 Text: `geom_text`, `geom_label`

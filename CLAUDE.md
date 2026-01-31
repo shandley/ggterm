@@ -17,7 +17,7 @@ Single package: `@ggterm/core` in `packages/core/`
 
 Contains:
 - Grammar engine with fluent API
-- 61 geometry types (including specialized: calendar, flame, sankey, treemap, corrmat, volcano, ma, manhattan, heatmap, biplot, kaplan_meier, forest, roc, bland_altman)
+- 68 geometry types (including specialized visualizations and statistical diagnostics)
 - 50+ scales (continuous, discrete, color)
 - CLI for plotting CSV/JSON/JSONL files
 - Vega-Lite export for publication-quality output
@@ -25,7 +25,7 @@ Contains:
 
 ## Current Status
 
-- **Version**: 0.2.19
+- **Version**: 0.2.20
 - **npm**: https://www.npmjs.com/package/@ggterm/core
 - **Repo**: https://github.com/shandley/ggterm (public)
 

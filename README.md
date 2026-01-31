@@ -146,7 +146,14 @@ ggterm> gg(data).aes({x: "sepal_length", y: "petal_length", color: "species"}).g
 - **Forest plots** - Meta-analysis effect sizes with CI
 - **ROC curves** - Classifier performance evaluation
 - **Bland-Altman plots** - Method comparison and agreement
-- **And more** - 61 geometry types available
+- **Q-Q plots** - Normality assessment
+- **ECDF plots** - Empirical cumulative distribution
+- **Funnel plots** - Publication bias in meta-analysis
+- **Control charts** - Statistical process control
+- **Scree plots** - PCA variance explained
+- **UpSet plots** - Modern set intersections (superior to Venn)
+- **Dendrograms** - Hierarchical clustering trees
+- **And more** - 68 geometry types available
 
 ## Export Options
 
