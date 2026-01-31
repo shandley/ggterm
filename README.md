@@ -138,7 +138,8 @@ ggterm> gg(data).aes({x: "sepal_length", y: "petal_length", color: "species"}).g
 - **Treemaps** - Hierarchical data as nested rectangles
 - **Correlation matrices** - Pairwise variable relationships
 - **Volcano plots** - Differential expression for genomics
-- **And more** - 53 geometry types available
+- **MA plots** - Companion to volcano for DE analysis
+- **And more** - 54 geometry types available
 
 ## Export Options
 

@@ -4146,6 +4146,151 @@ export function renderGeomVolcano(
 }
 
 /**
+ * Render geom_ma - MA plot for differential expression
+ */
+export function renderGeomMA(
+  data: DataSource,
+  geom: Geom,
+  aes: AestheticMapping,
+  scales: ScaleContext,
+  canvas: TerminalCanvas
+): void {
+  const fcThreshold = (geom.params.fc_threshold as number) ?? 1
+  const pThreshold = (geom.params.p_threshold as number) ?? 0.05
+  const pCol = geom.params.p_col as string | undefined
+  const xIsLog2 = (geom.params.x_is_log2 as boolean) ?? false
+  const upColor = parseColorToRgba(geom.params.up_color as string ?? '#e41a1c')
+  const downColor = parseColorToRgba(geom.params.down_color as string ?? '#377eb8')
+  const nsColor = parseColorToRgba(geom.params.ns_color as string ?? '#999999')
+  const showBaseline = (geom.params.show_baseline as boolean) ?? true
+  const showThresholds = (geom.params.show_thresholds as boolean) ?? true
+  const nLabels = (geom.params.n_labels as number) ?? 0
+  const pointChar = (geom.params.point_char as string) ?? '●'
+
+  // Classify and render each point
+  interface ClassifiedPoint {
+    row: Record<string, unknown>
+    x: number  // A value (average expression)
+    y: number  // M value (log fold change)
+    absM: number  // for sorting top hits
+    status: 'up' | 'down' | 'ns'
+    label?: string
+  }
+
+  const points: ClassifiedPoint[] = []
+
+  for (const row of data) {
+    let xVal = Number(row[aes.x])
+    const yVal = Number(row[aes.y])  // M value (log2 fold change)
+
+    if (isNaN(xVal) || isNaN(yVal)) continue
+    if (xVal <= 0) continue  // Can't log transform non-positive values
+
+    // Transform A value to log2 if needed
+    if (!xIsLog2) {
+      xVal = Math.log2(xVal)
+    }
+
+    // Classify the point
+    let status: 'up' | 'down' | 'ns' = 'ns'
+
+    // Check if passes fold change threshold
+    const passesFcThreshold = Math.abs(yVal) >= fcThreshold
+
+    // Check p-value if column specified
+    let passesPThreshold = true
+    if (pCol && row[pCol] !== undefined) {
+      const pVal = Number(row[pCol])
+      passesPThreshold = !isNaN(pVal) && pVal < pThreshold
+    }
+
+    if (passesFcThreshold && passesPThreshold) {
+      status = yVal > 0 ? 'up' : 'down'
+    }
+
+    const label = aes.label ? String(row[aes.label] ?? '') : undefined
+
+    points.push({
+      row,
+      x: xVal,
+      y: yVal,
+      absM: Math.abs(yVal),
+      status,
+      label,
+    })
+  }
+
+  // Draw reference lines first (below points)
+  const lineColor: RGBA = { r: 150, g: 150, b: 150, a: 0.7 }
+  const startX = Math.round(scales.x.range[0])
+  const endX = Math.round(scales.x.range[1])
+
+  // Baseline at M=0
+  if (showBaseline) {
+    const cy = Math.round(scales.y.map(0))
+    for (let x = startX; x <= endX; x++) {
+      canvas.drawChar(x, cy, '─', lineColor)
+    }
+  }
+
+  // Threshold lines at ±fc_threshold
+  if (showThresholds) {
+    const cyUp = Math.round(scales.y.map(fcThreshold))
+    const cyDown = Math.round(scales.y.map(-fcThreshold))
+
+    // Draw dashed horizontal lines
+    for (let x = startX; x <= endX; x += 2) {
+      canvas.drawChar(x, cyUp, '─', lineColor)
+      canvas.drawChar(x, cyDown, '─', lineColor)
+    }
+  }
+
+  // Draw non-significant points first (background)
+  for (const point of points) {
+    if (point.status === 'ns') {
+      const cx = Math.round(scales.x.map(point.x))
+      const cy = Math.round(scales.y.map(point.y))
+      canvas.drawPoint(cx, cy, nsColor, pointChar)
+    }
+  }
+
+  // Draw significant points on top
+  for (const point of points) {
+    if (point.status !== 'ns') {
+      const cx = Math.round(scales.x.map(point.x))
+      const cy = Math.round(scales.y.map(point.y))
+      const color = point.status === 'up' ? upColor : downColor
+      canvas.drawPoint(cx, cy, color, pointChar)
+    }
+  }
+
+  // Label top N significant points
+  if (nLabels > 0 && aes.label) {
+    // Get top hits by absolute M value (highest fold change)
+    const significantPoints = points
+      .filter(p => p.status !== 'ns' && p.label)
+      .sort((a, b) => b.absM - a.absM)
+      .slice(0, nLabels)
+
+    const labelColor: RGBA = { r: 50, g: 50, b: 50, a: 1 }
+
+    for (const point of significantPoints) {
+      const cx = Math.round(scales.x.map(point.x))
+      const cy = Math.round(scales.y.map(point.y))
+      const label = point.label!
+
+      // Position label to the right of the point
+      const labelX = cx + 1
+      const labelY = cy
+
+      for (let i = 0; i < label.length; i++) {
+        canvas.drawChar(labelX + i, labelY, label[i], labelColor)
+      }
+    }
+  }
+}
+
+/**
  * Geometry renderer dispatch
  */
 export function renderGeom(
@@ -4285,6 +4430,9 @@ export function renderGeom(
       break
     case 'volcano':
       renderGeomVolcano(data, geom, aes, scales, canvas)
+      break
+    case 'ma':
+      renderGeomMA(data, geom, aes, scales, canvas)
       break
     default:
       // Unknown geom type, skip

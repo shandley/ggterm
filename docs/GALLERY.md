@@ -1489,6 +1489,35 @@ const plot = gg(deResults)
 console.log(plot.render({ width: 80, height: 25 }))
 ```
 
+### MA Plot
+
+MA plot for differential expression, complementing volcano plots. Plots log2 fold change (M) vs average expression (A).
+
+```typescript
+import { gg, geom_ma } from '@ggterm/core'
+
+const deResults = [
+  { gene: 'IL6', baseMean: 5000, log2FC: 4.2, padj: 1e-100 },
+  { gene: 'TNF', baseMean: 3000, log2FC: 3.1, padj: 1e-80 },
+  { gene: 'CXCL8', baseMean: 8000, log2FC: 5.5, padj: 1e-120 },
+  { gene: 'STAT3', baseMean: 2000, log2FC: -2.1, padj: 1e-40 },
+  { gene: 'SOCS3', baseMean: 1500, log2FC: -1.8, padj: 1e-30 },
+  { gene: 'GAPDH', baseMean: 50000, log2FC: 0.1, padj: 0.9 },
+]
+
+const plot = gg(deResults)
+  .aes({ x: 'baseMean', y: 'log2FC', label: 'gene' })
+  .geom(geom_ma({
+    fc_threshold: 1,
+    p_col: 'padj',
+    p_threshold: 0.05,
+    n_labels: 5,
+  }))
+  .labs({ title: 'MA Plot - Gene Expression' })
+
+console.log(plot.render({ width: 80, height: 25 }))
+```
+
 ---
 
 ## Annotated Plots

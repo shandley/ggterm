@@ -1575,6 +1575,57 @@ Points are automatically classified as:
 - **Down-regulated**: log2FC < -fc_threshold AND p < p_threshold
 - **Not significant**: everything else
 
+### geom_ma()
+
+MA plot for differential expression analysis. Plots log2 fold change (M) against average expression (A), commonly used alongside volcano plots in genomics.
+
+```typescript
+import { geom_ma } from '@ggterm/core'
+
+const data = [
+  { gene: 'TP53', baseMean: 5000, log2FC: 3.5, padj: 1e-50 },
+  { gene: 'BRCA1', baseMean: 3000, log2FC: -2.8, padj: 1e-40 },
+  { gene: 'MYC', baseMean: 8000, log2FC: 2.1, padj: 1e-30 },
+  { gene: 'GAPDH', baseMean: 50000, log2FC: 0.1, padj: 0.9 },
+]
+
+gg(data)
+  .aes({ x: 'baseMean', y: 'log2FC', label: 'gene' })
+  .geom(geom_ma({
+    fc_threshold: 1,
+    p_col: 'padj',
+    p_threshold: 0.05,
+    n_labels: 5,
+  }))
+  .labs({ title: 'MA Plot - Differential Expression' })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `fc_threshold` | number | 1 | Log2 fold change threshold (1 = 2-fold) |
+| `p_threshold` | number | 0.05 | P-value threshold for significance |
+| `p_col` | string | undefined | Column name containing p-values (optional) |
+| `x_is_log2` | boolean | false | If true, x values are already log2 transformed |
+| `up_color` | string | '#e41a1c' | Color for up-regulated points (red) |
+| `down_color` | string | '#377eb8' | Color for down-regulated points (blue) |
+| `ns_color` | string | '#999999' | Color for non-significant points (gray) |
+| `show_baseline` | boolean | true | Show M=0 baseline reference line |
+| `show_thresholds` | boolean | true | Show ±fc_threshold reference lines |
+| `linetype` | string | 'dashed' | Line type for reference lines |
+| `n_labels` | number | 0 | Number of top significant points to label |
+| `size` | number | 1 | Point size |
+| `alpha` | number | 0.6 | Point opacity |
+| `point_char` | string | '●' | Character for points |
+
+#### Classification
+
+Points are classified as:
+- **Up-regulated**: log2FC > fc_threshold (AND p < p_threshold if p_col specified)
+- **Down-regulated**: log2FC < -fc_threshold (AND p < p_threshold if p_col specified)
+- **Not significant**: everything else
+
 ---
 
 ## Annotations

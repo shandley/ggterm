@@ -112,6 +112,7 @@ export {
   geom_sankey,
   geom_treemap,
   geom_volcano,
+  geom_ma,
 } from './geoms'
 export type {
   PathOptions,
@@ -143,6 +144,7 @@ export type {
   SankeyOptions,
   TreemapOptions,
   VolcanoOptions,
+  MAOptions,
 } from './geoms'
 
 // Position adjustments
