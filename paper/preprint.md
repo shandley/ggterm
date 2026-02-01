@@ -1,4 +1,4 @@
-# ggterm: Enabling Conversational Data Visualization for AI-Assisted Computational Biology
+# ggterm: A Grammar of Graphics for Terminal-Based Scientific Visualization and AI-Assisted Analysis
 
 **Authors:** Scott A. Handley^1^
 
@@ -6,31 +6,35 @@
 
 **Corresponding author:** [email]
 
-**Keywords:** data visualization, grammar of graphics, artificial intelligence, terminal interface, exploratory data analysis
+**Keywords:** data visualization, grammar of graphics, scientific computing, artificial intelligence, terminal interface, reproducibility, bioinformatics
 
 ---
 
 ## Abstract
 
-The emergence of AI coding assistants has transformed computational workflows, yet a critical gap remains: these agents cannot perform visual exploratory data analysis in terminal environments where most bioinformatics work occurs. We present ggterm, a TypeScript implementation of Wilkinson's Grammar of Graphics designed specifically for terminal rendering and AI agent integration. Unlike existing terminal plotting libraries that require memorization of imperative commands, ggterm provides a declarative, composable API that maps naturally to conversational interaction. Users describe visualizations in natural language ("show me the distribution of expression values by treatment group"), and AI assistants generate the corresponding ggterm code. The library implements 30 geometry types, comprehensive scale systems, faceting, and annotation layers. Plot specifications are stored as JSON with full provenance metadata, enabling reproducibility and retrieval. We demonstrate ggterm's utility through integration with Claude Code, providing deterministic skills for data loading, visualization, and publication-quality export. ggterm is freely available under the MIT license at https://github.com/shandley/ggterm and as @ggterm/core on npm.
+Visual exploratory data analysis is fundamental to scientific computing, yet terminal environments—where most computational research occurs—lack sophisticated visualization capabilities. We present ggterm, a TypeScript implementation of Wilkinson's Grammar of Graphics featuring 68 geometry types designed for terminal rendering and AI agent integration. ggterm provides comprehensive scientific visualization support including genomics plots (volcano, MA, Manhattan), clinical trial graphics (Kaplan-Meier survival curves, forest plots, ROC curves), statistical diagnostics (Q-Q plots, ECDF, control charts, funnel plots), and hierarchical visualizations (dendrograms, UpSet plots for set intersections). The library implements a declarative, composable API where visualizations are specified as layered grammar components—data, aesthetics, geometries, scales, coordinates, and facets—enabling natural language interaction with AI assistants. All plots are automatically persisted with full provenance metadata in a structured history system, enabling search, retrieval, and reproducibility. Plot specifications are stored as JSON documents that capture the complete analytical context, from data source to visual encoding decisions. We provide seven deterministic skills for Claude Code integration, supporting workflows from data loading through publication-quality export via Vega-Lite. ggterm bridges the gap between rapid terminal exploration and reproducible scientific figures, available under the MIT license at https://github.com/shandley/ggterm.
 
 ---
 
 ## Introduction
 
-Exploratory data analysis (EDA) is fundamental to computational biology, from initial quality assessment of sequencing runs to hypothesis generation in multi-omics studies. Visualization is the primary tool for EDA, yet the environments where bioinformaticians work—remote servers, compute clusters, containerized pipelines—often lack graphical display capabilities. Terminal-based visualization addresses this constraint, but existing tools offer limited functionality through imperative APIs that require memorizing specific syntax for each plot type.
+Scientific computing increasingly occurs in terminal environments—remote servers, compute clusters, containerized pipelines, and cloud instances—where graphical display capabilities are limited or absent. Researchers routinely SSH into analysis servers, submit batch jobs, and inspect results through text interfaces. Yet visualization, the primary tool for exploratory data analysis (EDA), has remained poorly supported in these environments.
 
-Simultaneously, AI coding assistants have become increasingly integrated into computational workflows. Large language models (LLMs) can generate code, explain analyses, and iterate on implementations through natural language conversation. However, these assistants face a fundamental limitation: they cannot *see*. When a user asks "what does the distribution look like?", the AI can generate plotting code but cannot interpret the result, breaking the conversational analysis loop that makes these assistants valuable.
+Existing terminal plotting libraries offer basic functionality through imperative APIs: call a function, pass arrays, receive output. This approach limits both the sophistication of visualizations and their integration with modern AI-assisted workflows. When a researcher asks an AI assistant "show me the survival curves stratified by treatment arm," the assistant must translate this request into tool-specific syntax that varies across libraries and offers no compositional structure for iterative refinement.
 
-We identified three gaps in the current landscape:
+Simultaneously, scientific visualization has domain-specific requirements that general-purpose plotting tools often neglect. Genomics researchers need volcano plots and Manhattan plots. Clinical trialists need Kaplan-Meier curves and forest plots. Statisticians need Q-Q plots and control charts. These specialized visualizations encode domain knowledge—significance thresholds, hazard ratios, theoretical distributions—that generic scatter plots cannot express.
 
-1. **No Grammar of Graphics for terminals.** The Grammar of Graphics, formalized by Wilkinson and popularized through R's ggplot2, provides a declarative framework for constructing visualizations from composable layers. This approach is well-suited to LLM code generation—specifications describe *what* to display, not *how* to render it—yet no terminal-native implementation exists.
+We identified four gaps in the current landscape:
 
-2. **Imperative APIs hinder AI assistance.** Existing terminal plotting tools (plotext, termgraph, asciichart) use imperative APIs where each plot type has distinct function signatures. LLMs can generate this code, but the lack of compositional structure means modifications require rewriting rather than layering.
+1. **No Grammar of Graphics for terminals.** The Grammar of Graphics, formalized by Wilkinson (2005) and popularized through R's ggplot2 (Wickham, 2016), provides a declarative framework for constructing visualizations from composable layers. This approach maps naturally to both human reasoning and AI code generation, yet no terminal-native implementation exists.
 
-3. **No provenance or reproducibility.** Terminal plots are ephemeral. Once scrolled off-screen, they are lost. There is no standard mechanism to store, retrieve, or reproduce previous visualizations.
+2. **Limited scientific visualization support.** Terminal plotting libraries focus on basic chart types. Domain-specific visualizations—essential for genomics, clinical research, and statistical analysis—require graphical environments or specialized tools.
 
-ggterm addresses these gaps through a Grammar of Graphics implementation designed for terminal rendering with first-class support for AI agent integration.
+3. **No reproducibility infrastructure.** Terminal plots are ephemeral. Once scrolled off-screen, they are lost. There is no standard mechanism to store, retrieve, or reproduce previous visualizations, undermining the reproducibility that scientific workflows require.
+
+4. **No AI agent integration.** As AI coding assistants become standard tools in scientific computing, visualization libraries need APIs designed for conversational interaction—declarative specifications that AI can generate, modify, and compose.
+
+ggterm addresses these gaps through a comprehensive Grammar of Graphics implementation featuring 68 geometry types, structured plot history with provenance tracking, and first-class support for AI agent integration.
 
 ---
 
@@ -38,82 +42,238 @@ ggterm addresses these gaps through a Grammar of Graphics implementation designe
 
 ### Grammar of Graphics Architecture
 
-ggterm implements the layered grammar of graphics with seven core components:
+ggterm implements the layered grammar of graphics (Wickham, 2010) with seven core components that compose to create arbitrarily complex visualizations:
 
 | Layer | Purpose | Example |
 |-------|---------|---------|
-| **Data** | Input dataset | CSV, JSON, JSONL files |
-| **Aesthetics** | Variable mappings | x, y, color, size, shape |
-| **Geometries** | Visual marks | Points, lines, bars, histograms |
-| **Statistics** | Data transformations | Binning, smoothing, density |
-| **Scales** | Value-to-visual mappings | Linear, log, color palettes |
-| **Coordinates** | Coordinate systems | Cartesian, polar |
-| **Facets** | Small multiples | Wrap, grid layouts |
+| **Data** | Input dataset as array of records | CSV, JSON, JSONL files; API responses |
+| **Aesthetics** | Variable-to-visual mappings | x, y, color, size, shape, fill, alpha |
+| **Geometries** | Visual mark types | Points, lines, bars, survival curves |
+| **Statistics** | Data transformations | Binning, density estimation, survival |
+| **Scales** | Value-to-visual encoding | Linear, log, color palettes, datetime |
+| **Coordinates** | Coordinate systems | Cartesian, polar, flipped |
+| **Facets** | Small multiples | Wrap by variable, grid by two variables |
 
-Visualizations are constructed by composing these layers:
+Visualizations are constructed by composing these layers through a fluent API:
 
 ```typescript
-gg(data)
-  .aes({ x: 'sepal_length', y: 'petal_length', color: 'species' })
-  .geom(geom_point())
-  .scale(scale_color_viridis())
-  .facet(facet_wrap('species'))
-  .labs({ title: 'Iris Morphology' })
+gg(expressionData)
+  .aes({ x: 'log2FoldChange', y: 'negLog10Pvalue', color: 'significant' })
+  .geom(geom_point({ alpha: 0.6 }))
+  .geom(geom_hline({ yintercept: -Math.log10(0.05) }))
+  .geom(geom_vline({ xintercept: [-1, 1] }))
+  .scale(scale_color_manual({ values: { true: '#e41a1c', false: '#999999' } }))
+  .labs({ title: 'Differential Expression', x: 'log2 Fold Change', y: '-log10(p-value)' })
 ```
 
-This declarative specification describes the visualization without prescribing rendering details. The same specification renders appropriately across terminal widths, color capabilities, and output formats.
+This declarative specification describes *what* to visualize without prescribing rendering details. The same specification renders appropriately across terminal widths, color capabilities, and output formats.
+
+### Data Handling
+
+ggterm operates on arrays of records (objects), the natural data structure for tabular data in JavaScript/TypeScript:
+
+```typescript
+const data = [
+  { gene: 'BRCA1', expression: 12.5, treatment: 'control' },
+  { gene: 'BRCA1', expression: 8.2, treatment: 'drug' },
+  { gene: 'TP53', expression: 15.1, treatment: 'control' },
+  // ...
+]
+```
+
+The library provides flexible data loading for common formats:
+
+| Format | Characteristics | Use Case |
+|--------|-----------------|----------|
+| **CSV** | Comma-separated, ubiquitous | Exported from Excel, R, pandas |
+| **JSON** | Native JavaScript, typed | API responses, structured data |
+| **JSONL** | Newline-delimited JSON | Streaming data, log files |
+
+Type inference automatically detects numeric, categorical, and datetime columns. Explicit type coercion handles edge cases:
+
+```typescript
+// Automatic type inference
+const data = loadCSV('results.csv')  // Numbers parsed, dates detected
+
+// Explicit coercion for ambiguous cases
+const typed = data.map(row => ({
+  ...row,
+  pvalue: Number(row.pvalue),
+  date: new Date(row.date).getTime()
+}))
+```
+
+Aesthetic mappings reference column names as strings, enabling dynamic specification:
+
+```typescript
+// Column names as strings enable AI-generated specifications
+gg(data).aes({ x: userSpecifiedX, y: userSpecifiedY, color: groupingVar })
+```
 
 ### Geometry Types
 
-ggterm implements 30 geometry types spanning common analytical needs:
+ggterm implements 68 geometry types organized by analytical domain:
 
-- **Distributions:** histogram, density, freqpoly, boxplot, violin, qq
-- **Relationships:** point, line, smooth, contour, density_2d
-- **Comparisons:** bar, col, errorbar, pointrange, crossbar
-- **Annotations:** hline, vline, abline, text, label, segment
-- **Spatial:** tile, raster, rect, contour_filled
+#### Core Visualizations (20 types)
+Basic building blocks for general-purpose visualization:
 
-Each geometry computes appropriate statistics automatically. For example, `geom_histogram()` bins continuous data, `geom_boxplot()` calculates quartiles and outliers, and `geom_smooth()` fits regression models.
+- **Point/Line:** `geom_point`, `geom_line`, `geom_path`, `geom_step`, `geom_segment`, `geom_curve`
+- **Distribution:** `geom_histogram`, `geom_density`, `geom_freqpoly`, `geom_boxplot`, `geom_violin`
+- **Comparison:** `geom_bar`, `geom_col`, `geom_errorbar`, `geom_pointrange`, `geom_crossbar`
+- **Area:** `geom_area`, `geom_ribbon`
+- **Reference:** `geom_hline`, `geom_vline`, `geom_abline`
+
+#### Scientific Visualizations (15 types)
+Domain-specific plots for research applications:
+
+- **Genomics:** `geom_volcano` (differential expression), `geom_ma` (MA plots), `geom_manhattan` (GWAS)
+- **Matrices:** `geom_heatmap` (expression matrices), `geom_corrmat` (correlation), `geom_biplot` (PCA)
+- **Hierarchy:** `geom_treemap`, `geom_sankey` (flow), `geom_flame`/`geom_icicle` (profiling)
+- **Temporal:** `geom_calendar` (activity heatmaps)
+
+#### Clinical and Biostatistical (4 types)
+Visualizations for clinical trials and medical research:
+
+- `geom_kaplan_meier`: Survival curves with confidence intervals and risk tables
+- `geom_forest`: Meta-analysis forest plots with effect sizes and confidence intervals
+- `geom_roc`: Receiver operating characteristic curves with AUC
+- `geom_bland_altman`: Method comparison plots with limits of agreement
+
+#### Statistical Diagnostics (6 types)
+Tools for model checking and statistical assessment:
+
+- `geom_qq`: Quantile-quantile plots for distribution comparison
+- `geom_ecdf`: Empirical cumulative distribution functions
+- `geom_funnel`: Funnel plots for publication bias assessment
+- `geom_control`: Shewhart control charts for process monitoring
+- `geom_scree`: Scree plots for PCA component selection
+
+#### Set and Hierarchical (2 types)
+Visualizations for categorical and hierarchical relationships:
+
+- `geom_upset`: UpSet plots for set intersections (superior to Venn diagrams for >3 sets)
+- `geom_dendrogram`: Hierarchical clustering trees
+
+#### Distribution Variants (8 types)
+Extended distribution visualizations:
+
+- `geom_ridgeline`/`geom_joy`: Stacked density ridgelines
+- `geom_beeswarm`/`geom_quasirandom`: Jittered point distributions
+- `geom_dumbbell`: Before-after comparisons
+- `geom_lollipop`: Sparse bar alternatives
+
+#### Terminal-Optimized (4 types)
+Visualizations designed specifically for character-cell rendering:
+
+- `geom_sparkline`: Inline word-sized charts
+- `geom_bullet`: KPI progress indicators
+- `geom_waffle`: Grid-based proportions
+- `geom_braille`: High-resolution using Braille Unicode (8x density)
+
+#### 2D and Spatial (9 types)
+Visualizations for continuous 2D data:
+
+- `geom_tile`, `geom_raster`, `geom_rect`
+- `geom_bin2d`, `geom_density_2d`
+- `geom_contour`, `geom_contour_filled`
+- `geom_text`, `geom_label`
+
+Each geometry computes appropriate statistics automatically. For example, `geom_kaplan_meier()` calculates survival probabilities and confidence intervals from time-to-event data, `geom_volcano()` identifies significant genes based on fold-change and p-value thresholds, and `geom_control()` computes control limits from process data.
 
 ### Terminal Rendering
 
-ggterm renders to Unicode text optimized for terminal display. The renderer:
+ggterm renders to Unicode text optimized for terminal display:
 
-1. Detects terminal dimensions and color capabilities
-2. Computes data-to-pixel mappings via scales
-3. Renders geometries to a character canvas
-4. Draws axes, labels, and legends
-5. Outputs ANSI-colored text
+1. **Dimension detection:** Queries terminal size and adapts layout
+2. **Scale computation:** Maps data values to character positions
+3. **Geometry rendering:** Draws marks to a character canvas
+4. **Decoration:** Adds axes, labels, legends using box-drawing characters
+5. **Color output:** Emits ANSI escape sequences for 24-bit color
 
-Point markers use Unicode symbols (●, ▲, ■, ◆) to encode categorical variables. Axes use box-drawing characters for clean alignment. Colors use 24-bit ANSI sequences where supported, with graceful degradation to 256-color or monochrome terminals.
+Point markers use Unicode symbols (●, ▲, ■, ◆, ○) to encode categorical variables without color. Axes use box-drawing characters (─, │, ┌, ┐, └, ┘) for clean alignment. The Braille renderer (`geom_braille`) achieves 8x resolution by encoding 2x4 pixel blocks into single Braille characters.
+
+Color support adapts to terminal capabilities:
+- **24-bit truecolor:** Full RGB palette (modern terminals)
+- **256-color:** Approximate colors via ANSI palette
+- **Monochrome:** Shape-only encoding for basic terminals
 
 ### Plot History and Provenance
 
-Every rendered plot is automatically stored with provenance metadata:
+Every rendered plot is automatically persisted to a structured history system. The history captures complete provenance enabling reproducibility:
+
+```
+~/.ggterm/
+├── history/
+│   ├── 2024-01-28-001.json    # Plot specification
+│   ├── 2024-01-28-002.json
+│   └── ...
+├── last-plot.json              # Most recent plot
+└── last-plot-vegalite.json     # Vega-Lite export
+```
+
+Each history entry contains:
 
 ```json
 {
   "id": "2024-01-28-001",
-  "timestamp": "2024-01-28T10:30:00Z",
-  "spec": { /* full plot specification */ },
-  "dataFile": "expression_data.csv",
-  "command": "gg(data).aes({x:'gene',y:'expression'}).geom(geom_boxplot())",
-  "description": "Boxplot of expression by gene"
+  "timestamp": "2024-01-28T10:30:00.000Z",
+  "spec": {
+    "data": { "source": "expression_data.csv", "rows": 20000 },
+    "layers": [
+      {
+        "geom": "volcano",
+        "aes": { "x": "log2FoldChange", "y": "negLog10Pvalue" },
+        "params": { "fc_threshold": 1, "p_threshold": 0.05 }
+      }
+    ],
+    "scales": { "color": { "type": "manual", "values": {...} } },
+    "labels": { "title": "Differential Expression Analysis" }
+  },
+  "command": "gg(data).aes({...}).geom(geom_volcano())",
+  "description": "Volcano plot of RNA-seq differential expression",
+  "tags": ["rnaseq", "differential-expression", "figure-2"]
 }
 ```
 
-Users can search history ("find my volcano plots"), retrieve previous visualizations by ID, and export any historical plot to publication formats. This addresses the ephemeral nature of terminal output and enables reproducibility.
+The history system supports:
+
+- **Chronological browsing:** List recent plots with timestamps
+- **Search:** Find plots by description, tags, or geom type
+- **Retrieval:** Load any historical plot by ID
+- **Re-rendering:** Regenerate plots at different dimensions
+- **Export:** Convert historical plots to publication formats
+
+This addresses the ephemeral nature of terminal output. Plots created during exploratory analysis remain accessible for inclusion in papers, presentations, or further refinement.
 
 ### Publication Export
 
-ggterm exports visualizations to interactive HTML files containing Vega-Lite specifications. These exports provide:
+ggterm exports visualizations to Vega-Lite specifications (Satyanarayan et al., 2017), enabling publication-quality output:
 
-- Pan and zoom interaction
-- PNG and SVG download buttons
+```bash
+# Export to interactive HTML
+ggterm export 2024-01-28-001 figure2.html
+
+# Convert to static formats via Vega CLI
+npx vl2png figure2.html > figure2.png
+npx vl2svg figure2.html > figure2.svg
+npx vl2pdf figure2.html > figure2.pdf
+```
+
+HTML exports include:
+- Interactive pan and zoom
 - Tooltips showing data values
-- Editable Vega-Lite JSON for further customization
+- PNG and SVG download buttons
+- Editable Vega-Lite specification
 
-This bridges the gap between rapid terminal exploration and publication-quality figures.
+Style presets apply publication-appropriate formatting:
+
+| Preset | Characteristics |
+|--------|-----------------|
+| **wilke** | Claus Wilke's principles: minimal, high data-ink ratio |
+| **tufte** | Edward Tufte's principles: no chartjunk, direct labeling |
+| **nature** | Nature journal style: specific fonts and dimensions |
+| **economist** | The Economist style: distinctive colors and layout |
+| **apa** | APA guidelines: grayscale-friendly, academic formatting |
 
 ---
 
@@ -121,139 +281,159 @@ This bridges the gap between rapid terminal exploration and publication-quality 
 
 ### The Conversational Analysis Loop
 
-ggterm's primary design goal is enabling AI assistants to perform visual EDA through conversation. The declarative Grammar of Graphics API maps directly to natural language:
+ggterm's declarative API enables AI assistants to perform visual EDA through natural conversation. The Grammar of Graphics structure maps directly to how humans describe visualizations:
 
-| User says | AI generates |
-|-----------|--------------|
-| "Load the expression data" | Data loading code |
-| "Show me expression by treatment" | `gg(data).aes({x:'treatment', y:'expression'}).geom(geom_boxplot())` |
-| "Add significance markers" | Annotation layer with p-values |
-| "Split by timepoint" | `.facet(facet_wrap('timepoint'))` |
-| "Export for the paper" | HTML export with SVG download |
+| User Request | Grammar Translation |
+|--------------|---------------------|
+| "Show expression by treatment" | `aes({ x: 'treatment', y: 'expression' })` |
+| "Use a boxplot" | `.geom(geom_boxplot())` |
+| "Color by response status" | `aes({ ..., color: 'response' })` |
+| "Split into panels by timepoint" | `.facet(facet_wrap('timepoint'))` |
+| "Add a significance threshold line" | `.geom(geom_hline({ yintercept: threshold }))` |
 
-Each modification layers onto the existing specification rather than rewriting. This compositional structure matches how humans describe iterative refinements.
+Each modification layers onto the existing specification. This compositional structure matches iterative refinement—users don't restart, they adjust.
 
 ### Deterministic Skills
 
-We implemented ggterm integration for Claude Code through six specialized skills:
+We implemented ggterm integration for Claude Code through seven specialized skills:
 
-1. **data-load**: Loads CSV, JSON, or JSONL files with automatic type inference
-2. **ggterm-plot**: Creates visualizations from natural language descriptions
-3. **ggterm-customize**: Modifies aesthetics (colors, labels, themes) conversationally
-4. **ggterm-history**: Searches and retrieves previous plots
-5. **ggterm-publish**: Exports to publication formats
-6. **ggterm-markdown**: Generates analysis reports with embedded visualizations
+| Skill | Purpose |
+|-------|---------|
+| **data-load** | Load CSV, JSON, JSONL with type inference |
+| **ggterm-plot** | Create visualizations from natural language |
+| **ggterm-customize** | Modify aesthetics conversationally |
+| **ggterm-style** | Apply publication style presets |
+| **ggterm-history** | Search and retrieve previous plots |
+| **ggterm-publish** | Export to PNG, SVG, PDF, HTML |
+| **ggterm-markdown** | Generate reports with embedded plots |
 
-These skills provide deterministic entry points for AI agents, ensuring consistent behavior regardless of how requests are phrased.
+These skills provide deterministic entry points ensuring consistent behavior regardless of request phrasing. The AI invokes specific tools rather than generating arbitrary code, improving reliability.
 
 ### Bundled Datasets
 
-ggterm includes classic datasets for immediate exploration:
+ggterm includes datasets for immediate exploration:
 
-| Dataset | Rows | Variables | Use case |
-|---------|------|-----------|----------|
-| **iris** | 150 | sepal_length, sepal_width, petal_length, petal_width, species | Classification, species comparison |
-| **mtcars** | 16 | mpg, cyl, hp, wt, name | Regression, continuous relationships |
-| **sample** | n | x, y, group, size | Testing, prototyping |
+| Dataset | Rows | Variables | Domain |
+|---------|------|-----------|--------|
+| **iris** | 150 | sepal_length, sepal_width, petal_length, petal_width, species | Classification |
+| **mtcars** | 16 | mpg, cyl, hp, wt, name | Regression |
+| **sample(n)** | n | x, y, group, size | Synthetic testing |
 
-These enable users to immediately explore ggterm capabilities without preparing data files.
+Users can explore ggterm capabilities immediately without data preparation.
 
 ---
 
 ## Results
 
-### Example: Iris Species Classification
+### Example: Genomics Workflow
 
-We demonstrate ggterm's capabilities through analysis of Fisher's iris dataset, a canonical example in statistical visualization.
+We demonstrate ggterm's scientific visualization capabilities through a differential expression analysis workflow.
 
-**Loading and initial exploration:**
-
-```
-User: Load the iris dataset and show me petal dimensions.
-
-AI: [Loads iris data, creates scatter plot of petal_length vs petal_width]
-```
-
-The resulting visualization immediately reveals the clustering structure: *I. setosa* forms a distinct group with small petals, while *I. versicolor* and *I. virginica* show overlap but remain separable.
-
-**Iterative refinement:**
+**Volcano plot for hit identification:**
 
 ```
-User: Color by species and add classification boundaries at petal_length=2.5
+User: Load the RNA-seq results and show me a volcano plot.
 
-AI: [Adds color encoding and reference line annotation]
+AI: [Loads data, creates volcano plot with fold-change and p-value thresholds]
 ```
 
-The colored plot with reference lines demonstrates that a simple threshold on petal length perfectly separates *setosa* from the other species—a finding that emerges visually before any statistical modeling.
+The volcano plot immediately identifies significantly differentially expressed genes: points in the upper corners represent genes with both large fold changes and statistical significance. The built-in `geom_volcano()` automatically draws threshold lines and colors significant hits.
 
-**Faceted comparison:**
-
-```
-User: Show each species in its own panel.
-
-AI: [Applies facet_wrap('species')]
-```
-
-Faceting reveals within-species variation: *setosa* shows tight clustering while *virginica* exhibits greater morphological diversity.
-
-**Publication export:**
+**MA plot for bias assessment:**
 
 ```
-User: Export for the methods figure.
+User: Show me an MA plot to check for intensity-dependent bias.
 
-AI: [Generates HTML with SVG download, dimensions suitable for journal submission]
+AI: [Creates MA plot with mean expression vs. log fold change]
 ```
 
-The complete analysis—from data loading through publication figure—required six natural language prompts and produced reproducible, citable output.
+The MA plot reveals whether fold-change estimates depend on expression level—a common technical artifact. Ideally, points scatter symmetrically around zero across all intensity values.
+
+**Survival analysis:**
+
+```
+User: Show survival curves for responders vs non-responders.
+
+AI: [Creates Kaplan-Meier plot with confidence intervals]
+```
+
+The Kaplan-Meier visualization shows time-to-event data with censoring handled appropriately. Confidence bands indicate uncertainty, and the log-rank p-value quantifies group differences.
+
+**Forest plot for meta-analysis:**
+
+```
+User: Summarize the treatment effects across all studies as a forest plot.
+
+AI: [Creates forest plot with effect sizes, CIs, and pooled estimate]
+```
+
+The forest plot displays individual study effects with confidence intervals, plus a diamond showing the pooled meta-analytic estimate. Heterogeneity is visible in the spread of point estimates.
 
 ### Comparison with Existing Tools
 
-We compared ggterm against existing terminal visualization libraries:
-
-| Feature | ggterm | plotext | termgraph | asciichart |
-|---------|--------|---------|-----------|------------|
+| Feature | ggterm | plotext | termgraph | gnuplot |
+|---------|--------|---------|-----------|---------|
 | Grammar of Graphics | ✓ | - | - | - |
-| Geometry types | 30 | 15 | 3 | 1 |
-| Color encoding | ✓ | ✓ | - | - |
-| Faceting | ✓ | - | - | - |
-| Statistical transforms | ✓ | Limited | - | - |
+| Geometry types | 68 | 15 | 3 | 20+ |
+| Scientific plots | ✓ | - | - | Limited |
+| Clinical plots | ✓ | - | - | - |
+| Statistical diagnostics | ✓ | - | - | Limited |
 | Plot history | ✓ | - | - | - |
-| Publication export | ✓ | ✓ | - | - |
+| Provenance tracking | ✓ | - | - | - |
 | AI agent skills | ✓ | - | - | - |
-| Declarative API | ✓ | - | - | - |
+| Publication export | ✓ | ✓ | - | ✓ |
+| Declarative API | ✓ | - | - | Partial |
 
-ggterm provides the only Grammar of Graphics implementation for terminals and the only library designed for AI agent integration.
+ggterm uniquely combines Grammar of Graphics architecture, comprehensive scientific visualization support, reproducibility infrastructure, and AI integration.
 
 ---
 
 ## Discussion
 
-### Implications for Computational Biology Workflows
+### Enabling Visual Analysis in Terminal Environments
 
-Terminal-based visualization has traditionally been a compromise—useful for quick checks but inadequate for real analysis. ggterm changes this calculus by providing publication-quality visualization capabilities in terminal environments. For bioinformaticians working on remote clusters, this means EDA can happen where the data lives, without transferring files or switching contexts.
+Terminal-based workflows dominate scientific computing. Researchers SSH into clusters, run analyses in containers, and manage remote servers through text interfaces. ggterm brings sophisticated visualization to these environments, enabling EDA where data lives rather than requiring file transfers to local graphical tools.
 
-The AI integration amplifies this benefit. As coding assistants become standard tools in computational biology, the ability to perform visual analysis conversationally removes a significant friction point. Researchers can explore data through natural language, with the AI handling implementation details while they focus on biological interpretation.
+The 68 geometry types cover analytical needs across domains. Genomics researchers can create volcano plots and Manhattan plots directly on the analysis server. Clinical researchers can generate Kaplan-Meier curves and forest plots during data review. Statisticians can assess model assumptions with Q-Q plots and residual diagnostics. This domain coverage reduces context-switching between exploration and specialized visualization tools.
 
-### Reproducibility and Provenance
+### Reproducibility Through Structured History
 
-The automatic capture of plot history with provenance metadata addresses a persistent challenge in computational research. Terminal output is ephemeral; ggterm makes it persistent and reproducible. Every visualization can be retrieved, regenerated, and exported months after initial creation.
+Scientific visualization often occurs during exploratory phases when documentation is minimal. The automatic history system captures every plot with full provenance—data source, specification, timestamp—without requiring explicit save actions. Months later, researchers can retrieve the exact visualization shown in a committee meeting or regenerate a figure at publication resolution.
+
+The JSON specification format ensures plots remain reproducible across ggterm versions. Specifications describe intent (show these variables with this geometry) rather than implementation (draw pixels at these coordinates), enabling forward compatibility as rendering improves.
+
+### AI Integration as Primary Interface
+
+The Grammar of Graphics' declarative nature proves ideal for AI-assisted analysis. Users describe visualizations in domain terms ("show survival by treatment arm"), and AI assistants translate to layered specifications. Modifications compose—adding color encoding doesn't require rewriting, just extending. This matches conversational refinement patterns.
+
+The deterministic skill system ensures AI assistants invoke specific, tested code paths rather than generating arbitrary implementations. This improves reliability for scientific applications where visualization errors could mislead analysis.
 
 ### Limitations
 
-ggterm's terminal rendering, while capable, cannot match the resolution of graphical displays. Dense datasets may require aggregation or sampling. The 30 geometry types, while comprehensive, do not cover all specialized visualization needs (e.g., genome browsers, phylogenetic trees).
+Terminal rendering, while capable, cannot match graphical display resolution. Dense datasets may require aggregation or sampling. The character-cell grid limits precision for quantitative reading, though the Braille renderer partially addresses this.
 
-The AI integration depends on the capabilities of the underlying language model. Complex analytical requests may require multiple conversational turns to specify correctly.
+Scientific visualizations implement common conventions but may not cover all domain-specific requirements. The Kaplan-Meier implementation shows survival curves with confidence intervals but does not include all clinical trial embellishments (risk tables beneath, landmark analyses). Users with specialized needs can extend geometries or export to Vega-Lite for customization.
+
+AI integration quality depends on the underlying language model. Complex analytical requests may require multiple turns to specify correctly. The skill system mitigates this by providing structured entry points, but novel visualization requests still require AI interpretation.
 
 ### Future Directions
 
-We plan to extend ggterm with additional geometry types for biological data (MA plots, volcano plots, heatmaps with clustering). Integration with additional AI assistants beyond Claude Code is planned. A companion R package providing ggplot2-compatible syntax is under consideration.
+We plan to extend ggterm in several directions:
+
+1. **Interactive terminal graphics:** Explore cursor-based interaction for pan, zoom, and point selection in terminals supporting mouse events.
+
+2. **Additional scientific domains:** Phylogenetic trees, genome browsers, and mass spectrometry visualizations would extend coverage to additional research areas.
+
+3. **Real-time streaming:** Support for updating plots as data arrives would enable monitoring dashboards and live experimental tracking.
+
+4. **Cross-language bindings:** Python and R wrappers would enable ggterm use from familiar scientific computing environments.
 
 ---
 
 ## Availability
 
 - **Source code:** https://github.com/shandley/ggterm
-- **npm package:** @ggterm/core
+- **npm package:** @ggterm/core (v0.2.20)
 - **License:** MIT
 - **Documentation:** https://github.com/shandley/ggterm#readme
 
@@ -273,22 +453,28 @@ We plan to extend ggterm with additional geometry types for biological data (MA 
 
 3. Wickham, H. (2016). *ggplot2: Elegant Graphics for Data Analysis* (2nd ed.). Springer.
 
-4. Morel, P. (2018). Gramm: grammar of graphics plotting in Matlab. *Journal of Open Source Software*, 3(23), 568.
+4. Satyanarayan, A., Moritz, D., Wongsuphasawat, K., & Heer, J. (2017). Vega-Lite: A grammar of interactive graphics. *IEEE Transactions on Visualization and Computer Graphics*, 23(1), 341-350.
 
-5. Satyanarayan, A., Moritz, D., Wongsuphasawat, K., & Heer, J. (2017). Vega-Lite: A grammar of interactive graphics. *IEEE Transactions on Visualization and Computer Graphics*, 23(1), 341-350.
+5. Wilke, C. O. (2019). *Fundamentals of Data Visualization*. O'Reilly Media.
 
-6. Fisher, R. A. (1936). The use of multiple measurements in taxonomic problems. *Annals of Eugenics*, 7(2), 179-188.
+6. Kaplan, E. L., & Meier, P. (1958). Nonparametric estimation from incomplete observations. *Journal of the American Statistical Association*, 53(282), 457-481.
 
-7. [AI coding assistant references to be added]
+7. Bland, J. M., & Altman, D. G. (1986). Statistical methods for assessing agreement between two methods of clinical measurement. *The Lancet*, 327(8476), 307-310.
+
+8. Lex, A., Gehlenborg, N., Strobelt, H., Vuillemot, R., & Pfister, H. (2014). UpSet: Visualization of intersecting sets. *IEEE Transactions on Visualization and Computer Graphics*, 20(12), 1983-1992.
+
+9. Fisher, R. A. (1936). The use of multiple measurements in taxonomic problems. *Annals of Eugenics*, 7(2), 179-188.
 
 ---
 
 ## Figures
 
-**Figure 1.** ggterm architecture showing the flow from data through grammar layers to terminal rendering and export.
+**Figure 1.** ggterm architecture showing the Grammar of Graphics layer system and rendering pipeline from data through terminal output and publication export.
 
-**Figure 2.** Comparison of visualization capabilities across terminal plotting libraries.
+**Figure 2.** Geometry type coverage across analytical domains: (A) taxonomy of 68 geometry types organized by purpose, (B) examples of scientific visualizations including volcano plot, Kaplan-Meier curve, and forest plot.
 
-**Figure 3.** Example ggterm output showing iris dataset analysis: (A) initial scatter plot, (B) colored by species with classification boundary, (C) faceted by species, (D) exported SVG.
+**Figure 3.** Plot history and provenance system: (A) directory structure, (B) JSON specification schema, (C) search and retrieval workflow.
 
-**Figure 4.** Conversational analysis workflow demonstrating AI agent integration.
+**Figure 4.** AI-assisted analysis workflow demonstrating conversational visualization refinement from initial exploration through publication export.
+
+**Figure 5.** Comparison of terminal plotting capabilities across libraries, showing ggterm's unique combination of Grammar of Graphics architecture, scientific visualization support, and reproducibility infrastructure.
