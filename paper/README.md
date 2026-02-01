@@ -1,70 +1,85 @@
 # ggterm Paper
 
-Academic preprint for bioRxiv submission.
+JOSS (Journal of Open Source Software) submission.
 
 ## Files
 
 | File | Description |
 |------|-------------|
-| `preprint.md` | Main manuscript (~3500 words) |
+| `paper.md` | JOSS paper (~1000 words) |
+| `preprint.md` | Extended preprint (~3500 words, supplementary) |
 | `references.bib` | BibTeX bibliography |
 
-## Submission Checklist
+## JOSS Submission Checklist
 
-### Before bioRxiv Submission
+### Paper Requirements
+- [x] Title
+- [x] Author with ORCID (placeholder - needs real ORCID)
+- [x] Affiliation
+- [x] Summary section
+- [x] Statement of Need section
+- [x] Key Features section
+- [x] References in BibTeX format
+- [ ] Acknowledgements (to be added)
 
-- [ ] Fill in author affiliation
-- [ ] Add corresponding author email
-- [ ] Add ORCID
-- [ ] Convert ASCII figures to publication graphics
-- [ ] Add acknowledgments
-- [ ] Review and finalize references
-- [ ] Convert to PDF (bioRxiv accepts PDF, Word, or LaTeX)
+### Repository Requirements
+- [x] Open source license (MIT)
+- [x] README with installation instructions
+- [x] Example usage documentation
+- [x] Automated tests (2158 tests)
+- [ ] Contributing guidelines (CONTRIBUTING.md)
+- [ ] Code of conduct (CODE_OF_CONDUCT.md)
+- [x] Version number in package.json
 
-### Figures
+### Before Submission
+- [ ] Add real ORCID to paper.md
+- [ ] Verify affiliation
+- [ ] Add acknowledgements
+- [ ] Create CONTRIBUTING.md
+- [ ] Create CODE_OF_CONDUCT.md
+- [ ] Final review of paper.md
 
-All figures are in `figures/` directory as ASCII art (to be converted to proper graphics):
+## Figures
+
+All figures are in `figures/` directory:
 
 | Figure | File | Description |
 |--------|------|-------------|
-| 1 | `figure1-architecture.txt` | ggterm architecture: Data → Grammar Layers → Renderer → Output |
-| 2 | `figure2-comparison.txt` | (A) Taxonomy of 68 geometry types by domain, (B) Scientific visualization examples |
-| 3 | `figure3-panels.txt` | Plot history and provenance: (A) Directory structure, (B) JSON schema, (C) Retrieval workflow |
-| 4 | `figure4-workflow.txt` | AI-assisted conversational analysis workflow |
+| 1 | `figure1-architecture.svg` | ggterm architecture |
+| 2 | `figure2-comparison.svg` | Geometry taxonomy + scientific examples |
+| 3 | `figure3-provenance.svg` | Plot history and provenance system |
+| 4 | `figure4-workflow.svg` | AI-assisted workflow |
 
 **Supplementary:**
-- `figure3-iris-analysis.txt` - Example iris analysis (4-panel progression, can be used as supplementary)
+- `figure3-iris-supplementary.svg` - Iris analysis example
+- `preprint.md` - Extended paper with full details
 
-To convert to publication graphics:
-- Use Lucidchart, draw.io, or Figma for diagrams (Figures 1, 3, 4)
-- Recreate with actual ggterm output for Figure 2B examples
-- SVG versions exist but need regeneration after ASCII updates
+## JOSS Submission
 
-### bioRxiv Submission
+1. Go to https://joss.theoj.org/papers/new
+2. Enter repository URL: https://github.com/shandley/ggterm
+3. Complete submission form
+4. Wait for editor assignment
+5. Address reviewer feedback
 
-1. Go to https://www.biorxiv.org/submit-a-manuscript
-2. Select "New Manuscript"
-3. Choose subject area: **Bioinformatics**
-4. Upload PDF
-5. Add metadata (title, authors, abstract)
-6. Select license (recommend CC-BY)
-7. Submit
+## Building the Paper
 
-### After bioRxiv
-
-- [ ] Share DOI on social media
-- [ ] Post to Hacker News
-- [ ] Condense for JOSS submission
-
-## Converting to PDF
-
-Using pandoc:
+JOSS uses their own build system, but you can preview locally:
 
 ```bash
-pandoc preprint.md -o preprint.pdf \
+# Install pandoc and dependencies
+# Then generate PDF preview
+pandoc paper.md -o paper.pdf \
   --bibliography=references.bib \
   --citeproc \
   -V geometry:margin=1in
 ```
 
-Or use a Markdown editor with PDF export (Typora, VS Code with extensions).
+## Word Count
+
+JOSS papers should be ~1000 words. Check with:
+
+```bash
+# Approximate word count (excluding code blocks and YAML)
+grep -v '```' paper.md | grep -v '^---' | wc -w
+```
