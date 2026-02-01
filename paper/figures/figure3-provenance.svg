@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="650" fill="white"/>
+
+  <!-- Title -->
+  <text x="500" y="30" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">Figure 3: Plot History and Provenance System</text>
+
+  <!-- Panel A: Directory Structure -->
+  <text x="50" y="60" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">A) Directory Structure</text>
+
+  <rect x="30" y="75" width="280" height="200" rx="6" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+
+  <!-- Directory tree -->
+  <text x="50" y="105" font-family="Courier, monospace" font-size="11" fill="#7b1fa2">~/.ggterm/</text>
+  <text x="50" y="125" font-family="Courier, monospace" font-size="11" fill="#333">└── history/</text>
+  <text x="50" y="145" font-family="Courier, monospace" font-size="10" fill="#666">    ├── 2024-01-28-001.json</text>
+  <text x="50" y="162" font-family="Courier, monospace" font-size="10" fill="#666">    ├── 2024-01-28-002.json</text>
+  <text x="50" y="179" font-family="Courier, monospace" font-size="10" fill="#666">    ├── 2024-01-28-003.json</text>
+  <text x="50" y="196" font-family="Courier, monospace" font-size="10" fill="#666">    ├── 2024-01-29-001.json</text>
+  <text x="50" y="213" font-family="Courier, monospace" font-size="10" fill="#666">    └── ...</text>
+
+  <!-- Naming convention box -->
+  <rect x="45" y="225" width="250" height="40" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="1"/>
+  <text x="170" y="242" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#1976d2">Naming Convention</text>
+  <text x="170" y="258" text-anchor="middle" font-family="Courier, monospace" font-size="9" fill="#333">YYYY-MM-DD-NNN.json</text>
+
+  <!-- Panel B: JSON Schema -->
+  <text x="340" y="60" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">B) JSON Specification Schema</text>
+
+  <rect x="330" y="75" width="350" height="200" rx="6" fill="#f5f5f5" stroke="#ddd" stroke-width="1"/>
+
+  <!-- JSON content -->
+  <text x="345" y="95" font-family="Courier, monospace" font-size="9" fill="#7b1fa2">{</text>
+  <text x="355" y="110" font-family="Courier, monospace" font-size="9" fill="#1976d2">"id"</text>
+  <text x="385" y="110" font-family="Courier, monospace" font-size="9" fill="#333">: "2024-01-28-001",</text>
+  <text x="355" y="125" font-family="Courier, monospace" font-size="9" fill="#1976d2">"created"</text>
+  <text x="415" y="125" font-family="Courier, monospace" font-size="9" fill="#333">: "2024-01-28T14:32:15Z",</text>
+  <text x="355" y="140" font-family="Courier, monospace" font-size="9" fill="#1976d2">"data"</text>
+  <text x="395" y="140" font-family="Courier, monospace" font-size="9" fill="#333">: {</text>
+  <text x="365" y="155" font-family="Courier, monospace" font-size="9" fill="#43a047">"source"</text>
+  <text x="420" y="155" font-family="Courier, monospace" font-size="9" fill="#333">: "/path/to/data.csv",</text>
+  <text x="365" y="170" font-family="Courier, monospace" font-size="9" fill="#43a047">"rows"</text>
+  <text x="405" y="170" font-family="Courier, monospace" font-size="9" fill="#333">: 150,</text>
+  <text x="365" y="185" font-family="Courier, monospace" font-size="9" fill="#43a047">"columns"</text>
+  <text x="430" y="185" font-family="Courier, monospace" font-size="9" fill="#333">: ["x", "y", "group"]</text>
+  <text x="355" y="200" font-family="Courier, monospace" font-size="9" fill="#333">},</text>
+  <text x="355" y="215" font-family="Courier, monospace" font-size="9" fill="#1976d2">"spec"</text>
+  <text x="395" y="215" font-family="Courier, monospace" font-size="9" fill="#333">: { "aes": {...}, "geom": {...} },</text>
+  <text x="355" y="230" font-family="Courier, monospace" font-size="9" fill="#1976d2">"render"</text>
+  <text x="410" y="230" font-family="Courier, monospace" font-size="9" fill="#333">: { "width": 80, "height": 24 }</text>
+  <text x="345" y="245" font-family="Courier, monospace" font-size="9" fill="#7b1fa2">}</text>
+
+  <!-- Annotations -->
+  <line x1="540" y1="108" x2="580" y2="108" stroke="#999" stroke-width="1"/>
+  <text x="585" y="112" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Unique ID</text>
+
+  <line x1="545" y1="153" x2="580" y2="140" stroke="#999" stroke-width="1"/>
+  <text x="585" y="144" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Data provenance</text>
+
+  <line x1="560" y1="213" x2="580" y2="200" stroke="#999" stroke-width="1"/>
+  <text x="585" y="204" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Plot specification</text>
+
+  <!-- Panel C: Benefits box (right side) -->
+  <text x="710" y="60" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">Key Benefits</text>
+
+  <rect x="700" y="75" width="280" height="200" rx="6" fill="#e8f5e9" stroke="#43a047" stroke-width="2"/>
+
+  <!-- Benefit items -->
+  <circle cx="720" cy="105" r="6" fill="#43a047"/>
+  <text x="735" y="100" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">Reproducibility</text>
+  <text x="735" y="115" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#666">Every plot can be exactly recreated</text>
+
+  <circle cx="720" cy="145" r="6" fill="#43a047"/>
+  <text x="735" y="140" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">Data Provenance</text>
+  <text x="735" y="155" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#666">Source files and parameters preserved</text>
+
+  <circle cx="720" cy="185" r="6" fill="#43a047"/>
+  <text x="735" y="180" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">Searchable History</text>
+  <text x="735" y="195" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#666">Find plots by type, date, or source</text>
+
+  <circle cx="720" cy="225" r="6" fill="#43a047"/>
+  <text x="735" y="220" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">Export Pipeline</text>
+  <text x="735" y="235" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#666">Terminal → HTML → PNG/SVG/PDF</text>
+
+  <!-- Panel D: Search and Retrieval Workflow -->
+  <text x="50" y="305" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">C) Search and Retrieval Workflow</text>
+
+  <!-- Workflow background -->
+  <rect x="30" y="320" width="950" height="310" rx="6" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+
+  <!-- Column headers -->
+  <text x="140" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#7b1fa2">USER</text>
+  <text x="450" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#1976d2">SYSTEM</text>
+  <text x="800" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#43a047">OUTPUT</text>
+
+  <!-- Vertical dividers -->
+  <line x1="280" y1="340" x2="280" y2="620" stroke="#eee" stroke-width="2" stroke-dasharray="5,5"/>
+  <line x1="620" y1="340" x2="620" y2="620" stroke="#eee" stroke-width="2" stroke-dasharray="5,5"/>
+
+  <!-- Step 1: Search request -->
+  <rect x="50" y="370" width="180" height="55" rx="25" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2"/>
+  <text x="140" y="392" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333">"Find my volcano plot</text>
+  <text x="140" y="407" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333">from yesterday"</text>
+
+  <line x1="230" y1="397" x2="290" y2="397" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="300" y="370" width="220" height="55" rx="6" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+  <text x="410" y="390" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333">Searches history/*.json</text>
+  <text x="410" y="407" text-anchor="middle" font-family="Courier, monospace" font-size="9" fill="#666">geom.type = "volcano"</text>
+  <text x="410" y="420" text-anchor="middle" font-family="Courier, monospace" font-size="9" fill="#666">date = yesterday</text>
+
+  <line x1="520" y1="397" x2="630" y2="397" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="640" y="370" width="200" height="55" rx="6" fill="#e8f5e9" stroke="#43a047" stroke-width="2"/>
+  <text x="740" y="388" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">Found: 2024-01-27-003</text>
+  <text x="740" y="403" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#666">Volcano plot</text>
+  <text x="740" y="418" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#666">Data: deseq_results.csv</text>
+
+  <!-- Vertical arrow down -->
+  <line x1="140" y1="430" x2="140" y2="455" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Step 2: Show request -->
+  <rect x="50" y="460" width="180" height="40" rx="20" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2"/>
+  <text x="140" y="485" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333">"Show it"</text>
+
+  <line x1="230" y1="480" x2="290" y2="480" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="300" y="455" width="220" height="50" rx="6" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+  <text x="410" y="475" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333">Loads saved specification</text>
+  <text x="410" y="492" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333">Re-renders from JSON</text>
+
+  <line x1="520" y1="480" x2="630" y2="480" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Terminal output mockup -->
+  <rect x="640" y="445" width="200" height="70" rx="6" fill="#1a1a1a" stroke="#333" stroke-width="2"/>
+  <text x="740" y="463" text-anchor="middle" font-family="Courier, monospace" font-size="9" fill="#43a047">    Volcano Plot</text>
+  <text x="660" y="478" font-family="Courier, monospace" font-size="8" fill="#e53935">●</text>
+  <text x="675" y="478" font-family="Courier, monospace" font-size="8" fill="#e53935">●</text>
+  <text x="710" y="488" font-family="Courier, monospace" font-size="8" fill="#999">●●●●●●●●</text>
+  <text x="780" y="478" font-family="Courier, monospace" font-size="8" fill="#1976d2">●</text>
+  <text x="795" y="478" font-family="Courier, monospace" font-size="8" fill="#1976d2">●</text>
+  <text x="740" y="508" text-anchor="middle" font-family="Courier, monospace" font-size="8" fill="#666">log2FC</text>
+
+  <!-- Vertical arrow down -->
+  <line x1="140" y1="505" x2="140" y2="530" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Step 3: Export request -->
+  <rect x="50" y="535" width="180" height="50" rx="25" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2"/>
+  <text x="140" y="557" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333">"Export for</text>
+  <text x="140" y="572" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333">publication"</text>
+
+  <line x1="230" y1="560" x2="290" y2="560" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="300" y="535" width="220" height="50" rx="6" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+  <text x="410" y="555" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#333">Generates Vega-Lite HTML</text>
+  <text x="410" y="572" text-anchor="middle" font-family="Courier, monospace" font-size="9" fill="#666">ggterm export ... figure.html</text>
+
+  <line x1="520" y1="560" x2="630" y2="560" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Export outputs -->
+  <rect x="640" y="530" width="70" height="30" rx="4" fill="#fff8e1" stroke="#ffa000" stroke-width="2"/>
+  <text x="675" y="550" text-anchor="middle" font-family="Courier, monospace" font-size="9" fill="#333">.html</text>
+
+  <rect x="720" y="530" width="55" height="30" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+  <text x="748" y="550" text-anchor="middle" font-family="Courier, monospace" font-size="9" fill="#333">.png</text>
+
+  <rect x="785" y="530" width="55" height="30" rx="4" fill="#e8f5e9" stroke="#43a047" stroke-width="2"/>
+  <text x="813" y="550" text-anchor="middle" font-family="Courier, monospace" font-size="9" fill="#333">.svg</text>
+
+  <!-- Final label -->
+  <text x="740" y="580" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#666">Publication-ready outputs</text>
+</svg>

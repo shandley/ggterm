@@ -1,118 +1,346 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
   <!-- Background -->
-  <rect width="800" height="520" fill="white"/>
+  <rect width="1000" height="700" fill="white"/>
 
   <!-- Title -->
-  <text x="400" y="30" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">Figure 2: Feature Comparison of Terminal Visualization Libraries</text>
+  <text x="500" y="30" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">Figure 2: Geometry Type Coverage Across Analytical Domains</text>
 
-  <!-- Table header background -->
-  <rect x="40" y="50" width="720" height="35" fill="#f5f5f5" stroke="#ddd" stroke-width="1"/>
+  <!-- Panel A: Taxonomy -->
+  <text x="50" y="60" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">A) Taxonomy of 68 Geometry Types</text>
 
-  <!-- Column headers -->
-  <text x="160" y="73" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">Feature</text>
-  <text x="340" y="73" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#1976d2">ggterm</text>
-  <text x="460" y="73" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#666">plotext</text>
-  <text x="560" y="73" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#666">termgraph</text>
-  <text x="680" y="73" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#666">asciichart</text>
+  <!-- Domain boxes -->
+  <!-- Core Statistical -->
+  <rect x="30" y="75" width="220" height="200" rx="6" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+  <text x="140" y="95" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1976d2">CORE STATISTICAL (26)</text>
+  <text x="45" y="115" font-family="Courier, monospace" font-size="9" fill="#333">point    line     bar</text>
+  <text x="45" y="130" font-family="Courier, monospace" font-size="9" fill="#333">col      histogram freqpoly</text>
+  <text x="45" y="145" font-family="Courier, monospace" font-size="9" fill="#333">density  boxplot  violin</text>
+  <text x="45" y="160" font-family="Courier, monospace" font-size="9" fill="#333">area     ribbon   smooth</text>
+  <text x="45" y="175" font-family="Courier, monospace" font-size="9" fill="#333">segment  curve    rect</text>
+  <text x="45" y="190" font-family="Courier, monospace" font-size="9" fill="#333">tile     raster   bin2d</text>
+  <text x="45" y="205" font-family="Courier, monospace" font-size="9" fill="#333">contour  text     label</text>
+  <text x="45" y="220" font-family="Courier, monospace" font-size="9" fill="#333">rug      step     path</text>
+  <text x="45" y="235" font-family="Courier, monospace" font-size="9" fill="#333">hline    vline    abline</text>
+  <text x="45" y="250" font-family="Courier, monospace" font-size="9" fill="#333">errorbar crossbar pointrange</text>
+  <text x="45" y="265" font-family="Courier, monospace" font-size="9" fill="#333">linerange contour_filled</text>
 
-  <!-- Vertical lines -->
-  <line x1="280" y1="50" x2="280" y2="500" stroke="#ddd" stroke-width="1"/>
-  <line x1="400" y1="50" x2="400" y2="500" stroke="#ddd" stroke-width="1"/>
-  <line x1="510" y1="50" x2="510" y2="500" stroke="#ddd" stroke-width="1"/>
-  <line x1="620" y1="50" x2="620" y2="500" stroke="#ddd" stroke-width="1"/>
+  <!-- Scientific -->
+  <rect x="265" y="75" width="220" height="105" rx="6" fill="#fff3e0" stroke="#f57c00" stroke-width="2"/>
+  <text x="375" y="95" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#f57c00">SCIENTIFIC (7)</text>
+  <text x="280" y="115" font-family="Courier, monospace" font-size="9" fill="#333">volcano    ma         manhattan</text>
+  <text x="280" y="130" font-family="Courier, monospace" font-size="9" fill="#333">heatmap    biplot     corrmat</text>
+  <text x="280" y="145" font-family="Courier, monospace" font-size="9" fill="#333">density_2d</text>
+  <text x="280" y="165" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Genomics, proteomics, multivariate</text>
 
-  <!-- Table border -->
-  <rect x="40" y="50" width="720" height="450" fill="none" stroke="#ddd" stroke-width="1"/>
+  <!-- Clinical/Biostatistical -->
+  <rect x="265" y="190" width="220" height="85" rx="6" fill="#fce4ec" stroke="#c2185b" stroke-width="2"/>
+  <text x="375" y="210" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#c2185b">CLINICAL (4)</text>
+  <text x="280" y="230" font-family="Courier, monospace" font-size="9" fill="#333">kaplan_meier  forest</text>
+  <text x="280" y="245" font-family="Courier, monospace" font-size="9" fill="#333">roc           bland_altman</text>
+  <text x="280" y="265" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Survival, meta-analysis, diagnostics</text>
 
-  <!-- Section: Grammar of Graphics -->
-  <rect x="40" y="85" width="720" height="25" fill="#e3f2fd"/>
-  <text x="50" y="102" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1976d2">Grammar of Graphics</text>
+  <!-- Statistical Diagnostics -->
+  <rect x="500" y="75" width="220" height="85" rx="6" fill="#e8f5e9" stroke="#43a047" stroke-width="2"/>
+  <text x="610" y="95" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#43a047">DIAGNOSTICS (5)</text>
+  <text x="515" y="115" font-family="Courier, monospace" font-size="9" fill="#333">qq      ecdf     scree</text>
+  <text x="515" y="130" font-family="Courier, monospace" font-size="9" fill="#333">funnel  control</text>
+  <text x="515" y="150" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Normality, process control, PCA</text>
 
-  <!-- Row data -->
-  <text x="60" y="127" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Declarative API</text>
-  <text x="340" y="127" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="460" y="127" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="560" y="127" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="680" y="127" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
+  <!-- Set/Hierarchical -->
+  <rect x="500" y="170" width="220" height="105" rx="6" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2"/>
+  <text x="610" y="190" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#7b1fa2">SET/HIERARCHICAL (6)</text>
+  <text x="515" y="210" font-family="Courier, monospace" font-size="9" fill="#333">upset      dendrogram</text>
+  <text x="515" y="225" font-family="Courier, monospace" font-size="9" fill="#333">treemap    sankey</text>
+  <text x="515" y="240" font-family="Courier, monospace" font-size="9" fill="#333">flame      icicle</text>
+  <text x="515" y="260" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Intersections, clustering, flows</text>
 
-  <text x="60" y="150" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Composable layers</text>
-  <text x="340" y="150" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="460" y="150" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="560" y="150" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="680" y="150" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
+  <!-- Distribution Variants -->
+  <rect x="735" y="75" width="220" height="85" rx="6" fill="#e0f2f1" stroke="#00796b" stroke-width="2"/>
+  <text x="845" y="95" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#00796b">DISTRIBUTION (8)</text>
+  <text x="750" y="115" font-family="Courier, monospace" font-size="9" fill="#333">ridgeline  joy       beeswarm</text>
+  <text x="750" y="130" font-family="Courier, monospace" font-size="9" fill="#333">quasirandom dumbbell lollipop</text>
+  <text x="750" y="145" font-family="Courier, monospace" font-size="9" fill="#333">errorbarh</text>
 
-  <text x="60" y="173" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Aesthetic mappings</text>
-  <text x="340" y="173" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="460" y="173" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="560" y="173" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="680" y="173" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
+  <!-- Terminal-Optimized -->
+  <rect x="735" y="170" width="220" height="105" rx="6" fill="#fff8e1" stroke="#ffa000" stroke-width="2"/>
+  <text x="845" y="190" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#ffa000">TERMINAL (5)</text>
+  <text x="750" y="210" font-family="Courier, monospace" font-size="9" fill="#333">braille    sparkline</text>
+  <text x="750" y="225" font-family="Courier, monospace" font-size="9" fill="#333">bullet     waffle</text>
+  <text x="750" y="240" font-family="Courier, monospace" font-size="9" fill="#333">calendar</text>
+  <text x="750" y="260" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">High-resolution terminal rendering</text>
 
-  <!-- Section: Geometry Types -->
-  <rect x="40" y="185" width="720" height="25" fill="#e3f2fd"/>
-  <text x="50" y="202" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1976d2">Geometry Types</text>
+  <!-- Summary bar -->
+  <rect x="30" y="285" width="925" height="25" rx="4" fill="#f5f5f5" stroke="#ddd" stroke-width="1"/>
+  <text x="485" y="302" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">Total: 68 geometry types across 8 analytical domains</text>
 
-  <text x="60" y="227" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Scatter / Point</text>
-  <text x="340" y="227" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="460" y="227" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="560" y="227" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="680" y="227" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
+  <!-- Panel B: Scientific Visualization Examples -->
+  <text x="50" y="340" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">B) Scientific Visualization Examples</text>
 
-  <text x="60" y="250" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Bar / Histogram</text>
-  <text x="340" y="250" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="460" y="250" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="560" y="250" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="680" y="250" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
+  <!-- Volcano Plot -->
+  <rect x="30" y="355" width="280" height="160" rx="6" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+  <text x="170" y="375" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">Volcano Plot</text>
 
-  <text x="60" y="273" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Statistical (smooth, qq, density)</text>
-  <text x="340" y="273" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="460" y="273" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="560" y="273" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="680" y="273" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
+  <!-- Volcano plot axes -->
+  <line x1="60" y1="490" x2="290" y2="490" stroke="#999" stroke-width="1"/>
+  <line x1="60" y1="390" x2="60" y2="490" stroke="#999" stroke-width="1"/>
+  <text x="175" y="505" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">log2 fold change</text>
+  <text x="48" y="440" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666" transform="rotate(-90 48 440)">-log10(p)</text>
 
-  <text x="60" y="296" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Total geometry types</text>
-  <text x="340" y="296" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#1976d2">30</text>
-  <text x="460" y="296" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">15</text>
-  <text x="560" y="296" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">3</text>
-  <text x="680" y="296" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#666">1</text>
+  <!-- Volcano points - upregulated (right, red) -->
+  <circle cx="240" cy="400" r="4" fill="#e53935"/>
+  <circle cx="250" cy="410" r="3" fill="#e53935"/>
+  <circle cx="235" cy="415" r="3" fill="#e53935"/>
+  <circle cx="260" cy="420" r="4" fill="#e53935"/>
+  <circle cx="245" cy="405" r="3" fill="#e53935"/>
 
-  <!-- Section: Data Features -->
-  <rect x="40" y="308" width="720" height="25" fill="#e3f2fd"/>
-  <text x="50" y="325" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1976d2">Data Features</text>
+  <!-- Volcano points - downregulated (left, blue) -->
+  <circle cx="90" cy="405" r="4" fill="#1976d2"/>
+  <circle cx="80" cy="415" r="3" fill="#1976d2"/>
+  <circle cx="100" cy="400" r="3" fill="#1976d2"/>
+  <circle cx="85" cy="420" r="3" fill="#1976d2"/>
 
-  <text x="60" y="350" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Color / Size / Shape encoding</text>
-  <text x="340" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="460" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#999">partial</text>
-  <text x="560" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="680" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
+  <!-- Volcano points - non-significant (middle, gray) -->
+  <circle cx="150" cy="470" r="2" fill="#999"/>
+  <circle cx="160" cy="465" r="2" fill="#999"/>
+  <circle cx="170" cy="475" r="2" fill="#999"/>
+  <circle cx="180" cy="468" r="2" fill="#999"/>
+  <circle cx="140" cy="472" r="2" fill="#999"/>
+  <circle cx="190" cy="478" r="2" fill="#999"/>
+  <circle cx="155" cy="480" r="2" fill="#999"/>
+  <circle cx="175" cy="460" r="2" fill="#999"/>
+  <circle cx="165" cy="455" r="2" fill="#999"/>
+  <circle cx="145" cy="462" r="2" fill="#999"/>
+  <circle cx="185" cy="458" r="2" fill="#999"/>
+  <circle cx="130" cy="475" r="2" fill="#999"/>
+  <circle cx="200" cy="470" r="2" fill="#999"/>
+  <circle cx="120" cy="468" r="2" fill="#999"/>
+  <circle cx="210" cy="465" r="2" fill="#999"/>
 
-  <text x="60" y="373" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Faceting (small multiples)</text>
-  <text x="340" y="373" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="460" y="373" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="560" y="373" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="680" y="373" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
+  <!-- Threshold lines -->
+  <line x1="120" y1="390" x2="120" y2="490" stroke="#e91e63" stroke-width="1" stroke-dasharray="4,2"/>
+  <line x1="220" y1="390" x2="220" y2="490" stroke="#e91e63" stroke-width="1" stroke-dasharray="4,2"/>
+  <line x1="60" y1="450" x2="290" y2="450" stroke="#e91e63" stroke-width="1" stroke-dasharray="4,2"/>
 
-  <!-- Section: AI Integration -->
-  <rect x="40" y="385" width="720" height="25" fill="#e3f2fd"/>
-  <text x="50" y="402" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1976d2">AI Integration</text>
+  <text x="170" y="510" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Differential expression analysis</text>
 
-  <text x="60" y="427" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Agent skills / tools</text>
-  <text x="340" y="427" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="460" y="427" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="560" y="427" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="680" y="427" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
+  <!-- Kaplan-Meier Curve -->
+  <rect x="330" y="355" width="280" height="160" rx="6" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+  <text x="470" y="375" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">Kaplan-Meier Curve</text>
 
-  <text x="60" y="450" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Plot history &amp; provenance</text>
-  <text x="340" y="450" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="460" y="450" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="560" y="450" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="680" y="450" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
+  <!-- KM axes -->
+  <line x1="360" y1="490" x2="590" y2="490" stroke="#999" stroke-width="1"/>
+  <line x1="360" y1="390" x2="360" y2="490" stroke="#999" stroke-width="1"/>
+  <text x="475" y="505" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Time (months)</text>
+  <text x="348" y="440" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666" transform="rotate(-90 348 440)">Survival</text>
 
-  <text x="60" y="473" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#333">Vega-Lite export</text>
-  <text x="340" y="473" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#43a047">✓</text>
-  <text x="460" y="473" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="560" y="473" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
-  <text x="680" y="473" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#999">—</text>
+  <!-- Y axis labels -->
+  <text x="355" y="395" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">1.0</text>
+  <text x="355" y="440" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">0.5</text>
+  <text x="355" y="490" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">0.0</text>
+
+  <!-- Treatment curve (blue) - step function -->
+  <polyline points="360,395 420,395 420,410 450,410 450,430 490,430 490,455 540,455 540,475 580,475" fill="none" stroke="#1976d2" stroke-width="2"/>
+
+  <!-- Control curve (orange) - step function -->
+  <polyline points="360,395 400,395 400,420 430,420 430,450 470,450 470,470 510,470 510,485 560,485" fill="none" stroke="#ff9800" stroke-width="2"/>
+
+  <!-- Censoring marks -->
+  <line x1="415" y1="392" x2="415" y2="398" stroke="#1976d2" stroke-width="2"/>
+  <line x1="475" y1="427" x2="475" y2="433" stroke="#1976d2" stroke-width="2"/>
+  <line x1="520" y1="452" x2="520" y2="458" stroke="#1976d2" stroke-width="2"/>
+
+  <line x1="385" y1="392" x2="385" y2="398" stroke="#ff9800" stroke-width="2"/>
+  <line x1="445" y1="417" x2="445" y2="423" stroke="#ff9800" stroke-width="2"/>
+  <line x1="495" y1="447" x2="495" y2="453" stroke="#ff9800" stroke-width="2"/>
 
   <!-- Legend -->
-  <text x="400" y="510" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#666">✓ = Supported, — = Not supported</text>
+  <line x1="500" y1="385" x2="520" y2="385" stroke="#1976d2" stroke-width="2"/>
+  <text x="525" y="388" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">Treatment</text>
+  <line x1="500" y1="397" x2="520" y2="397" stroke="#ff9800" stroke-width="2"/>
+  <text x="525" y="400" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">Control</text>
+
+  <text x="470" y="510" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Survival analysis with censoring</text>
+
+  <!-- Forest Plot -->
+  <rect x="630" y="355" width="280" height="160" rx="6" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+  <text x="770" y="375" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">Forest Plot</text>
+
+  <!-- Study labels -->
+  <text x="660" y="400" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Study A</text>
+  <text x="660" y="420" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Study B</text>
+  <text x="660" y="440" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Study C</text>
+  <text x="660" y="460" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Study D</text>
+  <text x="660" y="485" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#333">Pooled</text>
+
+  <!-- Null line -->
+  <line x1="820" y1="390" x2="820" y2="495" stroke="#999" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="820" y="508" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">1.0</text>
+
+  <!-- Effect estimates with CI -->
+  <!-- Study A -->
+  <line x1="760" y1="398" x2="850" y2="398" stroke="#1976d2" stroke-width="1"/>
+  <circle cx="800" cy="398" r="4" fill="#1976d2"/>
+
+  <!-- Study B -->
+  <line x1="780" y1="418" x2="870" y2="418" stroke="#1976d2" stroke-width="1"/>
+  <circle cx="830" cy="418" r="4" fill="#1976d2"/>
+
+  <!-- Study C -->
+  <line x1="740" y1="438" x2="810" y2="438" stroke="#1976d2" stroke-width="1"/>
+  <circle cx="770" cy="438" r="4" fill="#1976d2"/>
+
+  <!-- Study D -->
+  <line x1="770" y1="458" x2="860" y2="458" stroke="#1976d2" stroke-width="1"/>
+  <circle cx="810" cy="458" r="4" fill="#1976d2"/>
+
+  <!-- Pooled (diamond) -->
+  <polygon points="795,485 810,480 825,485 810,490" fill="#43a047" stroke="#43a047" stroke-width="1"/>
+
+  <!-- X axis -->
+  <line x1="720" y1="495" x2="890" y2="495" stroke="#999" stroke-width="1"/>
+  <text x="750" y="508" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">0.5</text>
+  <text x="880" y="508" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">2.0</text>
+
+  <text x="770" y="520" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Meta-analysis with confidence intervals</text>
+
+  <!-- Bottom row examples -->
+  <!-- UpSet Plot -->
+  <rect x="30" y="525" width="280" height="160" rx="6" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+  <text x="170" y="545" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">UpSet Plot</text>
+
+  <!-- Bar chart portion -->
+  <rect x="80" y="560" width="30" height="60" fill="#7b1fa2"/>
+  <rect x="120" y="575" width="30" height="45" fill="#7b1fa2"/>
+  <rect x="160" y="590" width="30" height="30" fill="#7b1fa2"/>
+  <rect x="200" y="600" width="30" height="20" fill="#7b1fa2"/>
+  <rect x="240" y="605" width="30" height="15" fill="#7b1fa2"/>
+
+  <!-- Matrix portion -->
+  <line x1="60" y1="630" x2="290" y2="630" stroke="#ddd" stroke-width="1"/>
+
+  <!-- Set labels -->
+  <text x="55" y="648" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">A</text>
+  <text x="55" y="663" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">B</text>
+  <text x="55" y="678" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">C</text>
+
+  <!-- Dots and lines -->
+  <circle cx="95" cy="645" r="5" fill="#333"/>
+  <circle cx="95" cy="660" r="5" fill="#333"/>
+  <circle cx="95" cy="675" r="5" fill="#333"/>
+  <line x1="95" y1="645" x2="95" y2="675" stroke="#333" stroke-width="2"/>
+
+  <circle cx="135" cy="645" r="5" fill="#333"/>
+  <circle cx="135" cy="660" r="5" fill="#333"/>
+  <circle cx="135" cy="675" r="3" fill="none" stroke="#ccc" stroke-width="1"/>
+  <line x1="135" y1="645" x2="135" y2="660" stroke="#333" stroke-width="2"/>
+
+  <circle cx="175" cy="645" r="5" fill="#333"/>
+  <circle cx="175" cy="660" r="3" fill="none" stroke="#ccc" stroke-width="1"/>
+  <circle cx="175" cy="675" r="5" fill="#333"/>
+  <line x1="175" y1="645" x2="175" y2="675" stroke="#333" stroke-width="2"/>
+
+  <circle cx="215" cy="645" r="5" fill="#333"/>
+  <circle cx="215" cy="660" r="3" fill="none" stroke="#ccc" stroke-width="1"/>
+  <circle cx="215" cy="675" r="3" fill="none" stroke="#ccc" stroke-width="1"/>
+
+  <circle cx="255" cy="645" r="3" fill="none" stroke="#ccc" stroke-width="1"/>
+  <circle cx="255" cy="660" r="5" fill="#333"/>
+  <circle cx="255" cy="675" r="3" fill="none" stroke="#ccc" stroke-width="1"/>
+
+  <text x="170" y="692" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Set intersections visualization</text>
+
+  <!-- Dendrogram -->
+  <rect x="330" y="525" width="280" height="160" rx="6" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+  <text x="470" y="545" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">Dendrogram</text>
+
+  <!-- Tree structure -->
+  <!-- Height axis -->
+  <line x1="360" y1="560" x2="360" y2="660" stroke="#999" stroke-width="1"/>
+  <text x="355" y="565" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="7" fill="#666">3</text>
+  <text x="355" y="595" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="7" fill="#666">2</text>
+  <text x="355" y="625" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="7" fill="#666">1</text>
+  <text x="355" y="655" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="7" fill="#666">0</text>
+
+  <!-- Leaf labels -->
+  <text x="390" y="675" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">A</text>
+  <text x="420" y="675" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">B</text>
+  <text x="450" y="675" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">C</text>
+  <text x="480" y="675" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">D</text>
+  <text x="510" y="675" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">E</text>
+  <text x="540" y="675" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">F</text>
+  <text x="570" y="675" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#333">G</text>
+
+  <!-- Branches -->
+  <!-- AB cluster -->
+  <line x1="390" y1="660" x2="390" y2="630" stroke="#00796b" stroke-width="2"/>
+  <line x1="420" y1="660" x2="420" y2="630" stroke="#00796b" stroke-width="2"/>
+  <line x1="390" y1="630" x2="420" y2="630" stroke="#00796b" stroke-width="2"/>
+  <line x1="405" y1="630" x2="405" y2="600" stroke="#00796b" stroke-width="2"/>
+
+  <!-- CD cluster -->
+  <line x1="450" y1="660" x2="450" y2="620" stroke="#00796b" stroke-width="2"/>
+  <line x1="480" y1="660" x2="480" y2="620" stroke="#00796b" stroke-width="2"/>
+  <line x1="450" y1="620" x2="480" y2="620" stroke="#00796b" stroke-width="2"/>
+  <line x1="465" y1="620" x2="465" y2="590" stroke="#00796b" stroke-width="2"/>
+
+  <!-- ABCD cluster -->
+  <line x1="405" y1="600" x2="465" y2="600" stroke="#00796b" stroke-width="2"/>
+  <line x1="435" y1="600" x2="435" y2="575" stroke="#00796b" stroke-width="2"/>
+
+  <!-- EF cluster -->
+  <line x1="510" y1="660" x2="510" y2="625" stroke="#00796b" stroke-width="2"/>
+  <line x1="540" y1="660" x2="540" y2="625" stroke="#00796b" stroke-width="2"/>
+  <line x1="510" y1="625" x2="540" y2="625" stroke="#00796b" stroke-width="2"/>
+  <line x1="525" y1="625" x2="525" y2="595" stroke="#00796b" stroke-width="2"/>
+
+  <!-- EFG cluster -->
+  <line x1="570" y1="660" x2="570" y2="595" stroke="#00796b" stroke-width="2"/>
+  <line x1="525" y1="595" x2="570" y2="595" stroke="#00796b" stroke-width="2"/>
+  <line x1="547" y1="595" x2="547" y2="575" stroke="#00796b" stroke-width="2"/>
+
+  <!-- Root -->
+  <line x1="435" y1="575" x2="547" y2="575" stroke="#00796b" stroke-width="2"/>
+  <line x1="491" y1="575" x2="491" y2="565" stroke="#00796b" stroke-width="2"/>
+
+  <text x="470" y="692" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Hierarchical clustering</text>
+
+  <!-- Bland-Altman -->
+  <rect x="630" y="525" width="280" height="160" rx="6" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+  <text x="770" y="545" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">Bland-Altman Plot</text>
+
+  <!-- Axes -->
+  <line x1="660" y1="660" x2="890" y2="660" stroke="#999" stroke-width="1"/>
+  <line x1="660" y1="560" x2="660" y2="660" stroke="#999" stroke-width="1"/>
+  <text x="775" y="680" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Mean of methods</text>
+  <text x="648" y="610" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666" transform="rotate(-90 648 610)">Difference</text>
+
+  <!-- Reference lines -->
+  <line x1="660" y1="610" x2="890" y2="610" stroke="#43a047" stroke-width="2"/>
+  <text x="895" y="613" font-family="Helvetica, Arial, sans-serif" font-size="7" fill="#43a047">Mean</text>
+
+  <line x1="660" y1="575" x2="890" y2="575" stroke="#e91e63" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="895" y="578" font-family="Helvetica, Arial, sans-serif" font-size="7" fill="#e91e63">+1.96 SD</text>
+
+  <line x1="660" y1="645" x2="890" y2="645" stroke="#e91e63" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="895" y="648" font-family="Helvetica, Arial, sans-serif" font-size="7" fill="#e91e63">-1.96 SD</text>
+
+  <!-- Data points -->
+  <circle cx="700" cy="605" r="3" fill="#1976d2"/>
+  <circle cx="720" cy="615" r="3" fill="#1976d2"/>
+  <circle cx="740" cy="600" r="3" fill="#1976d2"/>
+  <circle cx="760" cy="620" r="3" fill="#1976d2"/>
+  <circle cx="780" cy="608" r="3" fill="#1976d2"/>
+  <circle cx="800" cy="612" r="3" fill="#1976d2"/>
+  <circle cx="820" cy="595" r="3" fill="#1976d2"/>
+  <circle cx="840" cy="625" r="3" fill="#1976d2"/>
+  <circle cx="860" cy="615" r="3" fill="#1976d2"/>
+  <circle cx="710" cy="618" r="3" fill="#1976d2"/>
+  <circle cx="750" cy="608" r="3" fill="#1976d2"/>
+  <circle cx="790" cy="602" r="3" fill="#1976d2"/>
+  <circle cx="830" cy="622" r="3" fill="#1976d2"/>
+  <circle cx="870" cy="605" r="3" fill="#1976d2"/>
+  <circle cx="730" cy="585" r="3" fill="#1976d2"/>
+  <circle cx="810" cy="635" r="3" fill="#1976d2"/>
+
+  <text x="770" y="692" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#666">Method comparison and agreement</text>
 </svg>
