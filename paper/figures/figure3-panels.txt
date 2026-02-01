@@ -1,79 +1,96 @@
-=== FIGURE 3A ===
-                  A) Petal Dimensions                  
-                                                       
-       │·       ·      ·       ·      ·       ·      · 
-       │·       ·      ·       ·      ·       ·      · 
-     2 ┤··································●●●●●●●····· 
-       │·       ·      ·       ·      ·    ●●●●●●●   · 
-       │·       ·      ·       ·      ·       ·      · 
-       │·       ·      ·    ●● ●●     ·       ·      · 
-       │·       ·      ·   ●●●●●●●●   ·       ·      · 
-     1 ┤···················●●●●●·●···················· 
-       │·       ·      ·       ·      ·       ·      · 
-       │·   ●●●●●●●●   ·       ·      ·       ·      · 
-       │·   ●●●●●●●●   ·       ·      ·       ·      · 
-     0 ┤·············································· 
-       └┬───────┬──────┬───────┬──────┬───────┬──────┬ 
-        1       2      3       4      5       6      7 
+Figure 3: Plot History and Provenance System
 
-=== FIGURE 3B ===
-                 B) Colored by Species                 
-                                                       
-       │     ·          ·         ·      ● setosa      
-       │     ·          ·         ·      ● versicolor  
-     2 ┤························●●●●●··· ● virginica   
-       │     ·          ·       ●●●●●                  
-       │     ·          ·         ·                    
-       │     ·        ●●●         ·                    
-       │     ·       ●●●●●●       ·                    
-     1 ┤·············●●●●·●·············               
-       │     ·          ·         ·                    
-       │   ●●●●●●       ·         ·                    
-       │   ●●●●●        ·         ·                    
-     0 ┤································               
-       └─────┬──────────┬─────────┬─────               
-             2          4         6                    
+A) Directory Structure
 
-=== FIGURE 3C ===
-                        C) Faceted by Species                         
-                                                                      
-                                                                      
-                                                                      
-                setosa            versicolor          virginica       
-               │  ·  ·  ·          │  ·  ·  ·          │  ·  ·  ·     
-               │  ·  ·  ·          │  ·  ·  ·          │  ·  ·  ●     
-             2 ┤···········        ┤···········        ┤········●●·   
-               │  ·  ·  ·          │  ·  ·  ·          │  ·  ·  ·     
-               │  ·  ·  ·          │  ·  ●  ·          │  ·  ·  ·     
-               │···········        │····●●●····        │···········   
-               │  ·  ·  ·          │  ·  ·  ·          │  ·  ·  ·     
-               │ ●●  ·  ·          │  ·  ·  ·          │  ·  ·  ·     
-               │ ●●  ·  ·          │  ·  ·  ·          │  ·  ·  ·     
-             0 ┤···········        ┤···········        ┤···········   
-               └┬──────┬──┬        └┬──────┬──┬        └┬──────┬──┬   
-                1      5  7         1      5  7         1      5  7   
-                                                                      
-                                                                      
-                                                                      
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                 │
+│  ~/.ggterm/                                                                     │
+│  └── history/                                                                   │
+│      ├── 2024-01-28-001.json    ← First plot of the day                        │
+│      ├── 2024-01-28-002.json    ← Subsequent plots auto-numbered               │
+│      ├── 2024-01-28-003.json                                                    │
+│      ├── 2024-01-29-001.json                                                    │
+│      └── ...                                                                    │
+│                                                                                 │
+│  Naming Convention: YYYY-MM-DD-NNN.json                                         │
+│  - Date-based organization for chronological browsing                           │
+│  - Auto-incrementing sequence within each day                                   │
+│  - Human-readable identifiers for easy reference                                │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
 
-=== FIGURE 3D ===
-D) Publication Export
+B) JSON Specification Schema
 
-┌─────────────────────────────────────────────────────────┐
-│                                                         │
-│     [Interactive Vega-Lite Visualization]               │
-│                                                         │
-│     ┌─────────────────────────────────────┐             │
-│     │                           ■■■       │             │
-│     │                       ■■■■■■■■      │             │
-│     │                   ▲▲▲▲▲▲▲■■■       │             │
-│     │               ▲▲▲▲▲▲▲▲▲            │             │
-│     │           ●●●●●●●                  │             │
-│     │       ●●●●●●●                      │             │
-│     └─────────────────────────────────────┘             │
-│                                                         │
-│     [Download PNG]  [Download SVG]  [View Spec]         │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                 │
+│  {                                                                              │
+│    "id": "2024-01-28-001",                    // Unique identifier              │
+│    "created": "2024-01-28T14:32:15.123Z",     // ISO timestamp                  │
+│    "data": {                                                                    │
+│      "source": "/path/to/experiment.csv",    // Original data path             │
+│      "rows": 150,                            // Row count at creation           │
+│      "columns": ["gene", "log2fc", "pvalue"] // Column names                   │
+│    },                                                                           │
+│    "spec": {                                                                    │
+│      "aes": { "x": "log2fc", "y": "-log10(pvalue)", "color": "significant" },  │
+│      "geom": { "type": "volcano", "params": { "fc_threshold": 1.5 } },         │
+│      "scales": [...],                                                           │
+│      "theme": "minimal"                                                         │
+│    },                                                                           │
+│    "render": {                                                                  │
+│      "width": 80,                            // Terminal dimensions             │
+│      "height": 24,                                                              │
+│      "renderer": "braille"                   // Rendering mode used             │
+│    }                                                                            │
+│  }                                                                              │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
 
-HTML export with interactive pan/zoom and download buttons.
+C) Search and Retrieval Workflow
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                 │
+│  USER                              SYSTEM                          OUTPUT       │
+│                                                                                 │
+│  ┌───────────────────┐                                                          │
+│  │ "Find my volcano  │                                                          │
+│  │  plot from        │─────────────▶ Searches history/*.json                   │
+│  │  yesterday"       │              for geom.type = "volcano"                   │
+│  └───────────────────┘              and date = yesterday                        │
+│                                              │                                  │
+│                                              ▼                                  │
+│                              ┌─────────────────────────────┐                    │
+│                              │ Found: 2024-01-27-003.json  │                    │
+│                              │ - Volcano plot              │                    │
+│                              │ - Data: deseq_results.csv   │                    │
+│                              │ - 2,847 genes               │                    │
+│                              └─────────────────────────────┘                    │
+│                                              │                                  │
+│                                              ▼                                  │
+│  ┌───────────────────┐      ┌─────────────────────────────┐                    │
+│  │ "Show it"         │─────▶│ Re-renders from saved spec  │                    │
+│  └───────────────────┘      └─────────────────────────────┘                    │
+│                                              │                                  │
+│                                              ▼                                  │
+│                              ┌─────────────────────────────┐    ┌────────────┐ │
+│                              │      Terminal Plot          │───▶│  Rendered  │ │
+│                              │   (exact reproduction)      │    │   Output   │ │
+│                              └─────────────────────────────┘    └────────────┘ │
+│                                              │                                  │
+│  ┌───────────────────┐                       │                                  │
+│  │ "Export for       │                       ▼                                  │
+│  │  publication"     │─────▶ ggterm export 2024-01-27-003 figure.html          │
+│  └───────────────────┘                       │                                  │
+│                                              ▼                                  │
+│                              ┌─────────────────────────────┐    ┌────────────┐ │
+│                              │ Vega-Lite HTML with         │───▶│ figure.png │ │
+│                              │ PNG/SVG download buttons    │    │ figure.svg │ │
+│                              └─────────────────────────────┘    └────────────┘ │
+│                                                                                 │
+│  KEY BENEFITS:                                                                  │
+│  • Complete reproducibility: Every plot can be exactly recreated               │
+│  • Data provenance: Source files and parameters preserved                       │
+│  • Searchable history: Find plots by type, date, or data source                │
+│  • Export pipeline: Terminal → HTML → PNG/SVG/PDF in one workflow              │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘

@@ -1,47 +1,61 @@
-Figure 2: Feature Comparison of Terminal Visualization Libraries
+Figure 2: Geometry Type Coverage Across Analytical Domains
 
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                                                              │
-│  Feature                    ggterm    plotext   termgraph   asciichart      │
-│  ─────────────────────────────────────────────────────────────────────────   │
-│                                                                              │
-│  GRAMMAR OF GRAPHICS                                                         │
-│    Declarative API            ✓         -          -           -            │
-│    Composable layers          ✓         -          -           -            │
-│    Aesthetic mappings         ✓         -          -           -            │
-│                                                                              │
-│  GEOMETRY TYPES                                                              │
-│    Scatter/Point              ✓         ✓          -           -            │
-│    Line                       ✓         ✓          -           ✓            │
-│    Bar/Histogram              ✓         ✓          ✓           -            │
-│    Boxplot                    ✓         ✓          -           -            │
-│    Density/Contour            ✓         -          -           -            │
-│    Statistical (smooth, qq)   ✓         -          -           -            │
-│    Total geometry types       30        15         3           1            │
-│                                                                              │
-│  DATA HANDLING                                                               │
-│    Color encoding             ✓         ✓          -           -            │
-│    Size encoding              ✓         -          -           -            │
-│    Shape encoding             ✓         -          -           -            │
-│    Faceting                   ✓         -          -           -            │
-│    Automatic statistics       ✓         Limited    -           -            │
-│                                                                              │
-│  OUTPUT & EXPORT                                                             │
-│    Terminal rendering         ✓         ✓          ✓           ✓            │
-│    HTML/SVG export            ✓         ✓          -           -            │
-│    Vega-Lite integration      ✓         -          -           -            │
-│    Plot history               ✓         -          -           -            │
-│    Provenance tracking        ✓         -          -           -            │
-│                                                                              │
-│  AI INTEGRATION                                                              │
-│    Agent skills/tools         ✓         -          -           -            │
-│    Natural language workflow  ✓         -          -           -            │
-│    Bundled datasets           ✓         -          -           -            │
-│                                                                              │
-│  IMPLEMENTATION                                                              │
-│    Language                   TypeScript Python    Python      JavaScript   │
-│    License                    MIT       MIT        MIT         BSD-3        │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+A) Taxonomy of 68 Geometry Types Organized by Purpose
 
-Legend: ✓ = Supported, - = Not supported, Limited = Partial support
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                 │
+│  CORE STATISTICAL          SCIENTIFIC              CLINICAL/BIOSTATISTICAL     │
+│  ─────────────────         ──────────              ────────────────────────     │
+│  point    line             volcano    ma           kaplan_meier  forest        │
+│  bar      col              manhattan  heatmap      roc           bland_altman  │
+│  histogram freqpoly        biplot     corrmat      funnel        control       │
+│  density  boxplot                                                              │
+│  violin   area                                                                 │
+│  smooth   ribbon           SET/HIERARCHICAL        STATISTICAL DIAGNOSTICS     │
+│  segment  curve            ────────────────        ────────────────────────    │
+│  rect     tile             upset      treemap      qq            ecdf          │
+│  raster   bin2d            dendrogram sankey       scree         funnel        │
+│  contour  contour_filled   flame      icicle       control                     │
+│  text     label                                                                │
+│  rug      step                                                                 │
+│  path     abline           DISTRIBUTION VARIANTS   TERMINAL-OPTIMIZED          │
+│  hline    vline            ─────────────────────   ──────────────────          │
+│  errorbar errorbarh        ridgeline  joy          braille    sparkline        │
+│  crossbar linerange        beeswarm   quasirandom  bullet     waffle           │
+│  pointrange                dumbbell   lollipop     calendar                    │
+│  density_2d                                                                    │
+│                                                                                 │
+│  Total: 68 geometry types across 8 analytical domains                          │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+B) Scientific Visualization Examples
+
+┌───────────────────────┐  ┌───────────────────────┐  ┌───────────────────────┐
+│    Volcano Plot       │  │   Kaplan-Meier Curve  │  │     Forest Plot       │
+│                       │  │                       │  │                       │
+│         ●    ●        │  │ 1.0┤━━━━━┓            │  │ Study A    ●──────│   │
+│        ● ●  ● ●       │  │    │     ┗━━┓         │  │ Study B      ●────│   │
+│   ●   ●●●●  ●●●●   ●  │  │ 0.5┤        ┗━━━┓     │  │ Study C   ●────│      │
+│  ●●●●●●●●●●●●●●●●●●●  │  │    │ ── Treatment    │  │ Study D     ●───│      │
+│ ●●●●●●●●●●●●●●●●●●●●● │  │    │ ── Control      │  │ Pooled    ◆────│       │
+│    ●●●●●●●●●●●●●●     │  │ 0.0┤────────────────  │  │         ─┼─┼─┼─┼─     │
+│   log₂ fold change    │  │     Time (months)     │  │        0.5   1   2    │
+└───────────────────────┘  └───────────────────────┘  └───────────────────────┘
+ Differential expression    Survival analysis          Meta-analysis with CI
+
+┌───────────────────────┐  ┌───────────────────────┐  ┌───────────────────────┐
+│    UpSet Plot         │  │     Dendrogram        │  │   Bland-Altman        │
+│                       │  │                       │  │                       │
+│  45 ┤████             │  │     ┌──┴──┐           │  │    ●  ●    +1.96 SD   │
+│  30 ┤████ ███         │  │   ┌─┴┐  ┌┴─┐         │  │  ●  ●●  ●  ─ ─ ─ ─    │
+│  15 ┤████ ███ ██      │  │  ┌┴┐┌┴┐┌┴┐┌┴┐        │  │ ●●●●●●●●●● ──Mean──   │
+│     │ ●  │ ● │ ●      │  │  A B C D E F G       │  │  ●  ●●  ●  ─ ─ ─ ─    │
+│   A │ ●  │ ● │        │  │                       │  │    ●  ●    -1.96 SD   │
+│   B │ ●  │   │ ●      │  │ Hierarchical cluster  │  │                       │
+│   C │    │ ● │ ●      │  │ with height scale     │  │    Mean of methods    │
+└───────────────────────┘  └───────────────────────┘  └───────────────────────┘
+ Set intersections          Clustering results         Method agreement
+
+Legend: These domain-specific geometries enable publication-ready scientific
+        figures directly from terminal-based analysis workflows.

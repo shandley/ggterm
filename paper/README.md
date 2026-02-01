@@ -6,7 +6,7 @@ Academic preprint for bioRxiv submission.
 
 | File | Description |
 |------|-------------|
-| `preprint.md` | Main manuscript (~2500 words) |
+| `preprint.md` | Main manuscript (~3500 words) |
 | `references.bib` | BibTeX bibliography |
 
 ## Submission Checklist
@@ -16,23 +16,29 @@ Academic preprint for bioRxiv submission.
 - [ ] Fill in author affiliation
 - [ ] Add corresponding author email
 - [ ] Add ORCID
-- [ ] Create figures (1-4)
+- [ ] Convert ASCII figures to publication graphics
 - [ ] Add acknowledgments
 - [ ] Review and finalize references
 - [ ] Convert to PDF (bioRxiv accepts PDF, Word, or LaTeX)
 
-### Figures (Created)
+### Figures
 
-All figures are in `figures/` directory as ASCII art (can be converted to proper graphics):
+All figures are in `figures/` directory as ASCII art (to be converted to proper graphics):
 
-1. **figure1-architecture.txt** - Data → Grammar Layers → Renderer → Output
-2. **figure2-comparison.txt** - Feature matrix vs plotext, termgraph, asciichart
-3. **figure3-iris-analysis.txt** - 4-panel showing A) scatter, B) colored, C) faceted, D) export
-4. **figure4-workflow.txt** - Conversational analysis with AI agent
+| Figure | File | Description |
+|--------|------|-------------|
+| 1 | `figure1-architecture.txt` | ggterm architecture: Data → Grammar Layers → Renderer → Output |
+| 2 | `figure2-comparison.txt` | (A) Taxonomy of 68 geometry types by domain, (B) Scientific visualization examples |
+| 3 | `figure3-panels.txt` | Plot history and provenance: (A) Directory structure, (B) JSON schema, (C) Retrieval workflow |
+| 4 | `figure4-workflow.txt` | AI-assisted conversational analysis workflow |
 
-To convert to publication graphics, recreate in:
-- Lucidchart, draw.io, or Figma (diagrams)
-- Actual ggterm screenshots (Figure 3)
+**Supplementary:**
+- `figure3-iris-analysis.txt` - Example iris analysis (4-panel progression, can be used as supplementary)
+
+To convert to publication graphics:
+- Use Lucidchart, draw.io, or Figma for diagrams (Figures 1, 3, 4)
+- Recreate with actual ggterm output for Figure 2B examples
+- SVG versions exist but need regeneration after ASCII updates
 
 ### bioRxiv Submission
 
