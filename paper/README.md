@@ -1,18 +1,53 @@
 # ggterm Paper
 
-JOSS (Journal of Open Source Software) submission.
+Dual submission: JOSS (peer review) + bioRxiv (preprint).
 
 ## Files
 
-| File | Description |
-|------|-------------|
-| `paper.md` | JOSS paper (~1000 words) |
-| `preprint.md` | Extended preprint (~3500 words, supplementary) |
-| `references.bib` | BibTeX bibliography |
+| File | Purpose | Target |
+|------|---------|--------|
+| `paper.md` | Short paper (~1000 words) | JOSS |
+| `preprint.md` | Extended paper (~3500 words) | bioRxiv |
+| `references.bib` | BibTeX bibliography | Both |
 
-## JOSS Submission Checklist
+## Submission Strategy
 
-### Paper Requirements
+1. **bioRxiv** - Submit `preprint.md` as preprint for immediate visibility
+2. **JOSS** - Submit `paper.md` for peer review (can reference bioRxiv DOI)
+
+---
+
+## bioRxiv Submission
+
+### Checklist
+- [ ] Fill in author affiliation in `preprint.md`
+- [ ] Add corresponding author email
+- [ ] Add ORCID
+- [ ] Convert to PDF
+- [ ] Add acknowledgements
+
+### Steps
+1. Go to https://www.biorxiv.org/submit-a-manuscript
+2. Select "New Manuscript"
+3. Choose subject area: **Bioinformatics**
+4. Upload PDF (convert with pandoc - see below)
+5. Add metadata (title, authors, abstract)
+6. Select license: **CC-BY**
+7. Submit
+
+### Convert to PDF
+```bash
+pandoc preprint.md -o preprint.pdf \
+  --bibliography=references.bib \
+  --citeproc \
+  -V geometry:margin=1in
+```
+
+---
+
+## JOSS Submission
+
+### Paper Checklist
 - [x] Title
 - [x] Author with ORCID (placeholder - needs real ORCID)
 - [x] Affiliation
@@ -20,28 +55,37 @@ JOSS (Journal of Open Source Software) submission.
 - [x] Statement of Need section
 - [x] Key Features section
 - [x] References in BibTeX format
-- [ ] Acknowledgements (to be added)
+- [ ] Acknowledgements
 
-### Repository Requirements
+### Repository Checklist
 - [x] Open source license (MIT)
 - [x] README with installation instructions
 - [x] Example usage documentation
 - [x] Automated tests (2158 tests)
-- [ ] Contributing guidelines (CONTRIBUTING.md)
-- [ ] Code of conduct (CODE_OF_CONDUCT.md)
+- [x] Contributing guidelines (CONTRIBUTING.md)
+- [ ] Code of conduct (CODE_OF_CONDUCT.md) - get from contributor-covenant.org
 - [x] Version number in package.json
 
-### Before Submission
-- [ ] Add real ORCID to paper.md
-- [ ] Verify affiliation
-- [ ] Add acknowledgements
-- [ ] Create CONTRIBUTING.md
-- [ ] Create CODE_OF_CONDUCT.md
-- [ ] Final review of paper.md
+### Steps
+1. Go to https://joss.theoj.org/papers/new
+2. Enter repository URL: `https://github.com/shandley/ggterm`
+3. Complete submission form
+4. Wait for editor assignment
+5. Address reviewer feedback
+
+### Preview Paper
+```bash
+pandoc paper.md -o paper.pdf \
+  --bibliography=references.bib \
+  --citeproc \
+  -V geometry:margin=1in
+```
+
+---
 
 ## Figures
 
-All figures are in `figures/` directory:
+All figures in `figures/` directory:
 
 | Figure | File | Description |
 |--------|------|-------------|
@@ -52,34 +96,10 @@ All figures are in `figures/` directory:
 
 **Supplementary:**
 - `figure3-iris-supplementary.svg` - Iris analysis example
-- `preprint.md` - Extended paper with full details
 
-## JOSS Submission
+## Timeline
 
-1. Go to https://joss.theoj.org/papers/new
-2. Enter repository URL: https://github.com/shandley/ggterm
-3. Complete submission form
-4. Wait for editor assignment
-5. Address reviewer feedback
-
-## Building the Paper
-
-JOSS uses their own build system, but you can preview locally:
-
-```bash
-# Install pandoc and dependencies
-# Then generate PDF preview
-pandoc paper.md -o paper.pdf \
-  --bibliography=references.bib \
-  --citeproc \
-  -V geometry:margin=1in
-```
-
-## Word Count
-
-JOSS papers should be ~1000 words. Check with:
-
-```bash
-# Approximate word count (excluding code blocks and YAML)
-grep -v '```' paper.md | grep -v '^---' | wc -w
-```
+1. Submit to **bioRxiv** first (immediate DOI)
+2. Add bioRxiv DOI to JOSS paper
+3. Submit to **JOSS** (peer review)
+4. Update bioRxiv with JOSS acceptance

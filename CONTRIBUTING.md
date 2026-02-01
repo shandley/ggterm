@@ -14,7 +14,7 @@ Thank you for your interest in contributing to ggterm! This document provides gu
 
 ```bash
 # Clone the repository
-git clone https://github.com/handleylab/ggterm.git
+git clone https://github.com/shandley/ggterm.git
 cd ggterm
 
 # Install dependencies
