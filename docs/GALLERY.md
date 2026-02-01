@@ -23,6 +23,29 @@ A visual guide to all plot types available in ggterm.
 - [2D Density Plots](#2d-density-plots)
 - [Heatmaps](#heatmaps)
 - [Error Bars](#error-bars)
+- [Violin Plots](#violin-plots)
+- [Clinical & Biostatistical](#clinical--biostatistical)
+  - [Kaplan-Meier Survival Curves](#kaplan-meier-survival-curves)
+  - [Forest Plots](#forest-plots)
+  - [ROC Curves](#roc-curves)
+  - [Bland-Altman Plots](#bland-altman-plots)
+- [Statistical Diagnostics](#statistical-diagnostics)
+  - [ECDF Plots](#ecdf-plots)
+  - [Funnel Plots](#funnel-plots)
+  - [Control Charts](#control-charts)
+  - [Scree Plots](#scree-plots)
+- [Set & Hierarchical](#set--hierarchical)
+  - [UpSet Plots](#upset-plots)
+  - [Dendrograms](#dendrograms)
+- [Additional Geometries](#additional-geometries)
+  - [Step Plots](#step-plots)
+  - [Path Plots](#path-plots)
+  - [Smooth Curves](#smooth-curves)
+  - [Rug Plots](#rug-plots)
+  - [Segments & Curves](#segments--curves)
+  - [Contour Plots](#contour-plots)
+  - [2D Bins](#2d-bins)
+  - [Text & Labels](#text--labels)
 - [Faceted Plots](#faceted-plots)
 - [Annotated Plots](#annotated-plots)
 - [Streaming Plots](#streaming-plots)
@@ -1253,6 +1276,892 @@ const plot = gg(data)
 
 console.log(plot.render({ width: 60, height: 15 }))
 ```
+
+---
+
+## Violin Plots
+
+Violin plots combine boxplot summaries with kernel density estimates, showing the full distribution shape.
+
+### Basic Violin Plot
+
+```typescript
+import { gg, geom_violin } from '@ggterm/core'
+
+const data = [
+  { group: 'A', value: 23 }, { group: 'A', value: 25 },
+  { group: 'A', value: 28 }, { group: 'A', value: 22 },
+  { group: 'A', value: 30 }, { group: 'A', value: 27 },
+  { group: 'B', value: 35 }, { group: 'B', value: 38 },
+  { group: 'B', value: 32 }, { group: 'B', value: 40 },
+  { group: 'B', value: 36 }, { group: 'B', value: 42 },
+]
+
+const plot = gg(data)
+  .aes({ x: 'group', y: 'value' })
+  .geom(geom_violin())
+  .labs({ title: 'Violin Plot Comparison' })
+
+console.log(plot.render({ width: 60, height: 20 }))
+```
+
+### Violin with Quantiles
+
+```typescript
+const plot = gg(data)
+  .aes({ x: 'group', y: 'value', fill: 'group' })
+  .geom(geom_violin({
+    draw_quantiles: [0.25, 0.5, 0.75],
+    width: 0.9,
+    alpha: 0.7
+  }))
+  .labs({ title: 'Violin with Quartiles' })
+```
+
+### Violin via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts data.csv group value - "Distribution" violin
+```
+
+### Violin vs Box vs Beeswarm
+
+| Plot Type | Best For |
+|-----------|----------|
+| Violin | Large datasets, full distribution shape |
+| Boxplot | Quick summary statistics, outlier detection |
+| Beeswarm | Small datasets, individual points visible |
+
+---
+
+## Clinical & Biostatistical
+
+Specialized visualizations for clinical trials, epidemiology, and medical research.
+
+### Kaplan-Meier Survival Curves
+
+Survival analysis plots showing time-to-event with censoring.
+
+```typescript
+import { gg, geom_kaplan_meier } from '@ggterm/core'
+
+const survivalData = [
+  { time: 1, status: 1, treatment: 'Control' },
+  { time: 2, status: 0, treatment: 'Control' },  // censored
+  { time: 3, status: 1, treatment: 'Control' },
+  { time: 5, status: 1, treatment: 'Control' },
+  { time: 2, status: 1, treatment: 'Drug' },
+  { time: 4, status: 0, treatment: 'Drug' },     // censored
+  { time: 6, status: 1, treatment: 'Drug' },
+  { time: 8, status: 1, treatment: 'Drug' },
+]
+
+const plot = gg(survivalData)
+  .aes({ x: 'time', y: 'status', color: 'treatment' })
+  .geom(geom_kaplan_meier({
+    show_ci: true,
+    show_censored: true,
+    show_median: true
+  }))
+  .labs({
+    title: 'Survival by Treatment',
+    x: 'Time (months)',
+    y: 'Survival Probability'
+  })
+
+console.log(plot.render({ width: 80, height: 25 }))
+```
+
+**Output:**
+```
+                    Survival by Treatment
+
+  1.0 ┤●─────────────────┬──────────────────────────────
+      │                  │  Control ──
+      │                  └+ Drug ─ ─
+  0.8 ┤      ────────────+
+      │      │
+  0.6 ┤      │        ─ ─ ─ ─ ─ ─+
+      │      │                    │
+  0.4 ┤      ────────────────────+│
+      │                           └─ ─ ─ ─ ─ ─
+  0.2 ┤
+      └┬─────────┬─────────┬─────────┬─────────┬────
+       0         2         4         6         8
+                      Time (months)
+
+  + = censored observation
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `show_ci` | Display confidence intervals |
+| `show_censored` | Mark censored observations with '+' |
+| `show_median` | Draw horizontal line at median survival |
+| `show_risk_table` | Add number-at-risk table below |
+
+### Kaplan-Meier via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts survival.csv time status treatment "Survival" kaplan_meier
+```
+
+---
+
+### Forest Plots
+
+Meta-analysis visualization showing effect sizes with confidence intervals.
+
+```typescript
+import { gg, geom_forest } from '@ggterm/core'
+
+const metaData = [
+  { study: 'Smith 2020', estimate: 0.75, ci_lower: 0.55, ci_upper: 1.02, weight: 15 },
+  { study: 'Jones 2021', estimate: 0.68, ci_lower: 0.48, ci_upper: 0.96, weight: 20 },
+  { study: 'Lee 2021', estimate: 0.82, ci_lower: 0.65, ci_upper: 1.03, weight: 25 },
+  { study: 'Garcia 2022', estimate: 0.71, ci_lower: 0.58, ci_upper: 0.87, weight: 30 },
+  { study: 'Overall', estimate: 0.74, ci_lower: 0.65, ci_upper: 0.84, weight: 100 },
+]
+
+const plot = gg(metaData)
+  .aes({ y: 'study', x: 'estimate', xmin: 'ci_lower', xmax: 'ci_upper', size: 'weight' })
+  .geom(geom_forest({
+    null_line: 1,
+    log_scale: true,
+    show_summary: true,
+    summary_row: 4
+  }))
+  .labs({
+    title: 'Meta-Analysis: Treatment Effect',
+    x: 'Hazard Ratio (95% CI)'
+  })
+
+console.log(plot.render({ width: 80, height: 15 }))
+```
+
+**Output:**
+```
+               Meta-Analysis: Treatment Effect
+
+  Smith 2020  │    ■────────●────────■
+  Jones 2021  │  ■──────●──────■
+  Lee 2021    │      ■────────●────────■
+  Garcia 2022 │     ■────●────■
+              │         │
+  Overall     │    ◆────●────◆
+              └┬────────┬────────┬────────┬────────┬
+              0.4      0.6      0.8       1       1.2
+                      Hazard Ratio (95% CI)
+```
+
+### Forest Plot via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts meta.csv study estimate ci_lower "Meta-Analysis" forest
+```
+
+---
+
+### ROC Curves
+
+Receiver Operating Characteristic curves for classifier evaluation.
+
+```typescript
+import { gg, geom_roc } from '@ggterm/core'
+
+const rocData = [
+  { fpr: 0, tpr: 0, model: 'Model A' },
+  { fpr: 0.1, tpr: 0.5, model: 'Model A' },
+  { fpr: 0.2, tpr: 0.7, model: 'Model A' },
+  { fpr: 0.4, tpr: 0.85, model: 'Model A' },
+  { fpr: 0.6, tpr: 0.92, model: 'Model A' },
+  { fpr: 1.0, tpr: 1.0, model: 'Model A' },
+  { fpr: 0, tpr: 0, model: 'Model B' },
+  { fpr: 0.1, tpr: 0.3, model: 'Model B' },
+  { fpr: 0.3, tpr: 0.6, model: 'Model B' },
+  { fpr: 0.5, tpr: 0.75, model: 'Model B' },
+  { fpr: 1.0, tpr: 1.0, model: 'Model B' },
+]
+
+const plot = gg(rocData)
+  .aes({ x: 'fpr', y: 'tpr', color: 'model' })
+  .geom(geom_roc({
+    show_auc: true,
+    show_diagonal: true,
+    show_optimal: true
+  }))
+  .labs({
+    title: 'ROC Curve Comparison',
+    x: 'False Positive Rate (1 - Specificity)',
+    y: 'True Positive Rate (Sensitivity)'
+  })
+
+console.log(plot.render({ width: 70, height: 25 }))
+```
+
+**Output:**
+```
+                ROC Curve Comparison
+
+  1.0 ┤                           ●────────●  Model A (AUC=0.85)
+      │                     ●─────┘         ── Model B (AUC=0.72)
+  0.8 ┤               ●────┘                   - - random
+      │         ●────┘     ●
+  0.6 ┤       ●┘         ●─┘
+      │     ●┘       ●──┘
+  0.4 ┤   ●┘      ●─┘
+      │  ●     ●─┘    ·
+  0.2 ┤ ●   ●─┘   ·'
+      │●──●┘·'
+  0.0 ●·'
+      └┬─────────┬─────────┬─────────┬─────────┬
+       0        0.25      0.5       0.75       1
+              False Positive Rate
+```
+
+### ROC via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts roc.csv fpr tpr model "ROC Curves" roc
+```
+
+---
+
+### Bland-Altman Plots
+
+Method comparison plots showing agreement between two measurement methods.
+
+```typescript
+import { gg, geom_bland_altman } from '@ggterm/core'
+
+const comparisonData = [
+  { method1: 120, method2: 118 },
+  { method1: 130, method2: 132 },
+  { method1: 115, method2: 113 },
+  { method1: 140, method2: 145 },
+  { method1: 125, method2: 123 },
+  { method1: 135, method2: 138 },
+  { method1: 145, method2: 142 },
+  { method1: 110, method2: 115 },
+]
+
+const plot = gg(comparisonData)
+  .aes({ x: 'method1', y: 'method2' })
+  .geom(geom_bland_altman({
+    show_limits: true,
+    show_bias: true,
+    show_ci: true
+  }))
+  .labs({
+    title: 'Bland-Altman: Device Agreement',
+    x: 'Mean of Methods',
+    y: 'Difference (Method1 - Method2)'
+  })
+
+console.log(plot.render({ width: 70, height: 20 }))
+```
+
+**Output:**
+```
+            Bland-Altman: Device Agreement
+
+  +8 ┤· · · · · · · · · · · · · · ·Upper LOA (+1.96 SD)
+     │                   ●
+  +4 ┤              ●
+     │        ●              ●
+   0 ┤─────────────────────────────Mean Bias
+     │    ●        ●
+  -4 ┤                          ●
+     │         ●
+  -8 ┤· · · · · · · · · · · · · · ·Lower LOA (-1.96 SD)
+     └┬─────────┬─────────┬─────────┬─────────┬
+     110       120       130       140       150
+                  Mean of Methods
+```
+
+### Bland-Altman via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts measurements.csv method1 method2 - "Agreement" bland_altman
+```
+
+---
+
+## Statistical Diagnostics
+
+Visualizations for statistical quality control and model diagnostics.
+
+### ECDF Plots
+
+Empirical Cumulative Distribution Function for distribution analysis.
+
+```typescript
+import { gg, geom_ecdf } from '@ggterm/core'
+
+const data = [
+  { value: 1.2, group: 'A' }, { value: 2.5, group: 'A' },
+  { value: 3.1, group: 'A' }, { value: 4.8, group: 'A' },
+  { value: 2.0, group: 'B' }, { value: 3.5, group: 'B' },
+  { value: 5.2, group: 'B' }, { value: 6.1, group: 'B' },
+]
+
+const plot = gg(data)
+  .aes({ x: 'value', color: 'group' })
+  .geom(geom_ecdf({ show_ci: true }))
+  .labs({
+    title: 'ECDF Comparison',
+    x: 'Value',
+    y: 'Cumulative Probability'
+  })
+
+console.log(plot.render({ width: 60, height: 20 }))
+```
+
+**Output:**
+```
+                    ECDF Comparison
+
+  1.0 ┤                          ┌────── Group A
+      │                    ┌─────┘       Group B ─ ─
+  0.8 ┤              ┌─────┘
+      │        ┌─────┘  ┌─ ─ ─ ─ ─ ─ ─
+  0.6 ┤        │     ─ ─┘
+      │  ┌─────┘   ─ ─
+  0.4 ┤  │      ─ ─
+      │  │  ─ ─ ─
+  0.2 ┤──┘─ ─
+      │─ ─
+  0.0 ┤
+      └┬──────────┬──────────┬──────────┬──────────┬
+       0          2          4          6          8
+                          Value
+```
+
+### ECDF Options
+
+| Option | Description |
+|--------|-------------|
+| `show_ci` | Show confidence band (DKW inequality) |
+| `complement` | Plot 1-ECDF for survival-style |
+| `show_points` | Mark data points on curve |
+
+### ECDF via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts data.csv value group - "Distribution" ecdf
+```
+
+---
+
+### Funnel Plots
+
+Publication bias detection in meta-analyses.
+
+```typescript
+import { gg, geom_funnel } from '@ggterm/core'
+
+const metaStudies = [
+  { effect_size: 0.5, se: 0.1 },
+  { effect_size: 0.3, se: 0.15 },
+  { effect_size: 0.7, se: 0.2 },
+  { effect_size: 0.4, se: 0.12 },
+  { effect_size: 0.6, se: 0.25 },
+  { effect_size: 0.2, se: 0.3 },
+  { effect_size: 0.8, se: 0.35 },
+]
+
+const plot = gg(metaStudies)
+  .aes({ x: 'effect_size', y: 'se' })
+  .geom(geom_funnel({
+    show_contours: true,
+    contour_levels: [0.95, 0.99],
+    show_summary_line: true
+  }))
+  .labs({
+    title: 'Funnel Plot: Publication Bias',
+    x: 'Effect Size',
+    y: 'Standard Error'
+  })
+
+console.log(plot.render({ width: 60, height: 20 }))
+```
+
+**Interpretation:**
+- Asymmetric funnel suggests publication bias
+- Points outside contours may be outliers
+- Small studies (large SE) at bottom
+
+### Funnel via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts meta.csv effect_size se - "Funnel Plot" funnel
+```
+
+---
+
+### Control Charts
+
+Statistical Process Control (SPC) for quality monitoring.
+
+```typescript
+import { gg, geom_control } from '@ggterm/core'
+
+const processData = [
+  { sample: 1, measurement: 50.2 },
+  { sample: 2, measurement: 49.8 },
+  { sample: 3, measurement: 50.5 },
+  { sample: 4, measurement: 50.1 },
+  { sample: 5, measurement: 52.3 },  // out of control?
+  { sample: 6, measurement: 50.0 },
+  { sample: 7, measurement: 49.7 },
+  { sample: 8, measurement: 50.4 },
+]
+
+const plot = gg(processData)
+  .aes({ x: 'sample', y: 'measurement' })
+  .geom(geom_control({
+    chart_type: 'i',
+    sigma: 3,
+    show_warning: true,
+    highlight_ooc: true
+  }))
+  .labs({
+    title: 'I-Chart: Process Control',
+    x: 'Sample Number',
+    y: 'Measurement'
+  })
+
+console.log(plot.render({ width: 70, height: 20 }))
+```
+
+**Output:**
+```
+                I-Chart: Process Control
+
+  53 ┤─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ UCL
+     │                ◆
+  52 ┤· · · · · · · · · · · · · · · · · · Warning
+     │
+  51 ┤
+     │    ●         ●         ●
+  50 ┤●────────●─────────●─────────● ─ ─ Center
+     │              ●
+  49 ┤
+     │· · · · · · · · · · · · · · · · · · Warning
+  48 ┤─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ LCL
+     └┬────────┬────────┬────────┬────────┬
+      1        3        5        7        9
+                   Sample Number
+
+  ◆ = out-of-control point
+```
+
+### Control Chart Types
+
+| Type | Use Case |
+|------|----------|
+| `i` | Individual measurements |
+| `xbar` | Subgroup means |
+| `r` | Range within subgroups |
+| `s` | Standard deviation |
+| `p` | Proportion defective |
+| `c` | Count of defects |
+
+### Control via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts process.csv sample measurement - "SPC" control
+```
+
+---
+
+### Scree Plots
+
+PCA component variance visualization.
+
+```typescript
+import { gg, geom_scree } from '@ggterm/core'
+
+const pcaResults = [
+  { component: 1, variance: 45, eigenvalue: 4.5 },
+  { component: 2, variance: 25, eigenvalue: 2.5 },
+  { component: 3, variance: 15, eigenvalue: 1.5 },
+  { component: 4, variance: 8, eigenvalue: 0.8 },
+  { component: 5, variance: 4, eigenvalue: 0.4 },
+  { component: 6, variance: 3, eigenvalue: 0.3 },
+]
+
+const plot = gg(pcaResults)
+  .aes({ x: 'component', y: 'variance' })
+  .geom(geom_scree({
+    show_cumulative: true,
+    show_elbow: true,
+    threshold: 80
+  }))
+  .labs({
+    title: 'Scree Plot: PCA Variance',
+    x: 'Principal Component',
+    y: 'Variance Explained (%)'
+  })
+
+console.log(plot.render({ width: 60, height: 20 }))
+```
+
+**Output:**
+```
+                Scree Plot: PCA Variance
+
+ 100 ┤                               ●━━━ Cumulative
+     │                         ●━━━━━┘
+  80 ┤─ ─ ─ ─ ─ ─ ─ ─ ─ ─●━━━━━┘─ ─ ─ ─ Threshold (80%)
+     │               ●━━━┘
+  60 ┤          ●━━━━┘
+     │     ●━━━━┘
+  40 ┤●━━━━┘
+     │●                                 Individual
+  30 ┤│
+     ││    ●
+  20 ┤│         ●
+     ││              ●
+  10 ┤│                   ●    ●    ●
+     └┬─────────┬─────────┬─────────┬─────────┬
+      1         2         3         4         5
+                  Principal Component
+```
+
+### Scree Options
+
+| Option | Description |
+|--------|-------------|
+| `show_cumulative` | Add cumulative variance line |
+| `show_kaiser` | Kaiser criterion line (eigenvalue = 1) |
+| `show_elbow` | Highlight elbow point |
+| `threshold` | Draw threshold line (e.g., 80%) |
+
+### Scree via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts pca.csv component variance - "Scree" scree
+```
+
+---
+
+## Set & Hierarchical
+
+Visualizations for set intersections and hierarchical structures.
+
+### UpSet Plots
+
+Modern alternative to Venn diagrams for set intersections (superior for >3 sets).
+
+```typescript
+import { gg, geom_upset } from '@ggterm/core'
+
+// Binary matrix format
+const geneData = [
+  { Pathway_A: 1, Pathway_B: 1, Pathway_C: 0 },
+  { Pathway_A: 1, Pathway_B: 1, Pathway_C: 0 },
+  { Pathway_A: 1, Pathway_B: 0, Pathway_C: 0 },
+  { Pathway_A: 0, Pathway_B: 1, Pathway_C: 1 },
+  { Pathway_A: 0, Pathway_B: 1, Pathway_C: 1 },
+  { Pathway_A: 0, Pathway_B: 1, Pathway_C: 1 },
+  { Pathway_A: 0, Pathway_B: 0, Pathway_C: 1 },
+  { Pathway_A: 1, Pathway_B: 1, Pathway_C: 1 },
+]
+
+const plot = gg(geneData)
+  .geom(geom_upset({
+    sets: ['Pathway_A', 'Pathway_B', 'Pathway_C'],
+    sort_by: 'size',
+    show_set_sizes: true
+  }))
+  .labs({ title: 'Gene Set Intersections' })
+
+console.log(plot.render({ width: 70, height: 20 }))
+```
+
+**Output:**
+```
+              Gene Set Intersections
+
+        3 │  ███
+          │  ███
+        2 │  ███   ███
+          │  ███   ███   ███
+        1 │  ███   ███   ███   ███   ███
+          └──┴─────┴─────┴─────┴─────┴────
+             │     │     │     │     │
+  Pathway_A ─●─────●─────○─────●─────○───  (4)
+  Pathway_B ─●─────●─────●─────○─────○───  (6)
+  Pathway_C ─●─────○─────●─────○─────●───  (5)
+             └─────┴─────┴─────┴─────┴
+            A∩B∩C  A∩B   B∩C    A     C
+```
+
+### UpSet Options
+
+| Option | Description |
+|--------|-------------|
+| `sets` | Set names for binary matrix |
+| `sort_by` | Sort by 'size', 'degree', or 'sets' |
+| `min_size` | Minimum intersection size to show |
+| `show_set_sizes` | Show total set sizes |
+
+### UpSet via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts sets.csv - - - "Intersections" upset
+```
+
+---
+
+### Dendrograms
+
+Hierarchical clustering tree visualization.
+
+```typescript
+import { gg, geom_dendrogram } from '@ggterm/core'
+
+// Linkage matrix format
+const clusterData = [
+  { merge1: 0, merge2: 1, height: 0.5, size: 2 },
+  { merge1: 2, merge2: 3, height: 0.8, size: 2 },
+  { merge1: 4, merge2: 5, height: 1.5, size: 4 },
+]
+
+const plot = gg(clusterData)
+  .geom(geom_dendrogram({
+    labels: ['Sample A', 'Sample B', 'Sample C', 'Sample D'],
+    orientation: 'vertical',
+    k: 2  // Highlight 2 clusters
+  }))
+  .labs({ title: 'Hierarchical Clustering' })
+
+console.log(plot.render({ width: 60, height: 20 }))
+```
+
+**Output:**
+```
+              Hierarchical Clustering
+
+  1.5 ┤        ┌────────────────┐
+      │        │                │
+  1.0 ┤   ┌────┤           ┌────┤
+      │   │    │           │    │
+  0.5 ┤   ├────┤           ├────┤
+      │   │    │           │    │
+  0.0 ┤   ○    ○           ○    ○
+      └───┴────┴───────────┴────┴────
+       Sample  Sample    Sample  Sample
+          A       B         C       D
+       └────────────┘   └────────────┘
+         Cluster 1         Cluster 2
+```
+
+### Dendrogram via CLI
+
+```bash
+bun packages/core/src/cli-plot.ts linkage.csv - - - "Clustering" dendrogram
+```
+
+---
+
+## Additional Geometries
+
+Core geometries for specialized use cases.
+
+### Step Plots
+
+Step functions for data that changes at discrete points.
+
+```typescript
+import { gg, geom_step } from '@ggterm/core'
+
+const data = [
+  { time: 0, value: 10 },
+  { time: 1, value: 15 },
+  { time: 2, value: 15 },
+  { time: 3, value: 25 },
+  { time: 4, value: 20 },
+]
+
+const plot = gg(data)
+  .aes({ x: 'time', y: 'value' })
+  .geom(geom_step({ direction: 'hv' }))  // horizontal then vertical
+  .labs({ title: 'Step Plot' })
+
+console.log(plot.render({ width: 50, height: 15 }))
+```
+
+**Options:** `direction` can be `'hv'`, `'vh'`, or `'mid'`
+
+---
+
+### Path Plots
+
+Connect points in data order (unlike geom_line which sorts by x).
+
+```typescript
+import { gg, geom_path } from '@ggterm/core'
+
+// Spiral pattern
+const spiral = Array.from({ length: 50 }, (_, i) => ({
+  x: Math.cos(i * 0.2) * (1 + i * 0.1),
+  y: Math.sin(i * 0.2) * (1 + i * 0.1),
+}))
+
+const plot = gg(spiral)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_path())
+  .labs({ title: 'Spiral Path' })
+
+console.log(plot.render({ width: 40, height: 20 }))
+```
+
+---
+
+### Smooth Curves
+
+Fitted curves with optional confidence bands.
+
+```typescript
+import { gg, geom_point, geom_smooth } from '@ggterm/core'
+
+const data = Array.from({ length: 20 }, (_, i) => ({
+  x: i,
+  y: i * 2 + Math.random() * 10 - 5,
+}))
+
+const plot = gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_point())
+  .geom(geom_smooth({ method: 'lm', se: true }))
+  .labs({ title: 'Linear Fit with CI' })
+
+console.log(plot.render({ width: 60, height: 15 }))
+```
+
+**Methods:** `'lm'` (linear), `'loess'` (local regression), `'gam'`
+
+---
+
+### Rug Plots
+
+Marginal distribution marks along axes.
+
+```typescript
+import { gg, geom_point, geom_rug } from '@ggterm/core'
+
+const plot = gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_point())
+  .geom(geom_rug({ sides: 'bl' }))  // bottom and left
+  .labs({ title: 'Scatter with Rug' })
+
+console.log(plot.render({ width: 50, height: 20 }))
+```
+
+**Options:** `sides` can be `'b'`, `'l'`, `'t'`, `'r'`, or combinations like `'bl'`
+
+---
+
+### Segments & Curves
+
+Draw line segments and curves between points.
+
+```typescript
+import { gg, geom_segment, geom_curve } from '@ggterm/core'
+
+const arrows = [
+  { x: 0, y: 0, xend: 5, yend: 10 },
+  { x: 0, y: 0, xend: 10, yend: 5 },
+]
+
+const plot = gg(arrows)
+  .aes({ x: 'x', y: 'y', xend: 'xend', yend: 'yend' })
+  .geom(geom_segment({ arrow: true }))
+  .labs({ title: 'Vector Arrows' })
+
+console.log(plot.render({ width: 40, height: 15 }))
+```
+
+---
+
+### Contour Plots
+
+2D contour lines for continuous surfaces.
+
+```typescript
+import { gg, geom_contour } from '@ggterm/core'
+
+// Grid data with z values
+const gridData = []
+for (let x = -3; x <= 3; x += 0.5) {
+  for (let y = -3; y <= 3; y += 0.5) {
+    gridData.push({
+      x, y,
+      z: Math.exp(-(x*x + y*y) / 2)  // 2D Gaussian
+    })
+  }
+}
+
+const plot = gg(gridData)
+  .aes({ x: 'x', y: 'y', z: 'z' })
+  .geom(geom_contour({ bins: 8 }))
+  .labs({ title: '2D Gaussian Contours' })
+
+console.log(plot.render({ width: 50, height: 25 }))
+```
+
+---
+
+### 2D Bins
+
+Binned heatmaps for large scatter data.
+
+```typescript
+import { gg, geom_bin2d } from '@ggterm/core'
+
+const largeData = Array.from({ length: 1000 }, () => ({
+  x: Math.random() * 100,
+  y: Math.random() * 100,
+}))
+
+const plot = gg(largeData)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_bin2d({ bins: 10 }))
+  .labs({ title: 'Binned Scatter (n=1000)' })
+
+console.log(plot.render({ width: 50, height: 20 }))
+```
+
+---
+
+### Text & Labels
+
+Add text annotations to plots.
+
+```typescript
+import { gg, geom_point, geom_text, geom_label } from '@ggterm/core'
+
+const data = [
+  { x: 1, y: 2, name: 'A' },
+  { x: 3, y: 4, name: 'B' },
+  { x: 5, y: 3, name: 'C' },
+]
+
+const plot = gg(data)
+  .aes({ x: 'x', y: 'y', label: 'name' })
+  .geom(geom_point())
+  .geom(geom_text({ nudge_y: 0.3 }))
+  .labs({ title: 'Labeled Points' })
+
+console.log(plot.render({ width: 50, height: 15 }))
+```
+
+**geom_label** adds a box around text; **geom_text** is plain text.
 
 ---
 
