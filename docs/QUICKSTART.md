@@ -405,7 +405,7 @@ bun packages/core/src/cli-plot.ts export 2024-01-26-001 output.html
 
 ## Next Steps
 
-- [Gallery](./GALLERY.md) - See all plot types
+- [Geometry Reference](./GEOM-REFERENCE.md) - All 68 plot types
 - [API Reference](./API.md) - Full documentation
 - [Migration from ggplot2](./MIGRATION-GGPLOT2.md) - For R users
 - [Migration from Vega-Lite](./MIGRATION-VEGALITE.md) - For Vega-Lite users

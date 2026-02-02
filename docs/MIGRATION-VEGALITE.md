@@ -507,6 +507,6 @@ gg(data)
 
 ## See Also
 
-- [Gallery](./GALLERY.md) - Visual examples
+- [Geometry Reference](./GEOM-REFERENCE.md) - All 68 plot types
 - [API Reference](./API.md) - Complete API documentation
 - [Migration from ggplot2](./MIGRATION-GGPLOT2.md) - For R/ggplot2 users

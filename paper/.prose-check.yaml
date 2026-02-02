@@ -1,0 +1,131 @@
+# prose-check configuration for ggterm paper
+# Technical visualization/programming paper has different norms
+
+min_score: 75
+
+# Enable technical mode
+technical: true
+
+# Whitelist legitimate technical terms for this paper
+ignore_patterns:
+  # JOSS required sections
+  - "summary"
+  - "statement of need"
+  - "key features"
+  - "acknowledgements"
+
+  # Grammar of Graphics terminology
+  - "scales"
+  - "layers"
+  - "facets"
+  - "geometries"
+  - "aesthetics"
+  - "declarative"
+  - "composable"
+  - "compositional"
+
+  # Scientific/technical terms
+  - "differential"
+  - "correlation"
+  - "environments"
+  - "libraries"
+  - "interfaces"
+  - "capabilities"
+  - "alternatives"
+  - "explicit"
+  - "optimized"
+  - "tooling"
+  - "coding"
+  - "specifications"
+  - "servers"
+  - "analysis"
+
+  # Programming/code terms (appear in code examples)
+  - "const"
+  - "typescript"
+  - "geom_"
+  - "gg("
+  - "aes"
+  - "async"
+
+  # Data visualization domain terms
+  - "EDA"
+  - "exploratory data analysis"
+  - "hierarchical"
+  - "iterative"
+  - "implementation"
+  - "implementations"
+  - "thresholds"
+  - "distributions"
+  - "estimation"
+  - "layer"
+  - "layered"
+
+  # Grammar of Graphics specific
+  - "declarative"
+  - "composable"
+  - "compositional"
+  - "geometries"
+  - "aesthetics"
+  - "facets"
+
+  # Scientific visualization types
+  - "Kaplan-Meier"
+  - "volcano plot"
+  - "Manhattan plot"
+  - "forest plot"
+  - "dendrogram"
+  - "heatmap"
+  - "ridgeline"
+  - "beeswarm"
+
+  # Technical infrastructure terms
+  - "pipelines"
+  - "provenance"
+  - "retrieval"
+  - "metadata"
+  - "JSON"
+  - "API"
+  - "CLI"
+  - "terminal"
+  - "rendering"
+  - "renderer"
+
+  # Statistics terms
+  - "quantile"
+  - "empirical"
+  - "cumulative"
+  - "heterogeneity"
+
+  # Legitimate uses in this context
+  - "code generation"
+  - "code paths"
+  - "data structure"
+  - "edge cases"
+  - "KPI"
+  - "profiling"
+  - "temporal"
+  - "availability"
+  - "compatibility"
+  - "customization"
+  - "limitations"
+  - "assumptions"
+  - "fundamental"
+  - "modifications"
+
+  # Technical paper terms
+  - "documentation is"
+  - "components"
+  - "compute"
+  - "computational"
+  - "infrastructure"
+  - "reasoning"
+  - "inference"
+  - "type inference"
+  - "handles"
+  - "with existing"
+  - "queries"
+  - "principles"
+  - "uncertainty"
+  - "domain"
+  - "for data"

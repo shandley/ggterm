@@ -181,4 +181,4 @@ console.log(plot.render({ width: 80, height: 25 }))
 
 ---
 
-See [GALLERY.md](./GALLERY.md) for detailed examples with output.
+See [examples/](../examples/) for runnable code samples.

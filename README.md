@@ -192,7 +192,7 @@ ggterm implements the [Grammar of Graphics](https://www.amazon.com/Grammar-Graph
 ## Resources
 
 - [Quick Start Guide](./docs/QUICKSTART.md)
-- [Visual Gallery](./docs/GALLERY.md)
+- [Geometry Reference](./docs/GEOM-REFERENCE.md)
 - [Migration from ggplot2](./docs/MIGRATION-GGPLOT2.md)
 
 ## License

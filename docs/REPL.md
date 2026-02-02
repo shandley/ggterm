@@ -289,4 +289,4 @@ npx ggterm -w 100 -H 30 -e ".data iris; gg(data).aes({x:'sepal_length',y:'petal_
 
 - [Quick Start Guide](./QUICKSTART.md)
 - [API Reference](./API.md)
-- [Gallery](./GALLERY.md)
+- [Geometry Reference](./GEOM-REFERENCE.md)

@@ -72,7 +72,7 @@ Beyond standard charts, ggterm includes domain-specific visualizations:
 | **UpSet plots** | Modern set intersections |
 | **Dendrograms** | Hierarchical clustering |
 
-See the [Visual Gallery](../docs/GALLERY.md) for examples of all 68 geometry types.
+See the [Geometry Reference](../docs/GEOM-REFERENCE.md) for all 68 geometry types.
 
 ## Requirements
 
