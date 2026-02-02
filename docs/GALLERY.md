@@ -194,6 +194,8 @@ console.log(plot.render({ width: 60, height: 15 }))
 
 Display categorical data with rectangular bars.
 
+> **Note:** `geom_col()` is an alias for `geom_bar({ stat: 'identity' })` - use it when your data already contains the bar heights.
+
 ### Vertical Bar Chart
 
 ```typescript
@@ -1230,6 +1232,30 @@ const plot = gg(data)
 console.log(plot.render({ width: 60, height: 15 }))
 ```
 
+### Raster (Optimized for Regular Grids)
+
+`geom_raster()` is an optimized version of `geom_tile()` for regular grids where all tiles are the same size:
+
+```typescript
+import { gg, geom_raster, scale_fill_viridis } from '@ggterm/core'
+
+// Large regular grid - raster is faster than tile
+const imageData = []
+for (let x = 0; x < 100; x++) {
+  for (let y = 0; y < 100; y++) {
+    imageData.push({ x, y, z: Math.sin(x/10) * Math.cos(y/10) })
+  }
+}
+
+const plot = gg(imageData)
+  .aes({ x: 'x', y: 'y', fill: 'z' })
+  .geom(geom_raster())
+  .scale(scale_fill_viridis())
+  .labs({ title: 'Raster Image' })
+```
+
+> **When to use:** `geom_raster()` for large regular grids (images, matrices). `geom_tile()` for irregular or small grids.
+
 ---
 
 ## Error Bars
@@ -1276,6 +1302,40 @@ const plot = gg(data)
 
 console.log(plot.render({ width: 60, height: 15 }))
 ```
+
+### Error Bar Variants
+
+ggterm provides several error bar geometries for different visualization needs:
+
+```typescript
+import { gg, geom_crossbar, geom_linerange, geom_pointrange } from '@ggterm/core'
+
+const data = [
+  { x: 'A', y: 10, ymin: 8, ymax: 12 },
+  { x: 'B', y: 15, ymin: 12, ymax: 18 },
+  { x: 'C', y: 12, ymin: 9, ymax: 15 },
+]
+
+// Crossbar: box with horizontal line at middle
+gg(data).aes({ x: 'x', y: 'y', ymin: 'ymin', ymax: 'ymax' })
+  .geom(geom_crossbar())
+
+// Linerange: vertical line only (no whiskers)
+gg(data).aes({ x: 'x', y: 'y', ymin: 'ymin', ymax: 'ymax' })
+  .geom(geom_linerange())
+
+// Pointrange: point with vertical line through it
+gg(data).aes({ x: 'x', y: 'y', ymin: 'ymin', ymax: 'ymax' })
+  .geom(geom_pointrange())
+```
+
+| Geometry | Description | Best For |
+|----------|-------------|----------|
+| `geom_errorbar` | Whiskers with caps | Traditional error bars |
+| `geom_errorbarh` | Horizontal whiskers | Horizontal uncertainty |
+| `geom_crossbar` | Box with middle line | Confidence intervals |
+| `geom_linerange` | Vertical line only | Clean range display |
+| `geom_pointrange` | Point + vertical line | Point estimates with CI |
 
 ---
 
@@ -2115,6 +2175,18 @@ const plot = gg(gridData)
 console.log(plot.render({ width: 50, height: 25 }))
 ```
 
+**Filled contours** use `geom_contour_filled()` for solid regions:
+
+```typescript
+import { gg, geom_contour_filled, scale_fill_viridis } from '@ggterm/core'
+
+const plot = gg(gridData)
+  .aes({ x: 'x', y: 'y', z: 'z' })
+  .geom(geom_contour_filled({ bins: 6 }))
+  .scale(scale_fill_viridis())
+  .labs({ title: 'Filled Contours' })
+```
+
 ---
 
 ### 2D Bins
@@ -2523,16 +2595,41 @@ Add context with text, lines, and shapes.
 ### Reference Lines
 
 ```typescript
-import { gg, geom_point, geom_hline, geom_vline } from '@ggterm/core'
+import { gg, geom_point, geom_hline, geom_vline, geom_abline } from '@ggterm/core'
 
 const plot = gg(data)
   .aes({ x: 'x', y: 'y' })
   .geom(geom_point())
   .geom(geom_hline({ yintercept: 50, linetype: 'dashed', color: 'red' }))
   .geom(geom_vline({ xintercept: 0, linetype: 'dashed', color: 'blue' }))
+  .geom(geom_abline({ slope: 1, intercept: 0, linetype: 'dotted' }))  // y = x line
   .labs({ title: 'Plot with Reference Lines' })
 
 console.log(plot.render({ width: 60, height: 15 }))
+```
+
+| Geometry | Description |
+|----------|-------------|
+| `geom_hline` | Horizontal line at y = value |
+| `geom_vline` | Vertical line at x = value |
+| `geom_abline` | Diagonal line: y = slope*x + intercept |
+
+### Rectangles and Regions
+
+```typescript
+import { gg, geom_point, geom_rect } from '@ggterm/core'
+
+// Highlight a region of interest
+const plot = gg(data)
+  .aes({ x: 'x', y: 'y' })
+  .geom(geom_rect({
+    xmin: 2, xmax: 5,
+    ymin: 20, ymax: 40,
+    fill: 'yellow',
+    alpha: 0.3
+  }))
+  .geom(geom_point())
+  .labs({ title: 'Highlighted Region' })
 ```
 
 ### Text Annotations
