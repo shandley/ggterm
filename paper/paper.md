@@ -20,19 +20,19 @@ bibliography: references.bib
 
 # Summary
 
-`ggterm` is a TypeScript implementation of Wilkinson's Grammar of Graphics [@wilkinson2005grammar] designed for terminal environments. The library provides 68 geometry types spanning general-purpose visualization, genomics (volcano plots, Manhattan plots), clinical research (Kaplan-Meier survival curves, forest plots), and statistical diagnostics (Q-Q plots, control charts). Visualizations are constructed through a declarative, composable API where users specify data mappings, geometries, scales, and facets as layered components. This architecture enables natural language interaction with AI coding assistants, allowing researchers to create and refine visualizations through conversation rather than memorizing syntax.
+`ggterm` is a TypeScript implementation of Wilkinson's Grammar of Graphics [@wilkinson2005grammar] designed for terminal environments. The library provides 68 geometry types spanning general-purpose visualization, genomics (volcano plots, Manhattan plots), clinical research (Kaplan-Meier survival curves, forest plots), and statistical diagnostics (Q-Q plots, control charts). Visualizations are constructed through a declarative, composable API where users specify data mappings, geometries, scales, and facets as layered components. This architecture enables natural language interaction with AI assistants, allowing researchers to create and refine visualizations through conversation rather than memorizing syntax.
 
-All plots are automatically persisted with full provenance metadata—data source, specification, timestamp—enabling reproducibility without explicit save actions. The library exports to Vega-Lite [@satyanarayan2017vegalite] for publication-quality PNG, SVG, and PDF output. `ggterm` bridges the gap between rapid terminal-based exploration and reproducible scientific figures.
+All plots are automatically persisted with full provenance metadata (data source, specification, timestamp), enabling reproducibility without manual save actions. The library exports to Vega-Lite [@satyanarayan2017vegalite] for publication-quality PNG, SVG, and PDF output. `ggterm` bridges the gap between rapid terminal-based exploration and reproducible scientific figures.
 
 # Statement of Need
 
-Scientific computing increasingly occurs in terminal environments—remote servers, compute clusters, containerized pipelines—where graphical display capabilities are limited. Researchers SSH into analysis servers, run batch jobs, and inspect results through text interfaces. Yet visualization tools for these environments remain primitive compared to graphical alternatives.
+Scientific computing increasingly occurs in terminal environments: remote servers, compute clusters, and containerized pipelines. In these settings, graphical display is limited or absent. Researchers SSH into analysis servers, run batch jobs, and inspect results through text interfaces. Yet visualization tools for these environments remain primitive compared to graphical options.
 
-Existing terminal plotting libraries use imperative APIs that limit both sophistication and integration with AI-assisted workflows. When researchers work with AI coding assistants, they need visualization tools with declarative specifications that can be generated, modified, and composed through natural language requests.
+Existing terminal plotting libraries use imperative APIs that limit both depth and integration with AI-assisted workflows. When researchers work with AI assistants, they need visualization tools with declarative specifications that can be generated, modified, and composed through natural language requests.
 
-Additionally, scientific visualization has domain-specific requirements. Genomics researchers need volcano plots and Manhattan plots. Clinical trialists need Kaplan-Meier curves and forest plots. Statisticians need Q-Q plots and control charts. These specialized visualizations encode domain knowledge that generic plotting tools cannot express.
+Additionally, scientific visualization has field-specific requirements. Genomics researchers need volcano plots and Manhattan plots. Clinical trialists need Kaplan-Meier curves and forest plots. Statisticians need Q-Q plots and control charts. These specialized visualizations encode field knowledge that standard plotting tools cannot express.
 
-`ggterm` addresses these gaps by implementing the Grammar of Graphics architecture [@wickham2010layered] with comprehensive scientific visualization support. The declarative layer system—data, aesthetics, geometries, scales, coordinates, facets—maps naturally to how humans describe visualizations, enabling effective AI-assisted analysis.
+`ggterm` addresses these gaps by providing a Grammar of Graphics architecture [@wickham2010layered] with complete scientific visualization support. The declarative layer system (data, aesthetics, geometries, scales, coordinates, facets) maps naturally to how humans describe visualizations, enabling effective AI-assisted analysis.
 
 # Key Features
 
@@ -45,26 +45,26 @@ gg(data)
   .labs({ title: 'Differential Expression' })
 ```
 
-**68 Geometry Types.** Coverage spans:
+**68 Geometry Types.** The library includes:
 
-- Core visualizations: scatter, line, bar, histogram, boxplot, violin, density
-- Scientific: volcano, MA, Manhattan, heatmap, correlation matrix, biplot
+- Standard visualizations: scatter, line, bar, histogram, boxplot, violin, density
+- Scientific: volcano, MA, Manhattan, heatmap, correlation, biplot
 - Clinical: Kaplan-Meier [@kaplan1958nonparametric], forest, ROC, Bland-Altman [@bland1986statistical]
 - Statistical diagnostics: Q-Q, ECDF, funnel, control charts, scree plots
 - Set/hierarchical: UpSet [@lex2014upset], dendrogram, treemap, sankey
-- Terminal-optimized: braille (8x resolution), sparkline, bullet, waffle
+- Terminal-native: braille (8x resolution), sparkline, bullet, waffle
 
 **Plot History and Provenance.** Every plot is automatically saved to `~/.ggterm/history/` with JSON specifications capturing data source, aesthetic mappings, and parameters. Researchers can search, retrieve, and re-render any historical plot months later.
 
-**Publication Export.** Plots export to Vega-Lite specifications, then convert to PNG, SVG, or PDF via standard tooling. Style presets (Tufte, Nature, Economist) apply publication-appropriate formatting.
+**Publication Export.** Plots export to Vega-Lite specifications, then convert to PNG, SVG, or PDF via standard tools. Style presets (Tufte, Nature, Economist) apply publication-appropriate formatting.
 
-**AI Integration.** Seven deterministic skills for Claude Code enable natural language workflows from data loading through publication export. The Grammar of Graphics structure supports iterative refinement—each modification layers onto existing specifications.
+**AI Integration.** Seven deterministic skills for Claude Code enable natural language workflows from data loading through publication export. The Grammar of Graphics design supports iterative refinement: each modification layers onto existing specifications.
 
 # Comparison with Related Software
 
-Terminal visualization libraries like `plotext` (Python) and `termgraph` (Python) provide basic chart types through imperative APIs. `gnuplot` offers more geometry types but lacks the Grammar of Graphics' compositional structure. None provide scientific visualization support (survival curves, forest plots), plot history for reproducibility, or AI agent integration.
+Terminal visualization libraries like `plotext` (Python) and `termgraph` (Python) provide basic chart types through imperative APIs. `gnuplot` offers more geometry types but lacks the Grammar of Graphics' compositional design. None provide scientific visualization support (survival curves, forest plots), plot history for reproducibility, or AI agent integration.
 
-`ggterm` uniquely combines Grammar of Graphics architecture, 68 geometry types covering scientific domains, automatic provenance tracking, and first-class AI assistant support in a terminal-native package.
+`ggterm` uniquely combines Grammar of Graphics architecture, 68 geometry types covering scientific fields, automatic provenance tracking, and first-class AI assistant support in a terminal-native package.
 
 # Acknowledgements
 
