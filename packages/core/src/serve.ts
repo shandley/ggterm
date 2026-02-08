@@ -569,6 +569,16 @@ export function handleServe(port?: number): void {
     res.end(CLIENT_HTML)
   })
 
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${p} is already in use.`)
+      console.error(`Kill the existing server: lsof -ti:${p} | xargs kill`)
+      console.error(`Or use a different port: npx ggterm-plot serve ${p + 1}`)
+      process.exit(1)
+    }
+    throw err
+  })
+
   server.listen(p, () => {
     const url = `http://localhost:${p}`
     console.log(`ggterm live viewer running at ${url}`)
