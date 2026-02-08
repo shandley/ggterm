@@ -569,6 +569,64 @@ export function handleInit(): void {
     console.log('')
   }
 
+  // Generate or update CLAUDE.md — this is what Claude Code reads on every conversation start
+  const claudeMdPath = join(cwd, 'CLAUDE.md')
+  const claudeMdContent = `# ggterm Data Analysis Project
+
+This project uses ggterm (@ggterm/core) for data visualization.
+
+## IMPORTANT: Built-in Datasets
+
+ggterm has built-in datasets that work by name — NO CSV files or Python packages needed:
+
+\`\`\`bash
+npx ggterm-plot iris sepal_length sepal_width species "Iris" point
+npx ggterm-plot mtcars mpg hp cyl "Cars" point
+\`\`\`
+
+| Dataset | Rows | Columns |
+|---------|------|---------|
+| \`iris\` | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
+| \`mtcars\` | 16 | mpg, cyl, hp, wt, name |
+
+When asked about iris, mtcars, or sample data, use these names directly as the first argument to \`npx ggterm-plot\`. Do NOT search for CSV files or generate data.
+
+## Plotting Commands
+
+\`\`\`bash
+npx ggterm-plot <data> <x> <y> [color] [title] [geom]
+npx ggterm-plot serve              # Start live viewer (port 4242)
+npx ggterm-plot inspect <file>     # Show column types
+npx ggterm-plot suggest <file>     # Suggest visualizations
+npx ggterm-plot history            # List previous plots
+npx ggterm-plot export <id> out.html  # Export plot
+\`\`\`
+
+## Geom Types
+
+point, line, histogram, boxplot, bar, violin, density, area, ridgeline, heatmap, scatter, ecdf, smooth, and 50+ more.
+
+## Live Viewer
+
+When \`npx ggterm-plot serve\` is running, plots auto-display in the browser/Wave panel as high-resolution interactive Vega-Lite visualizations instead of ASCII art.
+`
+
+  // Only write if doesn't exist or is a ggterm-generated file
+  const GGTERM_MARKER = '# ggterm Data Analysis Project'
+  let shouldWriteClaudeMd = !existsSync(claudeMdPath)
+  if (!shouldWriteClaudeMd) {
+    try {
+      const existing = readFileSync(claudeMdPath, 'utf-8')
+      shouldWriteClaudeMd = existing.startsWith(GGTERM_MARKER)
+    } catch {}
+  }
+
+  if (shouldWriteClaudeMd) {
+    writeFileSync(claudeMdPath, claudeMdContent)
+    console.log('  ✓ CLAUDE.md (project instructions for Claude Code)')
+    console.log('')
+  }
+
   // Show built-in datasets
   console.log('Built-in datasets:')
   console.log('  • iris (150 rows: sepal_length, sepal_width, petal_length, petal_width, species)')
