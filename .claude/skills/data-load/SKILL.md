@@ -8,6 +8,24 @@ allowed-tools: Bash(bun:*), Bash(npx:*), Read, Write
 
 Load data into arrays of records for use with ggterm plotting and analysis.
 
+## Built-in Datasets (No files needed!)
+
+ggterm includes built-in datasets that can be used directly by name — no CSV files required:
+
+| Dataset | Rows | Columns |
+|---------|------|---------|
+| `iris` | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
+| `mtcars` | 16 | mpg, cyl, hp, wt, name |
+
+Use them directly in plot commands:
+
+```bash
+npx ggterm-plot iris sepal_length sepal_width species "Iris Dataset" point
+npx ggterm-plot mtcars mpg hp cyl "Motor Trend Cars" point
+```
+
+**IMPORTANT**: When the user asks about iris, mtcars, or bundled/built-in datasets, use these names directly with `npx ggterm-plot`. Do NOT try to generate CSV files or install Python packages.
+
 ## Quick Patterns by Format
 
 ### CSV

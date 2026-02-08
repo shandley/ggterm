@@ -1,7 +1,7 @@
 ---
 name: ggterm-style
 description: Apply publication-quality style presets to plots. Use when the user wants to style a plot like Wilke, Tufte, Nature, The Economist, or apply minimal/publication styling.
-allowed-tools: Read, Write, Bash(bun:*)
+allowed-tools: Read, Write, Bash(bun:*), Bash(npx:*)
 ---
 
 # Plot Style Presets

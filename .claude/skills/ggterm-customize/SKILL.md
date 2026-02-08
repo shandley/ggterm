@@ -1,7 +1,7 @@
 ---
 name: ggterm-customize
 description: Customize plot aesthetics using natural language. Use when the user wants to change colors, fonts, titles, labels, themes, or any visual aspect of a plot before publication.
-allowed-tools: Read, Write, Bash(bun:*)
+allowed-tools: Read, Write, Bash(bun:*), Bash(npx:*)
 ---
 
 # Natural Language Plot Customization

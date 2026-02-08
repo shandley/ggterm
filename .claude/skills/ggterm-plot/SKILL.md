@@ -1,72 +1,82 @@
 ---
 name: ggterm-plot
 description: Create terminal data visualizations using Grammar of Graphics. Use when plotting data, creating charts, graphing, visualizing distributions, or when the user mentions plot, chart, graph, histogram, scatter, boxplot, or visualize.
-allowed-tools: Bash(bun:*), Read
+allowed-tools: Bash(bun:*), Bash(npx:*), Read
 ---
 
 # Terminal Plotting with ggterm
 
-Create plots using the CLI tool. Start by inspecting the data, then plot.
+Create plots using the CLI tool. Supports both built-in datasets and external files.
 
-## Step 1: Inspect Data (Recommended)
+## Built-in Datasets
+
+ggterm includes datasets that work by name — no CSV files needed:
+
+| Dataset | Rows | Columns |
+|---------|------|---------|
+| `iris` | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
+| `mtcars` | 16 | mpg, cyl, hp, wt, name |
 
 ```bash
-bun packages/core/src/cli-plot.ts inspect <data.csv>
+npx ggterm-plot iris sepal_length sepal_width species "Iris" point
+npx ggterm-plot mtcars mpg hp cyl "Cars" point
 ```
 
-Shows column names, types (numeric/categorical/date), unique counts, and sample values.
+**IMPORTANT**: When the user mentions iris, mtcars, or asks for demo/sample data, use these built-in names directly. Do NOT look for CSV files or generate data.
 
-## Step 2: Get Suggestions (Optional)
+## Live Plot Viewer
+
+Start the companion viewer for high-resolution interactive plots:
 
 ```bash
-bun packages/core/src/cli-plot.ts suggest <data.csv>
+npx ggterm-plot serve        # default port 4242
+npx ggterm-plot serve 8080   # custom port
 ```
 
-Returns ready-to-run plot commands based on column types.
+When serve is running, plots auto-display in the browser/Wave panel instead of ASCII art.
 
-## Step 3: Create Plot
+## CLI Command
 
 ```bash
-bun packages/core/src/cli-plot.ts <data.csv> <x> <y> [color] [title] [geom]
+npx ggterm-plot <data> <x> <y> [color] [title] [geom]
 ```
 
 Arguments:
-- `data.csv` - Path to CSV file (use absolute path or relative to ggterm dir)
+- `data` - Built-in dataset name (`iris`, `mtcars`) OR path to CSV/JSON/JSONL file
 - `x` - Column name for x-axis
 - `y` - Column name for y-axis (use `-` for histogram)
 - `color` - Column name for color (optional, use `-` to skip)
 - `title` - Plot title (optional, use `-` to skip)
 - `geom` - Geometry type: `point` (default), `line`, `path`, `step`, `bar`, `col`, `histogram`, `freqpoly`, `density`, `boxplot`, `violin`, `ridgeline`, `joy`, `beeswarm`, `quasirandom`, `dumbbell`, `lollipop`, `waffle`, `sparkline`, `bullet`, `braille`, `calendar`, `flame`, `icicle`, `corrmat`, `sankey`, `treemap`, `volcano`, `ma`, `manhattan`, `heatmap`, `biplot`, `kaplan_meier`, `forest`, `roc`, `bland_altman`, `ecdf`, `funnel`, `control`, `scree`, `upset`, `dendrogram`, `area`, `ribbon`, `rug`, `errorbar`, `errorbarh`, `crossbar`, `linerange`, `pointrange`, `smooth`, `segment`, `curve`, `rect`, `tile`, `raster`, `bin2d`, `text`, `label`, `contour`, `contour_filled`, `density_2d`, `qq`, `hline`, `vline`, `abline`
 
+## Inspect & Suggest (for external files)
+
+```bash
+npx ggterm-plot inspect <data.csv>
+npx ggterm-plot suggest <data.csv>
+```
+
 ## Examples
 
-Scatter plot:
+Built-in data:
 ```bash
-bun packages/core/src/cli-plot.ts data/iris.csv sepal_length sepal_width species "Iris Dataset" point
+npx ggterm-plot iris sepal_length sepal_width species "Iris Dataset" point
+npx ggterm-plot iris petal_length - species "Petal Length" histogram
+npx ggterm-plot mtcars mpg hp cyl "MPG vs HP" point
 ```
 
-Line chart:
+External files:
 ```bash
-bun packages/core/src/cli-plot.ts data/stocks.csv date price symbol "Stock Prices" line
-```
-
-Histogram:
-```bash
-bun packages/core/src/cli-plot.ts data/iris.csv sepal_width - - "Sepal Width Distribution" histogram
-```
-
-Box plot:
-```bash
-bun packages/core/src/cli-plot.ts data/experiment.csv treatment response_time - "Response by Treatment" boxplot
+npx ggterm-plot data.csv x y color "Title" point
+npx ggterm-plot data.json date value - "Time Series" line
 ```
 
 ## Workflow
 
-1. Identify the data file from $ARGUMENTS or ask user
-2. Run `inspect` to see column names and types
-3. Run `suggest` to get recommended visualizations (or choose based on user request)
-4. Run the plot command
-5. Briefly describe what the plot shows
+1. If user asks for iris/mtcars/demo data, use built-in dataset names directly
+2. For external files: run `inspect` to see columns, then `suggest` for recommendations
+3. Run the plot command
+4. Briefly describe what the plot shows
 
 $ARGUMENTS
 

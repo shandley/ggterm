@@ -9,7 +9,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSy
 import { join, extname } from 'path'
 
 // Current version - update when skills change
-const SKILLS_VERSION = '0.2.7'
+const SKILLS_VERSION = '0.3.2'
 
 // Skill templates - these use npx ggterm-plot for portability
 const SKILLS: Record<string, { files: Record<string, string> }> = {
@@ -25,73 +25,41 @@ allowed-tools: Bash(npx:*), Read, Write
 
 Load data into arrays of records for use with ggterm plotting and analysis.
 
-## Quick Patterns by Format
+## Built-in Datasets (No files needed!)
 
-### CSV
+ggterm includes built-in datasets that can be used directly by name:
 
-\`\`\`typescript
-import { parse } from 'csv-parse/sync'
-import { readFileSync } from 'fs'
+| Dataset | Rows | Columns |
+|---------|------|---------|
+| \`iris\` | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
+| \`mtcars\` | 16 | mpg, cyl, hp, wt, name |
 
-const text = readFileSync('data.csv', 'utf-8')
-const data = parse(text, {
-  columns: true,        // First row as headers
-  cast: true,           // Auto-convert numbers
-  skip_empty_lines: true
-})
+Use them directly in plot commands:
+
+\`\`\`bash
+npx ggterm-plot iris sepal_length sepal_width species "Iris Dataset" point
+npx ggterm-plot mtcars mpg hp cyl "Motor Trend Cars" point
 \`\`\`
 
-**Alternative with d3-dsv** (lighter weight):
+**IMPORTANT**: When the user asks about iris, mtcars, or bundled/built-in datasets, use these names directly with \`npx ggterm-plot\`. Do NOT try to generate CSV files or install Python packages.
 
-\`\`\`typescript
-import { csvParse, autoType } from 'd3-dsv'
+## External Files
 
-const data = csvParse(readFileSync('data.csv', 'utf-8'), autoType)
-\`\`\`
-
-### JSON
-
-\`\`\`typescript
-import { readFileSync } from 'fs'
-
-// JSON array
-const data = JSON.parse(readFileSync('data.json', 'utf-8'))
-\`\`\`
-
-### JSONL (Newline-delimited JSON)
-
-\`\`\`typescript
-const data = readFileSync('data.jsonl', 'utf-8')
-  .trim()
-  .split('\\n')
-  .map(line => JSON.parse(line))
+\`\`\`bash
+npx ggterm-plot data.csv x_column y_column color_column "Title" point
+npx ggterm-plot data.json x_column y_column
+npx ggterm-plot data.jsonl x_column y_column
 \`\`\`
 
 ## Verification
 
-After loading, always verify the data structure:
+Inspect any data file to see columns and types:
 
-\`\`\`typescript
-console.log(\`Loaded \${data.length} rows\`)
-console.log('Columns:', Object.keys(data[0]))
-console.log('Sample row:', data[0])
+\`\`\`bash
+npx ggterm-plot inspect data.csv
 \`\`\`
 
-## Integration with ggterm
-
-Once data is loaded, pass directly to ggterm:
-
-\`\`\`typescript
-import { gg, geom_point } from '@ggterm/core'
-
-const data = loadData('measurements.csv')
-
-const plot = gg(data)
-  .aes({ x: 'time', y: 'value' })
-  .geom(geom_point())
-
-console.log(plot.render({ width: 80, height: 24 }))
-\`\`\`
+$ARGUMENTS
 `
     }
   },
@@ -105,62 +73,77 @@ allowed-tools: Bash(npx:ggterm-plot*), Read
 
 # Terminal Plotting with ggterm
 
-Create plots using the CLI tool. Start by inspecting the data, then plot.
+Create plots using the CLI tool. Supports both built-in datasets and external files.
 
-## Step 1: Inspect Data (Recommended)
+## Built-in Datasets
+
+ggterm includes datasets that work by name — no CSV files needed:
+
+| Dataset | Rows | Columns |
+|---------|------|---------|
+| \`iris\` | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
+| \`mtcars\` | 16 | mpg, cyl, hp, wt, name |
 
 \`\`\`bash
-npx ggterm-plot inspect <data.csv>
+npx ggterm-plot iris sepal_length sepal_width species "Iris" point
+npx ggterm-plot mtcars mpg hp cyl "Cars" point
 \`\`\`
 
-Shows column names, types (numeric/categorical/date), unique counts, and sample values.
+**IMPORTANT**: When the user mentions iris, mtcars, or asks for demo/sample data, use these built-in names directly. Do NOT look for CSV files or generate data.
 
-## Step 2: Get Suggestions (Optional)
+## Live Plot Viewer
+
+Start the companion viewer for high-resolution interactive plots:
 
 \`\`\`bash
-npx ggterm-plot suggest <data.csv>
+npx ggterm-plot serve        # default port 4242
+npx ggterm-plot serve 8080   # custom port
 \`\`\`
 
-Returns ready-to-run plot commands based on column types.
+When serve is running, plots auto-display in the browser/Wave panel instead of ASCII art.
 
-## Step 3: Create Plot
+## CLI Command
 
 \`\`\`bash
-npx ggterm-plot <data.csv> <x> <y> [color] [title] [geom]
+npx ggterm-plot <data> <x> <y> [color] [title] [geom]
 \`\`\`
 
 Arguments:
-- \`data.csv\` - Path to CSV file
+- \`data\` - Built-in dataset name (\`iris\`, \`mtcars\`) OR path to CSV/JSON/JSONL file
 - \`x\` - Column name for x-axis
 - \`y\` - Column name for y-axis (use \`-\` for histogram)
 - \`color\` - Column name for color (optional, use \`-\` to skip)
 - \`title\` - Plot title (optional, use \`-\` to skip)
-- \`geom\` - Geometry type: \`point\` (default), \`line\`, \`histogram\`, \`boxplot\`, \`bar\`, \`violin\`, \`area\`, etc.
+- \`geom\` - Geometry type: \`point\` (default), \`line\`, \`histogram\`, \`boxplot\`, \`bar\`, \`violin\`, \`density\`, \`area\`, etc.
+
+## Inspect & Suggest (for external files)
+
+\`\`\`bash
+npx ggterm-plot inspect <data.csv>
+npx ggterm-plot suggest <data.csv>
+\`\`\`
 
 ## Examples
 
-Scatter plot:
+Built-in data:
 \`\`\`bash
-npx ggterm-plot data.csv sepal_length sepal_width species "Iris Dataset" point
+npx ggterm-plot iris sepal_length sepal_width species "Iris Dataset" point
+npx ggterm-plot iris petal_length - species "Petal Length" histogram
+npx ggterm-plot mtcars mpg hp cyl "MPG vs HP" point
 \`\`\`
 
-Histogram:
+External files:
 \`\`\`bash
-npx ggterm-plot data.csv sepal_width - - "Sepal Width Distribution" histogram
-\`\`\`
-
-Box plot:
-\`\`\`bash
-npx ggterm-plot data.csv treatment response_time - "Response by Treatment" boxplot
+npx ggterm-plot data.csv x y color "Title" point
+npx ggterm-plot data.json date value - "Time Series" line
 \`\`\`
 
 ## Workflow
 
-1. Identify the data file from $ARGUMENTS or ask user
-2. Run \`inspect\` to see column names and types
-3. Run \`suggest\` to get recommended visualizations (or choose based on user request)
-4. Run the plot command
-5. Briefly describe what the plot shows
+1. If user asks for iris/mtcars/demo data, use built-in dataset names directly
+2. For external files: run \`inspect\` to see columns, then \`suggest\` for recommendations
+3. Run the plot command
+4. Briefly describe what the plot shows
 
 $ARGUMENTS
 
@@ -173,6 +156,11 @@ $ARGUMENTS
 | Distribution of 1 variable | \`histogram\` | Frequency distribution |
 | Distribution by group | \`boxplot\` | Compare medians |
 | Category comparison | \`bar\` | Counts per category |
+| Smoothed distribution | \`density\` | Kernel density estimate |
+| Density shape | \`violin\` | Distribution shape |
+| Stacked distributions | \`ridgeline\` | Joy plot |
+| Filled region | \`area\` | Cumulative or stacked |
+| Cumulative distribution | \`ecdf\` | Empirical CDF |
 `
     }
   },
@@ -293,7 +281,7 @@ $ARGUMENTS
       'SKILL.md': `---
 name: ggterm-customize
 description: Customize plot aesthetics using natural language. Use when the user wants to change colors, fonts, titles, labels, themes, or any visual aspect of a plot before publication.
-allowed-tools: Read, Write
+allowed-tools: Read, Write, Bash(npx:*)
 ---
 
 # Natural Language Plot Customization
@@ -350,7 +338,7 @@ $ARGUMENTS
       'SKILL.md': `---
 name: ggterm-style
 description: Apply publication-quality style presets to plots. Use when the user wants to style a plot like Wilke, Tufte, Nature, The Economist, or apply minimal/publication styling.
-allowed-tools: Read, Write
+allowed-tools: Read, Write, Bash(npx:*)
 ---
 
 # Plot Style Presets
@@ -374,47 +362,6 @@ Apply expert-curated style presets to Vega-Lite specifications for publication-q
 2. Apply the requested style preset
 3. Write the updated spec
 4. Inform user they can export with \`/ggterm-publish\`
-
-## Style Configurations
-
-### Wilke Style (Recommended Default)
-
-\`\`\`javascript
-const wilkeStyle = {
-  config: {
-    font: "Helvetica Neue, Helvetica, Arial, sans-serif",
-    background: "white",
-    view: { stroke: null },
-    title: { fontSize: 14, fontWeight: "normal", anchor: "start" },
-    axis: { grid: false, labelFontSize: 11, titleFontSize: 12 },
-    axisY: { grid: true, gridColor: "#ebebeb" }
-  }
-}
-\`\`\`
-
-### Tufte Style
-
-\`\`\`javascript
-const tufteStyle = {
-  config: {
-    font: "Georgia, serif",
-    view: { stroke: null },
-    axis: { domain: false, grid: false, ticks: false }
-  }
-}
-\`\`\`
-
-### Economist Style
-
-\`\`\`javascript
-const economistStyle = {
-  config: {
-    background: "#d5e4eb",
-    axis: { grid: true, gridColor: "#ffffff" },
-    axisX: { grid: false, domain: true }
-  }
-}
-\`\`\`
 
 ## Response Format
 
@@ -451,18 +398,6 @@ Generate analysis reports with embedded terminal visualizations.
 2. **Data Summary** - Shape, columns, key statistics
 3. **Visualizations** - Embedded plots with interpretations
 4. **Findings** - Key insights from the analysis
-
-## Embedding Plots
-
-\`\`\`markdown
-## Visualization
-
-\\\`\\\`\\\`
-[terminal plot output here]
-\\\`\\\`\\\`
-
-**Interpretation**: The scatter plot shows [describe the relationship observed].
-\`\`\`
 
 ## Width Guidelines
 
@@ -634,6 +569,12 @@ export function handleInit(): void {
     console.log('')
   }
 
+  // Show built-in datasets
+  console.log('Built-in datasets:')
+  console.log('  • iris (150 rows: sepal_length, sepal_width, petal_length, petal_width, species)')
+  console.log('  • mtcars (16 rows: mpg, cyl, hp, wt, name)')
+  console.log('')
+
   // Discover data files
   const dataFiles = findDataFiles(cwd)
   if (dataFiles.length > 0) {
@@ -666,9 +607,9 @@ export function handleInit(): void {
   // Quick tips on first install
   if (needsInstall) {
     console.log('Try:')
-    console.log('  "Show me a scatter plot of x vs y from data.csv"')
-    console.log('  "Create a histogram of the age column"')
-    console.log('  "Style this like Tufte and export as PNG"')
+    console.log('  npx ggterm-plot iris sepal_length sepal_width species "Iris" point')
+    console.log('  npx ggterm-plot serve   # Start live viewer')
+    console.log('  "Plot the iris dataset"  # Ask Claude Code')
     console.log('')
   }
 }
