@@ -500,7 +500,7 @@ export function handleServe(port?: number): void {
 
   // Watch for new plots
   const plotsDir = getPlotsDir()
-  watch(plotsDir, (event, filename) => {
+  watch(plotsDir, (_event, filename) => {
     if (!filename || !filename.endsWith('.json')) return
 
     // Debounce rapid writes
