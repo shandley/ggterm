@@ -3,10 +3,15 @@
  *
  * Watches .ggterm/plots/ for new plots and pushes them to connected
  * browsers via WebSocket. Renders interactive Vega-Lite in a dark-themed page.
+ *
+ * Uses node:http and a minimal WebSocket implementation for Node.js compatibility.
  */
 
 import { watch, writeFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
+import { createHash } from 'crypto'
+import { spawn } from 'child_process'
 import {
   getHistory,
   getLatestPlotId,
@@ -36,6 +41,40 @@ function getLatestPayload(): string | null {
   if (!plot) return null
   const { spec, provenance } = plotToVegaLite(plot)
   return JSON.stringify({ type: 'plot', spec, provenance })
+}
+
+/**
+ * Minimal WebSocket frame encoder/decoder for server push.
+ * Only supports text frames (opcode 0x1) which is all we need.
+ */
+function encodeWebSocketFrame(data: string): Buffer {
+  const payload = Buffer.from(data, 'utf-8')
+  const len = payload.length
+
+  let header: Buffer
+  if (len < 126) {
+    header = Buffer.alloc(2)
+    header[0] = 0x81 // FIN + text opcode
+    header[1] = len
+  } else if (len < 65536) {
+    header = Buffer.alloc(4)
+    header[0] = 0x81
+    header[1] = 126
+    header.writeUInt16BE(len, 2)
+  } else {
+    header = Buffer.alloc(10)
+    header[0] = 0x81
+    header[1] = 127
+    header.writeBigUInt64BE(BigInt(len), 2)
+  }
+
+  return Buffer.concat([header, payload])
+}
+
+function jsonResponse(res: ServerResponse, data: unknown, status = 200): void {
+  const body = JSON.stringify(data)
+  res.writeHead(status, { 'content-type': 'application/json' })
+  res.end(body)
 }
 
 const CLIENT_HTML = `<!DOCTYPE html>
@@ -495,7 +534,7 @@ export function handleServe(port?: number): void {
   const p = port || 4242
   ensureHistoryDirs()
 
-  const clients = new Set<any>()
+  const clients = new Set<import('stream').Duplex>()
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
   // Watch for new plots
@@ -508,85 +547,126 @@ export function handleServe(port?: number): void {
     debounceTimer = setTimeout(() => {
       const payload = getLatestPayload()
       if (!payload) return
+      const frame = encodeWebSocketFrame(payload)
       for (const client of clients) {
-        try { client.send(payload) } catch { clients.delete(client) }
+        try { client.write(frame) } catch { clients.delete(client) }
       }
     }, 150)
   })
 
-  const server = Bun.serve({
-    port: p,
-    fetch(req, server) {
-      const url = new URL(req.url)
+  const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+    const url = new URL(req.url || '/', `http://localhost:${p}`)
 
-      // WebSocket upgrade
-      if (url.pathname === '/ws') {
-        if (server.upgrade(req)) return
-        return new Response('WebSocket upgrade failed', { status: 400 })
-      }
+    // API routes
+    if (url.pathname === '/api/latest') {
+      const payload = getLatestPayload()
+      if (!payload) return jsonResponse(res, { type: 'empty' })
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(payload)
+      return
+    }
 
-      // API routes
-      if (url.pathname === '/api/latest') {
-        const payload = getLatestPayload()
-        if (!payload) return Response.json({ type: 'empty' })
-        return new Response(payload, { headers: { 'content-type': 'application/json' } })
-      }
+    if (url.pathname === '/api/history') {
+      const entries = getHistory().slice(-50)
+      jsonResponse(res, entries)
+      return
+    }
 
-      if (url.pathname === '/api/history') {
-        const entries = getHistory().slice(-50)
-        return Response.json(entries)
-      }
+    if (url.pathname.startsWith('/api/plot/')) {
+      const id = url.pathname.slice('/api/plot/'.length)
+      const plot = loadPlotFromHistory(id)
+      if (!plot) return jsonResponse(res, { error: 'not found' }, 404)
+      const { spec, provenance } = plotToVegaLite(plot)
+      jsonResponse(res, { type: 'plot', spec, provenance })
+      return
+    }
 
-      if (url.pathname.startsWith('/api/plot/')) {
-        const id = url.pathname.slice('/api/plot/'.length)
-        const plot = loadPlotFromHistory(id)
-        if (!plot) return Response.json({ error: 'not found' }, { status: 404 })
-        const { spec, provenance } = plotToVegaLite(plot)
-        return Response.json({ type: 'plot', spec, provenance })
-      }
-
-      // Serve client HTML
-      return new Response(CLIENT_HTML, {
-        headers: { 'content-type': 'text/html; charset=utf-8' },
-      })
-    },
-    websocket: {
-      open(ws) {
-        clients.add(ws)
-        // Send latest plot immediately
-        const payload = getLatestPayload()
-        if (payload) ws.send(payload)
-      },
-      close(ws) {
-        clients.delete(ws)
-      },
-      message() {
-        // Client doesn't send messages; ignore
-      },
-    },
+    // Serve client HTML
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+    res.end(CLIENT_HTML)
   })
 
-  const url = `http://localhost:${server.port}`
-  console.log(`ggterm live viewer running at ${url}`)
+  // Handle WebSocket upgrade
+  server.on('upgrade', (req, socket, _head) => {
+    const url = new URL(req.url || '/', `http://localhost:${p}`)
+    if (url.pathname !== '/ws') {
+      socket.destroy()
+      return
+    }
 
-  // Write marker file so CLI can detect serve is running
-  const markerPath = join(getGGTermDir(), 'serve.json')
-  writeFileSync(markerPath, JSON.stringify({ port: server.port, pid: process.pid }))
+    // WebSocket handshake
+    const key = req.headers['sec-websocket-key']
+    if (!key) { socket.destroy(); return }
 
-  // Clean up marker on exit
-  const cleanup = () => { try { unlinkSync(markerPath) } catch {} }
-  process.on('SIGINT', () => { cleanup(); process.exit(0) })
-  process.on('SIGTERM', () => { cleanup(); process.exit(0) })
-  process.on('exit', cleanup)
+    const accept = createHash('sha1')
+      .update(key + '258EAFA5-E914-47DA-95CA-5AB5DC85B7A8')
+      .digest('base64')
 
-  // Auto-open Wave panel if running inside Wave terminal
-  if (process.env.TERM_PROGRAM === 'waveterm') {
-    Bun.spawn(['wsh', 'web', 'open', url])
-    console.log(`Opened Wave panel`)
-  } else {
-    console.log(`Open in browser or Wave panel: wsh web open ${url}`)
-  }
+    socket.write(
+      'HTTP/1.1 101 Switching Protocols\r\n' +
+      'Upgrade: websocket\r\n' +
+      'Connection: Upgrade\r\n' +
+      `Sec-WebSocket-Accept: ${accept}\r\n` +
+      '\r\n'
+    )
 
-  console.log(`Watching ${plotsDir} for new plots...`)
-  console.log(`Press Ctrl+C to stop`)
+    clients.add(socket)
+
+    // Send latest plot immediately
+    const payload = getLatestPayload()
+    if (payload) socket.write(encodeWebSocketFrame(payload))
+
+    socket.on('close', () => clients.delete(socket))
+    socket.on('error', () => clients.delete(socket))
+
+    // Handle incoming frames (ping/pong, close)
+    socket.on('data', (data: Buffer) => {
+      if (data.length < 2) return
+      const opcode = data[0] & 0x0f
+
+      // Close frame
+      if (opcode === 0x8) {
+        const closeFrame = Buffer.alloc(2)
+        closeFrame[0] = 0x88 // FIN + close
+        closeFrame[1] = 0x00
+        try { socket.write(closeFrame) } catch {}
+        socket.end()
+        clients.delete(socket)
+        return
+      }
+
+      // Ping → pong
+      if (opcode === 0x9) {
+        const pong = Buffer.from(data)
+        pong[0] = (pong[0] & 0xf0) | 0x0a // Change opcode to pong
+        try { socket.write(pong) } catch {}
+      }
+    })
+  })
+
+  server.listen(p, () => {
+    const url = `http://localhost:${p}`
+    console.log(`ggterm live viewer running at ${url}`)
+
+    // Write marker file so CLI can detect serve is running
+    const markerPath = join(getGGTermDir(), 'serve.json')
+    writeFileSync(markerPath, JSON.stringify({ port: p, pid: process.pid }))
+
+    // Clean up marker on exit
+    const cleanup = () => { try { unlinkSync(markerPath) } catch {} }
+    process.on('SIGINT', () => { cleanup(); process.exit(0) })
+    process.on('SIGTERM', () => { cleanup(); process.exit(0) })
+    process.on('exit', cleanup)
+
+    // Auto-open Wave panel if running inside Wave terminal
+    if (process.env.TERM_PROGRAM === 'waveterm') {
+      spawn('wsh', ['web', 'open', url], { stdio: 'ignore', detached: true }).unref()
+      console.log(`Opened Wave panel`)
+    } else {
+      console.log(`Open in browser or Wave panel: wsh web open ${url}`)
+    }
+
+    console.log(`Watching ${plotsDir} for new plots...`)
+    console.log(`Press Ctrl+C to stop`)
+  })
 }
