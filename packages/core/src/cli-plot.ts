@@ -1244,6 +1244,7 @@ Commands:
   history [search]                            List all plots (optionally filter by search)
   show <id>                                   Re-render a plot from history
   export [id] [output.html]                   Export plot to HTML (latest or by ID)
+  serve [port]                                Start live plot viewer (default: 4242)
   <file> <x> <y> [color] [title] [geom] [facet]   Create a plot
 
 Supported formats: CSV, JSON, JSONL (auto-detected by extension)
@@ -1268,6 +1269,8 @@ Examples:
   ggterm-plot history
   ggterm-plot show 2024-01-26-001
   ggterm-plot export 2024-01-26-001 figure.html
+  ggterm-plot serve                           # Start live plot viewer
+  ggterm-plot serve 8080                      # Custom port
 `)
 }
 
@@ -1305,6 +1308,10 @@ if (command === 'init') {
   handleShow(args[1])
 } else if (command === 'export') {
   handleExport(args[1], args[2])
+} else if (command === 'serve') {
+  import('./serve').then(({ handleServe }) => {
+    handleServe(args[1] ? parseInt(args[1]) : undefined)
+  })
 } else if (command === 'help' || command === '--help' || command === '-h') {
   printUsage()
 } else {
