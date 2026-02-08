@@ -44,6 +44,7 @@ Contains:
 - `packages/core/src/geoms/` - All geometry implementations
 - `packages/core/src/scales/` - Scale system
 - `packages/core/src/cli-plot.ts` - CLI tool
+- `packages/core/src/serve.ts` - Live plot viewer server
 
 ## CLI Usage
 
@@ -60,6 +61,11 @@ bun packages/core/src/cli-plot.ts data.csv x y - - point+hline@50+vline@2
 bun packages/core/src/cli-plot.ts history
 bun packages/core/src/cli-plot.ts show 2024-01-26-001
 bun packages/core/src/cli-plot.ts export 2024-01-26-001 output.html
+
+# Live plot viewer (companion panel for Wave terminal or browser)
+bun packages/core/src/cli-plot.ts serve          # default port 4242
+bun packages/core/src/cli-plot.ts serve 8080     # custom port
+# In Wave terminal: wsh web open http://localhost:4242
 
 # Inspect and suggest
 bun packages/core/src/cli-plot.ts inspect data.csv
@@ -91,6 +97,30 @@ Seven skills in `.claude/skills/` for AI-assisted data analysis:
 - `examples/` - AI-forward vignettes using bundled datasets
 - `paper/` - bioRxiv preprint draft with figures
 - `docs/` - Technical documentation
+
+## Live Plot Viewer (`ggterm serve`)
+
+WebSocket-powered companion panel for real-time plot visualization. Watches
+`.ggterm/plots/` for new files and auto-pushes interactive Vega-Lite specs to
+connected browsers. Designed for use with Wave terminal to create a minimal
+data analysis IDE: terminal (Claude Code) + plot viewer.
+
+**Architecture**: `serve.ts` uses `Bun.serve()` for HTTP + WebSocket, `fs.watch()`
+on the plots directory, and embeds a dark-themed HTML client with Vega-Lite CDN.
+When `savePlotToHistory()` writes a new plot file, the watcher fires, converts the
+spec to Vega-Lite, and pushes it to all connected clients.
+
+**Current features**: auto-display of new plots, history navigation (arrow keys),
+SVG/PNG export buttons, dark theme, metadata bar (plot ID, description, timestamp).
+
+### Future Enhancements
+
+1. **Full history panel** - Thumbnail strip or dropdown list to jump to any plot directly instead of sequential prev/next navigation
+2. **Auto `wsh` detection** - Detect Wave terminal (`TERM_PROGRAM=waveterm`) and auto-run `wsh web open` so `ggterm serve` opens the panel with zero manual setup
+3. **Plot diffing** - Side-by-side comparison mode for iterating on visualizations
+4. **Keyboard shortcuts** - `s` for SVG, `p` for PNG, `f` for fullscreen, `h` for history panel
+5. **Wave widget auto-install** - Write to `~/.waveterm/config/widgets.json` on first run for permanent sidebar button
+6. **Plot annotations** - Click to add notes (e.g., "version for paper") saved to history provenance
 
 ## Next Steps
 
