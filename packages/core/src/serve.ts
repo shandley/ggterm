@@ -48,8 +48,75 @@ const CLIENT_HTML = `<!DOCTYPE html>
     color: #c9d1d9;
     height: 100vh;
     display: flex;
-    flex-direction: column;
     overflow: hidden;
+  }
+  #sidebar {
+    width: 260px;
+    background: #161b22;
+    border-right: 1px solid #30363d;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transform: translateX(-260px);
+    transition: transform 0.2s ease;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 10;
+  }
+  #sidebar.open { transform: translateX(0); }
+  #sidebar-header {
+    padding: 12px;
+    border-bottom: 1px solid #30363d;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    color: #c9d1d9;
+  }
+  #sidebar-header button {
+    background: none;
+    border: none;
+    color: #8b949e;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+  }
+  #sidebar-header button:hover { color: #c9d1d9; }
+  #history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+  #history-list::-webkit-scrollbar { width: 6px; }
+  #history-list::-webkit-scrollbar-track { background: transparent; }
+  #history-list::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+  .history-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: background 0.1s;
+  }
+  .history-item:hover { background: #21262d; }
+  .history-item.active { background: #1c2128; border-left-color: #58a6ff; }
+  .history-item .hi-id { font-size: 11px; color: #58a6ff; font-weight: 600; }
+  .history-item .hi-desc { font-size: 11px; color: #8b949e; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-item .hi-meta { font-size: 10px; color: #484f58; margin-top: 2px; display: flex; gap: 8px; }
+  .history-item .hi-geom {
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 3px;
+    padding: 0 4px;
+    font-size: 10px;
+    color: #8b949e;
+  }
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
   }
   #vis {
     flex: 1;
@@ -58,9 +125,7 @@ const CLIENT_HTML = `<!DOCTYPE html>
     justify-content: center;
     padding: 16px;
   }
-  #vis .vega-embed {
-    width: 100%;
-  }
+  #vis .vega-embed { width: 100%; }
   #vis .vega-embed canvas,
   #vis .vega-embed svg {
     max-width: 100%;
@@ -82,7 +147,7 @@ const CLIENT_HTML = `<!DOCTYPE html>
   #plot-desc { color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #plot-time { color: #484f58; }
   #nav { display: flex; gap: 4px; align-items: center; }
-  #nav button {
+  .bar-btn {
     background: #21262d;
     border: 1px solid #30363d;
     color: #c9d1d9;
@@ -92,9 +157,11 @@ const CLIENT_HTML = `<!DOCTYPE html>
     font-size: 12px;
     font-family: inherit;
   }
-  #nav button:hover { background: #30363d; }
-  #nav button:disabled { opacity: 0.3; cursor: default; }
-  #nav button:disabled:hover { background: #21262d; }
+  .bar-btn:hover { background: #30363d; }
+  .bar-btn:disabled { opacity: 0.3; cursor: default; }
+  .bar-btn:disabled:hover { background: #21262d; }
+  .bar-btn.active { background: #30363d; border-color: #58a6ff; }
+  #actions { display: flex; gap: 4px; align-items: center; }
   #actions button {
     background: none;
     border: 1px solid #30363d;
@@ -119,41 +186,108 @@ const CLIENT_HTML = `<!DOCTYPE html>
     text-align: center;
   }
   .waiting .hint { font-size: 12px; margin-top: 8px; color: #30363d; }
+  #shortcuts {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 20px 24px;
+    z-index: 20;
+    font-size: 12px;
+    min-width: 220px;
+  }
+  #shortcuts.open { display: block; }
+  #shortcuts h3 { font-size: 13px; margin-bottom: 12px; color: #c9d1d9; }
+  .shortcut-row { display: flex; justify-content: space-between; padding: 4px 0; }
+  .shortcut-row kbd {
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-family: inherit;
+    font-size: 11px;
+    color: #c9d1d9;
+  }
+  .shortcut-row span { color: #8b949e; }
+  #overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 15;
+  }
+  #overlay.open { display: block; }
 </style>
 </head>
 <body>
-<div id="vis">
-  <div class="waiting">
-    <div>waiting for plots...</div>
-    <div class="hint">create a plot in ggterm and it will appear here</div>
+<div id="sidebar">
+  <div id="sidebar-header">
+    <span>History</span>
+    <button onclick="toggleHistory()">&times;</button>
+  </div>
+  <div id="history-list"></div>
+</div>
+<div id="main">
+  <div id="vis">
+    <div class="waiting">
+      <div>waiting for plots...</div>
+      <div class="hint">create a plot in ggterm and it will appear here</div>
+    </div>
+  </div>
+  <div id="bar">
+    <div id="status"></div>
+    <div id="meta">
+      <span id="plot-id"></span>
+      <span id="plot-desc"></span>
+      <span id="plot-time"></span>
+    </div>
+    <div id="nav">
+      <button id="hist-btn" class="bar-btn" onclick="toggleHistory()" title="History (h)">H</button>
+      <button id="prev" class="bar-btn" disabled title="Previous plot (&larr;)">&larr;</button>
+      <button id="next" class="bar-btn" disabled title="Next plot (&rarr;)">&rarr;</button>
+    </div>
+    <div id="actions">
+      <button onclick="downloadSVG()" title="Download SVG (s)">SVG</button>
+      <button onclick="downloadPNG()" title="Download PNG (p)">PNG</button>
+      <button onclick="toggleShortcuts()" title="Keyboard shortcuts (?)">?</button>
+    </div>
   </div>
 </div>
-<div id="bar">
-  <div id="status"></div>
-  <div id="meta">
-    <span id="plot-id"></span>
-    <span id="plot-desc"></span>
-    <span id="plot-time"></span>
-  </div>
-  <div id="nav">
-    <button id="prev" disabled>&larr;</button>
-    <button id="next" disabled>&rarr;</button>
-  </div>
-  <div id="actions">
-    <button onclick="downloadSVG()">SVG</button>
-    <button onclick="downloadPNG()">PNG</button>
-  </div>
+<div id="overlay" onclick="closeOverlays()"></div>
+<div id="shortcuts">
+  <h3>Keyboard Shortcuts</h3>
+  <div class="shortcut-row"><span>Previous plot</span><kbd>&larr;</kbd></div>
+  <div class="shortcut-row"><span>Next plot</span><kbd>&rarr;</kbd></div>
+  <div class="shortcut-row"><span>Latest plot</span><kbd>End</kbd></div>
+  <div class="shortcut-row"><span>First plot</span><kbd>Home</kbd></div>
+  <div class="shortcut-row"><span>Toggle history</span><kbd>h</kbd></div>
+  <div class="shortcut-row"><span>Download SVG</span><kbd>s</kbd></div>
+  <div class="shortcut-row"><span>Download PNG</span><kbd>p</kbd></div>
+  <div class="shortcut-row"><span>Fullscreen</span><kbd>f</kbd></div>
+  <div class="shortcut-row"><span>Show shortcuts</span><kbd>?</kbd></div>
+  <div class="shortcut-row"><span>Close panel</span><kbd>Esc</kbd></div>
 </div>
 <script>
 const vis = document.getElementById('vis');
+const main = document.getElementById('main');
 const statusEl = document.getElementById('status');
 const idEl = document.getElementById('plot-id');
 const descEl = document.getElementById('plot-desc');
 const timeEl = document.getElementById('plot-time');
 const prevBtn = document.getElementById('prev');
 const nextBtn = document.getElementById('next');
+const histBtn = document.getElementById('hist-btn');
+const sidebar = document.getElementById('sidebar');
+const historyList = document.getElementById('history-list');
+const shortcutsEl = document.getElementById('shortcuts');
+const overlayEl = document.getElementById('overlay');
 
 let history = [];
+let historyIndex = {};
 let currentIdx = -1;
 let view = null;
 let ws = null;
@@ -168,6 +302,35 @@ function updateMeta(prov) {
 function updateNav() {
   prevBtn.disabled = currentIdx <= 0;
   nextBtn.disabled = currentIdx >= history.length - 1;
+}
+
+function updateHistoryHighlight() {
+  historyList.querySelectorAll('.history-item').forEach((el, i) => {
+    el.classList.toggle('active', i === currentIdx);
+  });
+  const active = historyList.querySelector('.active');
+  if (active) active.scrollIntoView({ block: 'nearest' });
+}
+
+function addHistoryItem(data, idx) {
+  const prov = data.provenance;
+  if (!prov) return;
+  const div = document.createElement('div');
+  div.className = 'history-item' + (idx === currentIdx ? ' active' : '');
+  div.innerHTML =
+    '<div class="hi-id">' + prov.id + '</div>' +
+    '<div class="hi-desc">' + (prov.description || '') + '</div>' +
+    '<div class="hi-meta">' +
+      '<span class="hi-geom">' + (prov.geomTypes ? prov.geomTypes.join('+') : '') + '</span>' +
+      '<span>' + (prov.timestamp ? new Date(prov.timestamp).toLocaleTimeString() : '') + '</span>' +
+    '</div>';
+  div.onclick = () => navigate(idx);
+  historyList.appendChild(div);
+}
+
+function rebuildHistoryList() {
+  historyList.innerHTML = '';
+  history.forEach((data, i) => addHistoryItem(data, i));
 }
 
 async function renderSpec(spec) {
@@ -196,16 +359,62 @@ async function showPlot(data) {
 function navigate(idx) {
   if (idx < 0 || idx >= history.length) return;
   currentIdx = idx;
-  showPlot(history[idx]);
+  const data = history[idx];
+  if (data.spec) {
+    showPlot(data);
+  } else {
+    // Lazy-load full spec from server
+    fetch('/api/plot/' + data.provenance.id)
+      .then(r => r.json())
+      .then(full => {
+        history[idx] = full;
+        showPlot(full);
+      });
+  }
   updateNav();
+  updateHistoryHighlight();
 }
 
 prevBtn.onclick = () => navigate(currentIdx - 1);
 nextBtn.onclick = () => navigate(currentIdx + 1);
 
+function toggleHistory() {
+  const open = sidebar.classList.toggle('open');
+  histBtn.classList.toggle('active', open);
+}
+
+function toggleShortcuts() {
+  const open = shortcutsEl.classList.toggle('open');
+  overlayEl.classList.toggle('open', open);
+}
+
+function closeOverlays() {
+  shortcutsEl.classList.remove('open');
+  overlayEl.classList.remove('open');
+}
+
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowLeft') navigate(currentIdx - 1);
-  if (e.key === 'ArrowRight') navigate(currentIdx + 1);
+  // Ignore when typing in an input
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  switch (e.key) {
+    case 'ArrowLeft': navigate(currentIdx - 1); break;
+    case 'ArrowRight': navigate(currentIdx + 1); break;
+    case 'Home': e.preventDefault(); navigate(0); break;
+    case 'End': e.preventDefault(); navigate(history.length - 1); break;
+    case 'h': toggleHistory(); break;
+    case 's': downloadSVG(); break;
+    case 'p': downloadPNG(); break;
+    case 'f':
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+      break;
+    case '?': toggleShortcuts(); break;
+    case 'Escape': closeOverlays(); if (sidebar.classList.contains('open')) toggleHistory(); break;
+  }
 });
 
 function downloadSVG() {
@@ -244,8 +453,10 @@ function connect() {
     if (data.type === 'plot') {
       history.push(data);
       currentIdx = history.length - 1;
+      addHistoryItem(data, history.length - 1);
       showPlot(data);
       updateNav();
+      updateHistoryHighlight();
     }
   };
 }
@@ -254,9 +465,9 @@ function connect() {
 fetch('/api/history')
   .then(r => r.json())
   .then(entries => {
-    // Preload just the IDs; full specs loaded on navigate
-    history = [];
-    return entries;
+    // Populate history with provenance-only stubs (lazy-load specs on navigate)
+    history = entries.map(e => ({ provenance: e, spec: null }));
+    rebuildHistoryList();
   })
   .then(() => connect());
 </script>
