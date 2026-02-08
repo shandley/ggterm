@@ -478,6 +478,12 @@ function connect() {
       showPlot(data);
       updateNav();
       updateHistoryHighlight();
+    } else if (data.type === 'update') {
+      // Style/customize change — replace current plot, don't add to history
+      if (currentIdx >= 0 && currentIdx < history.length) {
+        history[currentIdx] = data;
+      }
+      showPlot(data);
     }
   };
 }
@@ -522,22 +528,51 @@ export function handleServe(port?: number): void {
     }, 150)
   })
 
-  // Watch for style/customize changes to the Vega-Lite spec
-  const vegaLitePath = join(getGGTermDir(), 'last-plot-vegalite.json')
+  // Watch for style/customize changes to spec files in .ggterm/
+  // Handles both last-plot-vegalite.json (direct Vega-Lite edits) and
+  // last-plot.json (ggterm format edits that need re-conversion)
   let styleDebounce: ReturnType<typeof setTimeout> | null = null
+  let lastStyleBroadcast = 0
   watch(getGGTermDir(), (_event, filename) => {
-    if (filename !== 'last-plot-vegalite.json') return
+    if (filename !== 'last-plot-vegalite.json' && filename !== 'last-plot.json') return
 
     if (styleDebounce) clearTimeout(styleDebounce)
     styleDebounce = setTimeout(() => {
-      if (!existsSync(vegaLitePath)) return
+      // Prevent duplicate broadcasts within 500ms
+      const now = Date.now()
+      if (now - lastStyleBroadcast < 500) return
+      lastStyleBroadcast = now
+
       try {
-        const spec = JSON.parse(readFileSync(vegaLitePath, 'utf-8'))
+        let spec: VegaLiteSpec | null = null
         const latestId = getLatestPlotId()
-        const provenance = latestId ? { id: latestId, description: 'Styled plot', timestamp: new Date().toISOString(), geomTypes: [] } : { id: 'styled', description: 'Styled plot', timestamp: new Date().toISOString(), geomTypes: [] }
-        broadcast(JSON.stringify({ type: 'plot', spec, provenance }))
+
+        if (filename === 'last-plot.json') {
+          // Re-convert ggterm format to Vega-Lite
+          const plotPath = join(getGGTermDir(), 'last-plot.json')
+          if (!existsSync(plotPath)) return
+          const plot = JSON.parse(readFileSync(plotPath, 'utf-8')) as HistoricalPlot
+          const geomTypes = plot._provenance?.geomTypes || []
+          const hasCompositeMark = geomTypes.some(t => COMPOSITE_MARKS.has(t))
+          spec = plotSpecToVegaLite(plot.spec, { interactive: !hasCompositeMark })
+        } else {
+          // Direct Vega-Lite edit
+          const vegaLitePath = join(getGGTermDir(), 'last-plot-vegalite.json')
+          if (!existsSync(vegaLitePath)) return
+          spec = JSON.parse(readFileSync(vegaLitePath, 'utf-8'))
+        }
+
+        if (!spec) return
+        const provenance = {
+          id: latestId || 'styled',
+          description: 'Styled plot',
+          timestamp: new Date().toISOString(),
+          geomTypes: [] as string[],
+        }
+        // Use 'update' type so the client replaces the current plot instead of adding to history
+        broadcast(JSON.stringify({ type: 'update', spec, provenance }))
       } catch { /* ignore parse errors during partial writes */ }
-    }, 200)
+    }, 300)
   })
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
