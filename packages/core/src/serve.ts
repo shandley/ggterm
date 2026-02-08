@@ -19,8 +19,13 @@ import { plotSpecToVegaLite } from './export'
 import type { HistoricalPlot } from './history'
 import type { VegaLiteSpec } from './export'
 
+// Composite marks in Vega-Lite that don't support selection parameters
+const COMPOSITE_MARKS = new Set(['boxplot', 'violin', 'errorband', 'errorbar'])
+
 function plotToVegaLite(plot: HistoricalPlot): { spec: VegaLiteSpec; provenance: HistoricalPlot['_provenance'] } {
-  const spec = plotSpecToVegaLite(plot.spec, { interactive: true })
+  const geomTypes = plot._provenance.geomTypes
+  const hasCompositeMark = geomTypes.some(t => COMPOSITE_MARKS.has(t))
+  const spec = plotSpecToVegaLite(plot.spec, { interactive: !hasCompositeMark })
   return { spec, provenance: plot._provenance }
 }
 
@@ -335,22 +340,32 @@ function rebuildHistoryList() {
   history.forEach((data, i) => addHistoryItem(data, i));
 }
 
+const embedOpts = {
+  actions: false,
+  theme: 'dark',
+  renderer: 'svg',
+  config: {
+    background: '#0d1117',
+    axis: { domainColor: '#30363d', gridColor: '#21262d', tickColor: '#30363d', labelColor: '#8b949e', titleColor: '#c9d1d9' },
+    legend: { labelColor: '#c9d1d9', titleColor: '#c9d1d9' },
+    title: { color: '#c9d1d9', subtitleColor: '#8b949e' },
+    view: { stroke: null }
+  }
+};
+
 async function renderSpec(spec) {
   vis.innerHTML = '';
   const vegaSpec = { ...spec, width: 'container', height: 'container', autosize: { type: 'fit', contains: 'padding' } };
-  const result = await vegaEmbed(vis, vegaSpec, {
-    actions: false,
-    theme: 'dark',
-    renderer: 'svg',
-    config: {
-      background: '#0d1117',
-      axis: { domainColor: '#30363d', gridColor: '#21262d', tickColor: '#30363d', labelColor: '#8b949e', titleColor: '#c9d1d9' },
-      legend: { labelColor: '#c9d1d9', titleColor: '#c9d1d9' },
-      title: { color: '#c9d1d9', subtitleColor: '#8b949e' },
-      view: { stroke: null }
-    }
-  });
-  view = result.view;
+  try {
+    const result = await vegaEmbed(vis, vegaSpec, embedOpts);
+    view = result.view;
+  } catch (e) {
+    // Retry without interactive params (composite marks like boxplot don't support selections)
+    console.warn('Render failed, retrying without params:', e.message);
+    const { params, ...cleanSpec } = vegaSpec;
+    const result = await vegaEmbed(vis, cleanSpec, embedOpts);
+    view = result.view;
+  }
 }
 
 async function showPlot(data) {
