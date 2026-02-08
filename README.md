@@ -163,6 +163,28 @@ Export any plot to HTML for sharing or publication:
 - Download as PNG or SVG
 - Full Vega-Lite spec for further editing
 
+## Live Plot Viewer
+
+ggterm includes a companion plot viewer that automatically displays new plots in real time. Every plot you create instantly appears as an interactive Vega-Lite visualization — no manual export or refresh needed.
+
+```bash
+# Start the live viewer (runs on localhost:4242)
+npx ggterm-plot serve
+```
+
+Open `http://localhost:4242` in a browser alongside your terminal. As you create plots through conversation, they appear automatically in the viewer with:
+
+- **Interactive Vega-Lite rendering** — tooltips, zoom, pan, legend filtering
+- **Plot history navigation** — arrow keys to browse previous plots
+- **SVG/PNG export** — download publication-quality output directly
+- **Dark theme** — designed to sit alongside your terminal
+
+This creates a minimal data analysis IDE: a terminal for conversation with your AI assistant, and a companion panel for high-fidelity plot output.
+
+**Wave terminal users**: `ggterm serve` auto-detects [Wave](https://www.waveterm.dev/) and opens the viewer as a side panel with zero additional setup.
+
+![ggterm live viewer in Wave terminal](paper/figures/Screenshot%202026-02-08%20at%209.32.28%E2%80%AFAM.png)
+
 ## For Developers
 
 If you want to use ggterm programmatically:
