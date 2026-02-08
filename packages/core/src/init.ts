@@ -9,7 +9,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSy
 import { join, extname } from 'path'
 
 // Current version - update when skills change
-const SKILLS_VERSION = '0.3.4'
+const SKILLS_VERSION = '0.3.7'
 
 // Skill templates - these use npx ggterm-plot for portability
 const SKILLS: Record<string, { files: Record<string, string> }> = {
@@ -288,30 +288,41 @@ allowed-tools: Read, Write, Bash(npx:*)
 
 Modify Vega-Lite specifications based on natural language requests.
 
-## Files
+## CRITICAL: Which File to Edit
 
-After creating a plot, these files exist:
-- \`.ggterm/last-plot.json\` - Original PlotSpec
-- \`.ggterm/last-plot-vegalite.json\` - Vega-Lite spec to modify
+**ALWAYS read and write \`.ggterm/last-plot-vegalite.json\`** — this is the Vega-Lite spec that the viewer renders.
+
+**NEVER modify \`.ggterm/last-plot.json\`** — that is the ggterm terminal format. Changes to it will NOT appear in the viewer.
 
 ## Common Customizations
+
+All examples below modify properties of the Vega-Lite spec read from \`.ggterm/last-plot-vegalite.json\`:
 
 ### Title and Labels
 
 \`\`\`javascript
 spec.title = "New Title"
+spec.title = { text: "Title", subtitle: "Subtitle" }
 spec.encoding.x.title = "X Axis Label"
 spec.encoding.y.title = "Y Axis Label"
+spec.encoding.color.title = "Legend Title"
 \`\`\`
 
 ### Colors
 
 \`\`\`javascript
-// Color scheme for categorical data
-spec.encoding.color.scale = { scheme: "category10" }
+spec.encoding.color.scale = { scheme: "category10" }  // categorical
+spec.encoding.color.scale = { scheme: "viridis" }     // continuous
+spec.mark.color = "#3366cc"                            // single color
+\`\`\`
 
-// Color scheme for continuous data
-spec.encoding.color.scale = { scheme: "viridis" }
+### Fonts and Config
+
+\`\`\`javascript
+spec.config = spec.config || {}
+spec.config.font = "Helvetica"
+spec.config.title = { fontSize: 18, fontWeight: "bold" }
+spec.config.axis = { labelFontSize: 12, titleFontSize: 14 }
 \`\`\`
 
 ### Dimensions
@@ -323,9 +334,9 @@ spec.height = 400
 
 ## Workflow
 
-1. Read \`.ggterm/last-plot-vegalite.json\`
-2. Apply the requested modifications
-3. Write the updated spec back to \`.ggterm/last-plot-vegalite.json\`
+1. Read \`.ggterm/last-plot-vegalite.json\` (NOT last-plot.json)
+2. Parse as JSON, apply the requested modifications
+3. Write the updated JSON back to \`.ggterm/last-plot-vegalite.json\`
 4. **DONE** — the live viewer auto-detects the change and displays the customized plot
 
 **IMPORTANT**: Do NOT re-create the plot with \`npx ggterm-plot\` after customizing. The viewer watches the spec file and auto-updates. Re-running the plot command would overwrite your customizations.
@@ -346,26 +357,107 @@ allowed-tools: Read, Write, Bash(npx:*)
 
 Apply expert-curated style presets to Vega-Lite specifications for publication-quality output.
 
-## Available Presets
+## CRITICAL: Which File to Edit
 
-| Preset | Inspiration | Key Characteristics |
-|--------|-------------|---------------------|
-| \`wilke\` | Claus Wilke's *Fundamentals of Data Visualization* | Minimal, clean, no chartjunk, subtle gridlines |
-| \`tufte\` | Edward Tufte's data-ink ratio principles | Maximum data-ink, no grid, no borders |
-| \`nature\` | Nature journal style | Clean, serif fonts, specific dimensions |
-| \`economist\` | The Economist charts | Bold colors, distinctive style |
-| \`minimal\` | Generic minimal style | No grid, no borders, clean |
-| \`apa\` | APA publication guidelines | Academic papers, grayscale-friendly |
+**ALWAYS read and write \`.ggterm/last-plot-vegalite.json\`** — this is the Vega-Lite spec that the viewer renders.
+
+**NEVER modify \`.ggterm/last-plot.json\`** — that is the ggterm terminal format. Changes to it will NOT appear in the viewer.
 
 ## Workflow
 
-1. Read \`.ggterm/last-plot-vegalite.json\`
-2. Apply the requested style preset (only modify \`config\` — do NOT change \`encoding\`, \`data\`, or \`mark\` structure)
-3. Write the updated spec back to \`.ggterm/last-plot-vegalite.json\`
-4. **DONE** — the live viewer auto-detects the change and displays the styled plot
-5. Inform user they can export with \`/ggterm-publish\`
+1. Read \`.ggterm/last-plot-vegalite.json\` (NOT last-plot.json)
+2. Parse as JSON
+3. Set \`spec.config\` to the style config below — do NOT change \`encoding\`, \`data\`, or \`mark\`
+4. Write the updated JSON back to \`.ggterm/last-plot-vegalite.json\`
+5. **DONE** — the live viewer auto-detects the change and displays the styled plot
 
-**IMPORTANT**: Do NOT re-create the plot with \`npx ggterm-plot\` after styling. The viewer watches the spec file and auto-updates. Re-running the plot command would overwrite your style changes.
+**IMPORTANT**: Do NOT re-create the plot with \`npx ggterm-plot\` after styling. Re-running would overwrite your style changes.
+
+## Style Configs (Vega-Lite \`config\` property)
+
+### Wilke (default for "publication ready")
+
+\`\`\`json
+{
+  "font": "Helvetica Neue, Helvetica, Arial, sans-serif",
+  "background": "white",
+  "view": { "stroke": null },
+  "title": { "fontSize": 14, "fontWeight": "normal", "anchor": "start", "offset": 12 },
+  "axis": { "domain": true, "domainColor": "#333333", "domainWidth": 1, "grid": false, "labelColor": "#333333", "labelFontSize": 11, "tickColor": "#333333", "tickSize": 5, "titleColor": "#333333", "titleFontSize": 12, "titleFontWeight": "normal", "titlePadding": 10 },
+  "axisY": { "grid": true, "gridColor": "#ebebeb", "gridWidth": 0.5 },
+  "legend": { "labelFontSize": 11, "titleFontSize": 11, "titleFontWeight": "normal", "symbolSize": 100 },
+  "range": { "category": ["#4C78A8", "#F58518", "#E45756", "#72B7B2", "#54A24B", "#EECA3B", "#B279A2", "#FF9DA6"] }
+}
+\`\`\`
+
+### Tufte
+
+\`\`\`json
+{
+  "font": "Georgia, serif",
+  "background": "white",
+  "view": { "stroke": null },
+  "title": { "fontSize": 13, "fontWeight": "normal", "anchor": "start" },
+  "axis": { "domain": false, "grid": false, "labelColor": "#333333", "labelFontSize": 10, "ticks": false, "titleColor": "#333333", "titleFontSize": 11, "titleFontWeight": "normal" },
+  "legend": { "labelFontSize": 10, "titleFontSize": 10, "titleFontWeight": "normal" },
+  "range": { "category": ["#333333", "#666666", "#999999", "#CCCCCC"] }
+}
+\`\`\`
+
+### Nature
+
+\`\`\`json
+{
+  "font": "Arial, Helvetica, sans-serif",
+  "background": "white",
+  "view": { "stroke": null },
+  "title": { "fontSize": 10, "fontWeight": "bold" },
+  "axis": { "domain": true, "domainColor": "#000000", "domainWidth": 0.5, "grid": false, "labelColor": "#000000", "labelFontSize": 8, "tickColor": "#000000", "tickSize": 4, "tickWidth": 0.5, "titleColor": "#000000", "titleFontSize": 9, "titleFontWeight": "normal" },
+  "legend": { "labelFontSize": 8, "titleFontSize": 8, "symbolSize": 50 }
+}
+\`\`\`
+
+### Economist
+
+\`\`\`json
+{
+  "font": "Officina Sans, Arial, sans-serif",
+  "background": "#d5e4eb",
+  "view": { "stroke": null },
+  "title": { "fontSize": 14, "fontWeight": "bold", "color": "#000000", "anchor": "start" },
+  "axis": { "domain": false, "grid": true, "gridColor": "#ffffff", "gridWidth": 1, "labelColor": "#000000", "labelFontSize": 11, "titleFontSize": 12, "titleFontWeight": "bold" },
+  "axisX": { "grid": false, "domain": true, "domainColor": "#000000" },
+  "legend": { "orient": "top", "labelFontSize": 11, "titleFontSize": 11 },
+  "range": { "category": ["#006BA2", "#3EBCD2", "#379A8B", "#EBB434", "#B4BA39", "#9A607F", "#D73F3F"] }
+}
+\`\`\`
+
+### Minimal
+
+\`\`\`json
+{
+  "font": "system-ui, -apple-system, sans-serif",
+  "background": "white",
+  "view": { "stroke": null },
+  "title": { "fontSize": 14, "fontWeight": "normal" },
+  "axis": { "domain": false, "grid": false, "ticks": false, "labelColor": "#666666", "labelFontSize": 11, "titleColor": "#333333", "titleFontSize": 12, "titleFontWeight": "normal" },
+  "legend": { "labelFontSize": 11, "titleFontSize": 11, "titleFontWeight": "normal" }
+}
+\`\`\`
+
+### APA
+
+\`\`\`json
+{
+  "font": "Times New Roman, serif",
+  "background": "white",
+  "view": { "stroke": null },
+  "title": { "fontSize": 12, "fontWeight": "bold", "anchor": "middle" },
+  "axis": { "domain": true, "domainColor": "#000000", "grid": false, "labelColor": "#000000", "labelFontSize": 10, "tickColor": "#000000", "titleColor": "#000000", "titleFontSize": 11, "titleFontWeight": "normal", "titleFontStyle": "italic" },
+  "legend": { "labelFontSize": 10, "titleFontSize": 10, "titleFontStyle": "italic" },
+  "range": { "category": ["#000000", "#666666", "#999999", "#CCCCCC"] }
+}
+\`\`\`
 
 ## Response Format
 

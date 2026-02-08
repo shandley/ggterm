@@ -8,6 +8,12 @@ allowed-tools: Read, Write, Bash(bun:*), Bash(npx:*)
 
 Apply expert-curated style presets to Vega-Lite specifications for publication-quality output.
 
+## CRITICAL: Which File to Edit
+
+**ALWAYS read and write `.ggterm/last-plot-vegalite.json`** — this is the Vega-Lite spec that the viewer renders.
+
+**NEVER modify `.ggterm/last-plot.json`** — that is the ggterm terminal format. Changes to it will NOT appear in the viewer.
+
 ## Available Presets
 
 | Preset | Inspiration | Key Characteristics |
@@ -21,13 +27,14 @@ Apply expert-curated style presets to Vega-Lite specifications for publication-q
 
 ## Workflow
 
-1. Read `.ggterm/last-plot-vegalite.json`
-2. Apply the requested style preset (only modify `config` — do NOT change `encoding`, `data`, or `mark` structure)
-3. Write the updated spec back to `.ggterm/last-plot-vegalite.json`
-4. **DONE** — the live viewer auto-detects the file change and displays the styled plot
-5. Inform user they can export with `/ggterm-publish`
+1. Read `.ggterm/last-plot-vegalite.json` (NOT last-plot.json)
+2. Parse as JSON
+3. Set `spec.config` to the style config below — do NOT change `encoding`, `data`, or `mark`
+4. Write the updated JSON back to `.ggterm/last-plot-vegalite.json`
+5. **DONE** — the live viewer auto-detects the file change and displays the styled plot
+6. Inform user they can export with `/ggterm-publish`
 
-**IMPORTANT**: Do NOT re-create the plot with `npx ggterm-plot` after styling. The viewer watches `.ggterm/last-plot-vegalite.json` and auto-updates when it changes. Re-running the plot command would overwrite your style changes.
+**IMPORTANT**: Do NOT re-create the plot with `npx ggterm-plot` after styling. Re-running would overwrite your style changes.
 
 ## Style Configurations
 

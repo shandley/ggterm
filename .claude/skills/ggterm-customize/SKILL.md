@@ -8,17 +8,17 @@ allowed-tools: Read, Write, Bash(bun:*), Bash(npx:*)
 
 Modify Vega-Lite specifications based on natural language requests.
 
-## Files
+## CRITICAL: Which File to Edit
 
-After creating a plot, these files exist:
-- `.ggterm/last-plot.json` - Original PlotSpec
-- `.ggterm/last-plot-vegalite.json` - Vega-Lite spec to modify
+**ALWAYS read and write `.ggterm/last-plot-vegalite.json`** — this is the Vega-Lite spec that the viewer renders.
+
+**NEVER modify `.ggterm/last-plot.json`** — that is the ggterm terminal format. Changes to it will NOT appear in the viewer.
 
 ## Customization Workflow
 
-1. Read `.ggterm/last-plot-vegalite.json`
+1. Read `.ggterm/last-plot-vegalite.json` (NOT last-plot.json)
 2. Interpret the user's natural language request
-3. Modify the appropriate properties
+3. Modify the appropriate Vega-Lite properties
 4. Write the updated spec back to `.ggterm/last-plot-vegalite.json`
 5. **DONE** — the live viewer auto-detects the file change and displays the customized plot
 

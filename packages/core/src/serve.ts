@@ -515,6 +515,9 @@ export function handleServe(port?: number): void {
     }
   }
 
+  // Track when a new plot is created so we can suppress duplicate broadcasts
+  let lastNewPlotTime = 0
+
   // Watch for new plots in history
   const plotsDir = getPlotsDir()
   watch(plotsDir, (_event, filename) => {
@@ -523,46 +526,29 @@ export function handleServe(port?: number): void {
     // Debounce rapid writes
     if (debounceTimer) clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => {
+      lastNewPlotTime = Date.now()
       const payload = getLatestPayload()
       if (payload) broadcast(payload)
     }, 150)
   })
 
-  // Watch for style/customize changes to spec files in .ggterm/
-  // Handles both last-plot-vegalite.json (direct Vega-Lite edits) and
-  // last-plot.json (ggterm format edits that need re-conversion)
+  // Watch for style/customize changes to the Vega-Lite spec
+  // Only watches last-plot-vegalite.json since that's what the viewer renders
   let styleDebounce: ReturnType<typeof setTimeout> | null = null
-  let lastStyleBroadcast = 0
   watch(getGGTermDir(), (_event, filename) => {
-    if (filename !== 'last-plot-vegalite.json' && filename !== 'last-plot.json') return
+    if (filename !== 'last-plot-vegalite.json') return
 
     if (styleDebounce) clearTimeout(styleDebounce)
     styleDebounce = setTimeout(() => {
-      // Prevent duplicate broadcasts within 500ms
-      const now = Date.now()
-      if (now - lastStyleBroadcast < 500) return
-      lastStyleBroadcast = now
+      // Suppress if a new plot was just created (avoid duplicate on initial save)
+      if (Date.now() - lastNewPlotTime < 2000) return
+
+      const vegaLitePath = join(getGGTermDir(), 'last-plot-vegalite.json')
+      if (!existsSync(vegaLitePath)) return
 
       try {
-        let spec: VegaLiteSpec | null = null
+        const spec = JSON.parse(readFileSync(vegaLitePath, 'utf-8'))
         const latestId = getLatestPlotId()
-
-        if (filename === 'last-plot.json') {
-          // Re-convert ggterm format to Vega-Lite
-          const plotPath = join(getGGTermDir(), 'last-plot.json')
-          if (!existsSync(plotPath)) return
-          const plot = JSON.parse(readFileSync(plotPath, 'utf-8')) as HistoricalPlot
-          const geomTypes = plot._provenance?.geomTypes || []
-          const hasCompositeMark = geomTypes.some(t => COMPOSITE_MARKS.has(t))
-          spec = plotSpecToVegaLite(plot.spec, { interactive: !hasCompositeMark })
-        } else {
-          // Direct Vega-Lite edit
-          const vegaLitePath = join(getGGTermDir(), 'last-plot-vegalite.json')
-          if (!existsSync(vegaLitePath)) return
-          spec = JSON.parse(readFileSync(vegaLitePath, 'utf-8'))
-        }
-
-        if (!spec) return
         const provenance = {
           id: latestId || 'styled',
           description: 'Styled plot',
