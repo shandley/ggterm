@@ -81,7 +81,7 @@ import {
   geom_dendrogram,
   facet_wrap,
 } from './index'
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import {
   savePlotToHistory,
@@ -92,6 +92,23 @@ import {
   getGGTermDir,
 } from './history'
 import { handleInit } from './init'
+
+/**
+ * Check if ggterm serve is running by reading the marker file and verifying PID
+ */
+function isServeRunning(): boolean {
+  const markerPath = join(getGGTermDir(), 'serve.json')
+  if (!existsSync(markerPath)) return false
+
+  try {
+    const info = JSON.parse(readFileSync(markerPath, 'utf-8'))
+    // Check if process is still alive (signal 0 = existence check)
+    process.kill(info.pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
 
 const GEOM_TYPES = [
   'point', 'line', 'path', 'step', 'bar', 'col', 'histogram', 'freqpoly', 'density',
@@ -1033,7 +1050,11 @@ function handlePlot(args: string[]): void {
     plot = plot.facet(facet_wrap(facetVar))
   }
 
-  console.log(plot.render({ width: 70, height: 20, colorMode: 'truecolor' }))
+  const serveActive = isServeRunning()
+
+  if (!serveActive) {
+    console.log(plot.render({ width: 70, height: 20, colorMode: 'truecolor' }))
+  }
 
   // Save to history with provenance
   const spec = plot.spec()
@@ -1043,7 +1064,11 @@ function handlePlot(args: string[]): void {
     command: commandStr,
   })
 
-  console.log(`\n[Saved as ${plotId}]`)
+  if (serveActive) {
+    console.log(`[${plotId}] → live viewer`)
+  } else {
+    console.log(`\n[Saved as ${plotId}]`)
+  }
 }
 
 /**

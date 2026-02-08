@@ -110,15 +110,16 @@ on the plots directory, and embeds a dark-themed HTML client with Vega-Lite CDN.
 When `savePlotToHistory()` writes a new plot file, the watcher fires, converts the
 spec to Vega-Lite, and pushes it to all connected clients.
 
-**Current features**: auto-display of new plots, history navigation (arrow keys),
-SVG/PNG export buttons, dark theme, metadata bar (plot ID, description, timestamp).
+**Current features**: auto-display of new plots, history panel sidebar (press `h`),
+keyboard shortcuts (`h`/`s`/`p`/`f`/`?`/arrows), SVG/PNG export, dark theme,
+metadata bar (plot ID, description, timestamp), Wave terminal auto-detection.
 
 ### Future Enhancements
 
-1. **Full history panel** - Thumbnail strip or dropdown list to jump to any plot directly instead of sequential prev/next navigation
-2. **Auto `wsh` detection** - Detect Wave terminal (`TERM_PROGRAM=waveterm`) and auto-run `wsh web open` so `ggterm serve` opens the panel with zero manual setup
+1. ~~**Full history panel**~~ — Done (c3bf2bb)
+2. ~~**Auto `wsh` detection**~~ — Done (73924e0)
 3. **Plot diffing** - Side-by-side comparison mode for iterating on visualizations
-4. **Keyboard shortcuts** - `s` for SVG, `p` for PNG, `f` for fullscreen, `h` for history panel
+4. ~~**Keyboard shortcuts**~~ — Done (c3bf2bb)
 5. **Wave widget auto-install** - Write to `~/.waveterm/config/widgets.json` on first run for permanent sidebar button
 6. **Plot annotations** - Click to add notes (e.g., "version for paper") saved to history provenance
 

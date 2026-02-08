@@ -5,12 +5,14 @@
  * browsers via WebSocket. Renders interactive Vega-Lite in a dark-themed page.
  */
 
-import { watch } from 'fs'
+import { watch, writeFileSync, unlinkSync } from 'fs'
+import { join } from 'path'
 import {
   getHistory,
   getLatestPlotId,
   loadPlotFromHistory,
   getPlotsDir,
+  getGGTermDir,
   ensureHistoryDirs,
 } from './history'
 import { plotSpecToVegaLite } from './export'
@@ -551,6 +553,16 @@ export function handleServe(port?: number): void {
 
   const url = `http://localhost:${server.port}`
   console.log(`ggterm live viewer running at ${url}`)
+
+  // Write marker file so CLI can detect serve is running
+  const markerPath = join(getGGTermDir(), 'serve.json')
+  writeFileSync(markerPath, JSON.stringify({ port: server.port, pid: process.pid }))
+
+  // Clean up marker on exit
+  const cleanup = () => { try { unlinkSync(markerPath) } catch {} }
+  process.on('SIGINT', () => { cleanup(); process.exit(0) })
+  process.on('SIGTERM', () => { cleanup(); process.exit(0) })
+  process.on('exit', cleanup)
 
   // Auto-open Wave panel if running inside Wave terminal
   if (process.env.TERM_PROGRAM === 'waveterm') {
