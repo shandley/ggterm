@@ -7,7 +7,7 @@
  * Uses node:http and a minimal WebSocket implementation for Node.js compatibility.
  */
 
-import { watch, writeFileSync, unlinkSync } from 'fs'
+import { watch, readFileSync, writeFileSync, unlinkSync, existsSync } from 'fs'
 import { join } from 'path'
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { spawn } from 'child_process'
@@ -502,7 +502,14 @@ export function handleServe(port?: number): void {
   const clients = new Set<ServerResponse>()
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
-  // Watch for new plots
+  function broadcast(payload: string) {
+    const sseData = `data: ${payload}\n\n`
+    for (const client of clients) {
+      try { client.write(sseData) } catch { clients.delete(client) }
+    }
+  }
+
+  // Watch for new plots in history
   const plotsDir = getPlotsDir()
   watch(plotsDir, (_event, filename) => {
     if (!filename || !filename.endsWith('.json')) return
@@ -511,12 +518,26 @@ export function handleServe(port?: number): void {
     if (debounceTimer) clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => {
       const payload = getLatestPayload()
-      if (!payload) return
-      const sseData = `data: ${payload}\n\n`
-      for (const client of clients) {
-        try { client.write(sseData) } catch { clients.delete(client) }
-      }
+      if (payload) broadcast(payload)
     }, 150)
+  })
+
+  // Watch for style/customize changes to the Vega-Lite spec
+  const vegaLitePath = join(getGGTermDir(), 'last-plot-vegalite.json')
+  let styleDebounce: ReturnType<typeof setTimeout> | null = null
+  watch(getGGTermDir(), (_event, filename) => {
+    if (filename !== 'last-plot-vegalite.json') return
+
+    if (styleDebounce) clearTimeout(styleDebounce)
+    styleDebounce = setTimeout(() => {
+      if (!existsSync(vegaLitePath)) return
+      try {
+        const spec = JSON.parse(readFileSync(vegaLitePath, 'utf-8'))
+        const latestId = getLatestPlotId()
+        const provenance = latestId ? { id: latestId, description: 'Styled plot', timestamp: new Date().toISOString(), geomTypes: [] } : { id: 'styled', description: 'Styled plot', timestamp: new Date().toISOString(), geomTypes: [] }
+        broadcast(JSON.stringify({ type: 'plot', spec, provenance }))
+      } catch { /* ignore parse errors during partial writes */ }
+    }, 200)
   })
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
