@@ -377,6 +377,14 @@ async function renderSpec(spec) {
   }
 }
 
+// Re-render on container resize so plot reflows correctly
+let resizeTimer = null;
+new ResizeObserver(() => {
+  if (!view) return;
+  if (resizeTimer) clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { view.resize(); }, 150);
+}).observe(vis);
+
 async function showPlot(data) {
   await renderSpec(data.spec);
   updateMeta(data.provenance);
@@ -515,17 +523,21 @@ export function handleServe(port?: number): void {
     }
   }
 
-  // Track when a new plot is created so we can suppress duplicate broadcasts
+  // Track last broadcast to suppress duplicates
   let lastNewPlotTime = 0
+  let lastBroadcastPlotId: string | null = null
 
   // Watch for new plots in history
   const plotsDir = getPlotsDir()
   watch(plotsDir, (_event, filename) => {
     if (!filename || !filename.endsWith('.json')) return
 
-    // Debounce rapid writes
+    // Debounce rapid writes (macOS emits multiple events per file write)
     if (debounceTimer) clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => {
+      const latestId = getLatestPlotId()
+      if (!latestId || latestId === lastBroadcastPlotId) return // already broadcast
+      lastBroadcastPlotId = latestId
       lastNewPlotTime = Date.now()
       const payload = getLatestPayload()
       if (payload) broadcast(payload)
