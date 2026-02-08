@@ -10,7 +10,6 @@
 import { watch, writeFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
-import { createHash } from 'crypto'
 import { spawn } from 'child_process'
 import {
   getHistory,
@@ -41,34 +40,6 @@ function getLatestPayload(): string | null {
   if (!plot) return null
   const { spec, provenance } = plotToVegaLite(plot)
   return JSON.stringify({ type: 'plot', spec, provenance })
-}
-
-/**
- * Minimal WebSocket frame encoder/decoder for server push.
- * Only supports text frames (opcode 0x1) which is all we need.
- */
-function encodeWebSocketFrame(data: string): Buffer {
-  const payload = Buffer.from(data, 'utf-8')
-  const len = payload.length
-
-  let header: Buffer
-  if (len < 126) {
-    header = Buffer.alloc(2)
-    header[0] = 0x81 // FIN + text opcode
-    header[1] = len
-  } else if (len < 65536) {
-    header = Buffer.alloc(4)
-    header[0] = 0x81
-    header[1] = 126
-    header.writeUInt16BE(len, 2)
-  } else {
-    header = Buffer.alloc(10)
-    header[0] = 0x81
-    header[1] = 127
-    header.writeBigUInt64BE(BigInt(len), 2)
-  }
-
-  return Buffer.concat([header, payload])
 }
 
 function jsonResponse(res: ServerResponse, data: unknown, status = 200): void {
@@ -336,7 +307,6 @@ let history = [];
 let historyIndex = {};
 let currentIdx = -1;
 let view = null;
-let ws = null;
 
 function updateMeta(prov) {
   if (!prov) return;
@@ -494,17 +464,12 @@ function downloadPNG() {
 }
 
 function connect() {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(proto + '//' + location.host + '/ws');
+  const es = new EventSource('/events');
 
-  ws.onopen = () => { statusEl.classList.add('connected'); };
-  ws.onclose = () => {
-    statusEl.classList.remove('connected');
-    setTimeout(connect, 2000);
-  };
-  ws.onerror = () => ws.close();
+  es.onopen = () => { statusEl.classList.add('connected'); };
+  es.onerror = () => { statusEl.classList.remove('connected'); };
 
-  ws.onmessage = (e) => {
+  es.onmessage = (e) => {
     const data = JSON.parse(e.data);
     if (data.type === 'plot') {
       history.push(data);
@@ -534,7 +499,7 @@ export function handleServe(port?: number): void {
   const p = port || 4242
   ensureHistoryDirs()
 
-  const clients = new Set<import('stream').Duplex>()
+  const clients = new Set<ServerResponse>()
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
   // Watch for new plots
@@ -547,15 +512,33 @@ export function handleServe(port?: number): void {
     debounceTimer = setTimeout(() => {
       const payload = getLatestPayload()
       if (!payload) return
-      const frame = encodeWebSocketFrame(payload)
+      const sseData = `data: ${payload}\n\n`
       for (const client of clients) {
-        try { client.write(frame) } catch { clients.delete(client) }
+        try { client.write(sseData) } catch { clients.delete(client) }
       }
     }, 150)
   })
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url || '/', `http://localhost:${p}`)
+
+    // SSE endpoint for live updates
+    if (url.pathname === '/events') {
+      res.writeHead(200, {
+        'content-type': 'text/event-stream',
+        'cache-control': 'no-cache',
+        'connection': 'keep-alive',
+      })
+
+      clients.add(res)
+
+      // Send latest plot immediately
+      const payload = getLatestPayload()
+      if (payload) res.write(`data: ${payload}\n\n`)
+
+      req.on('close', () => clients.delete(res))
+      return
+    }
 
     // API routes
     if (url.pathname === '/api/latest') {
@@ -584,64 +567,6 @@ export function handleServe(port?: number): void {
     // Serve client HTML
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
     res.end(CLIENT_HTML)
-  })
-
-  // Handle WebSocket upgrade
-  server.on('upgrade', (req, socket, _head) => {
-    const url = new URL(req.url || '/', `http://localhost:${p}`)
-    if (url.pathname !== '/ws') {
-      socket.destroy()
-      return
-    }
-
-    // WebSocket handshake
-    const key = req.headers['sec-websocket-key']
-    if (!key) { socket.destroy(); return }
-
-    const accept = createHash('sha1')
-      .update(key + '258EAFA5-E914-47DA-95CA-5AB5DC85B7A8')
-      .digest('base64')
-
-    socket.write(
-      'HTTP/1.1 101 Switching Protocols\r\n' +
-      'Upgrade: websocket\r\n' +
-      'Connection: Upgrade\r\n' +
-      `Sec-WebSocket-Accept: ${accept}\r\n` +
-      '\r\n'
-    )
-
-    clients.add(socket)
-
-    // Send latest plot immediately
-    const payload = getLatestPayload()
-    if (payload) socket.write(encodeWebSocketFrame(payload))
-
-    socket.on('close', () => clients.delete(socket))
-    socket.on('error', () => clients.delete(socket))
-
-    // Handle incoming frames (ping/pong, close)
-    socket.on('data', (data: Buffer) => {
-      if (data.length < 2) return
-      const opcode = data[0] & 0x0f
-
-      // Close frame
-      if (opcode === 0x8) {
-        const closeFrame = Buffer.alloc(2)
-        closeFrame[0] = 0x88 // FIN + close
-        closeFrame[1] = 0x00
-        try { socket.write(closeFrame) } catch {}
-        socket.end()
-        clients.delete(socket)
-        return
-      }
-
-      // Ping → pong
-      if (opcode === 0x9) {
-        const pong = Buffer.from(data)
-        pong[0] = (pong[0] & 0xf0) | 0x0a // Change opcode to pong
-        try { socket.write(pong) } catch {}
-      }
-    })
   })
 
   server.listen(p, () => {

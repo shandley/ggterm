@@ -28,7 +28,7 @@ All plots are automatically persisted with full provenance metadata (data source
 
 Scientific computing increasingly occurs in terminal environments: remote servers, compute clusters, and containerized pipelines. In these settings, graphical display is limited or absent. Researchers SSH into analysis servers, run batch jobs, and inspect results through text interfaces. Yet visualization tools for these environments remain primitive compared to graphical options.
 
-Existing terminal plotting libraries use imperative APIs that limit both depth and integration with AI-assisted workflows. When researchers work with AI assistants, they need visualization tools with declarative specifications that can be generated, modified, and composed through natural language requests.
+Existing terminal plotting libraries use imperative APIs that limit both depth and integration with AI-assisted workflows. When researchers work with AI assistants [@perkel2023ai], they need visualization tools with declarative specifications that can be generated, modified, and composed through natural language requests.
 
 Additionally, scientific visualization has field-specific requirements. Genomics researchers need volcano plots and Manhattan plots. Clinical trialists need Kaplan-Meier curves and forest plots. Statisticians need Q-Q plots and control charts. These specialized visualizations encode field knowledge that standard plotting tools cannot express.
 
@@ -47,7 +47,7 @@ gg(data)
 
 **68 Geometry Types.** The library includes:
 
-- Standard visualizations: scatter, line, bar, histogram, boxplot, violin, density
+- Standard visualizations: scatter, line, bar, histogram, boxplot [@tukey1977exploratory], violin, density
 - Scientific: volcano, MA, Manhattan, heatmap, correlation, biplot
 - Clinical: Kaplan-Meier [@kaplan1958nonparametric], forest, ROC, Bland-Altman [@bland1986statistical]
 - Statistical diagnostics: Q-Q, ECDF, funnel, control charts, scree plots
@@ -56,13 +56,13 @@ gg(data)
 
 **Plot History and Provenance.** Every plot is automatically saved to `~/.ggterm/history/` with JSON specifications capturing data source, aesthetic mappings, and parameters. Researchers can search, retrieve, and re-render any historical plot months later.
 
-**Publication Export.** Plots export to Vega-Lite specifications, then convert to PNG, SVG, or PDF via standard tools. Style presets (Tufte, Nature, Economist) apply publication-appropriate formatting.
+**Publication Export.** Plots export to Vega-Lite specifications, then convert to PNG, SVG, or PDF via standard tools. Style presets (Tufte [@tufte2001], Nature, Economist) apply publication-appropriate formatting.
 
-**AI Integration.** Seven deterministic skills for Claude Code enable natural language workflows from data loading through publication export. The Grammar of Graphics design supports iterative refinement: each modification layers onto existing specifications.
+**AI Integration.** Seven deterministic skills for Claude Code [@anthropic2024claude] enable natural language workflows from data loading through publication export. The Grammar of Graphics design supports iterative refinement: each modification layers onto existing specifications.
 
 # Comparison with Related Software
 
-Terminal visualization libraries like `plotext` (Python) and `termgraph` (Python) provide basic chart types through imperative APIs. `gnuplot` offers more geometry types but lacks the Grammar of Graphics' compositional design. None provide scientific visualization support (survival curves, forest plots), plot history for reproducibility, or AI agent integration.
+Grammar of Graphics implementations such as ggplot2 [@wickham2016ggplot2] in R and gramm [@morel2018gramm] in Matlab provide compositional visualization design but require graphical displays. Terminal visualization libraries like `plotext` [@plotext2023] (Python) and `termgraph` (Python) provide basic chart types through imperative APIs. `gnuplot` offers more geometry types but lacks the Grammar of Graphics' compositional design. None of these tools combine scientific visualization support (survival curves, forest plots), plot history for reproducibility, and AI agent integration in a terminal-native package.
 
 `ggterm` uniquely combines Grammar of Graphics architecture, 68 geometry types covering scientific fields, automatic provenance tracking, and first-class AI assistant support in a terminal-native package.
 

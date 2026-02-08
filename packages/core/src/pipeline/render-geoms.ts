@@ -4127,7 +4127,7 @@ export function renderGeomVolcano(
       .sort((a, b) => b.significance - a.significance)
       .slice(0, nLabels)
 
-    const labelColor: RGBA = { r: 50, g: 50, b: 50, a: 1 }
+    const labelColor: RGBA = { r: 255, g: 255, b: 255, a: 1 }
 
     for (const point of significantPoints) {
       const cx = Math.round(scales.x.map(point.x))
@@ -5232,6 +5232,18 @@ function renderGeomForest(
     // Draw point estimate (size based on weight)
     const px = Math.round(mapX(row.estimate))
     canvas.drawChar(px, y, pointChar, pointColor)
+
+    // Draw study label right-aligned to the left of the plot area
+    const label = row.study
+    const labelColor: RGBA = { r: 200, g: 200, b: 200, a: 1 }
+    const labelEnd = plotLeft - 1  // one space gap before axis
+    const labelStart = labelEnd - label.length
+    for (let c = 0; c < label.length; c++) {
+      const charX = labelStart + c
+      if (charX >= 0) {
+        canvas.drawChar(charX, y, label[c], labelColor)
+      }
+    }
   }
 }
 

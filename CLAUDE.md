@@ -25,7 +25,7 @@ Contains:
 
 ## Current Status
 
-- **Version**: 0.3.1
+- **Version**: 0.3.2
 - **npm**: https://www.npmjs.com/package/@ggterm/core
 - **Repo**: https://github.com/shandley/ggterm (public)
 
@@ -100,15 +100,16 @@ Seven skills in `.claude/skills/` for AI-assisted data analysis:
 
 ## Live Plot Viewer (`ggterm serve`)
 
-WebSocket-powered companion panel for real-time plot visualization. Watches
+SSE-powered companion panel for real-time plot visualization. Watches
 `.ggterm/plots/` for new files and auto-pushes interactive Vega-Lite specs to
 connected browsers. Designed for use with Wave terminal to create a minimal
 data analysis IDE: terminal (Claude Code) + plot viewer.
 
-**Architecture**: `serve.ts` uses `Bun.serve()` for HTTP + WebSocket, `fs.watch()`
-on the plots directory, and embeds a dark-themed HTML client with Vega-Lite CDN.
-When `savePlotToHistory()` writes a new plot file, the watcher fires, converts the
-spec to Vega-Lite, and pushes it to all connected clients.
+**Architecture**: `serve.ts` uses `node:http` for HTTP + Server-Sent Events,
+`fs.watch()` on the plots directory, and embeds a dark-themed HTML client with
+Vega-Lite CDN. When `savePlotToHistory()` writes a new plot file, the watcher
+fires, converts the spec to Vega-Lite, and pushes it to all connected clients.
+Node.js compatible (works with `npx`).
 
 **Current features**: auto-display of new plots, history panel sidebar (press `h`),
 keyboard shortcuts (`h`/`s`/`p`/`f`/`?`/arrows), SVG/PNG export, dark theme,

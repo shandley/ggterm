@@ -693,19 +693,68 @@ function handlePlot(args: string[]): void {
     process.exit(1)
   }
 
-  // Check if file argument looks like a file
-  if (!args[0].includes('.') && !fileExists(args[0])) {
+  // Built-in datasets
+  const BUILTIN_DATASETS: Record<string, () => { headers: string[]; data: Record<string, unknown>[] }> = {
+    iris: () => {
+      const species = ['setosa', 'versicolor', 'virginica']
+      const data = Array.from({ length: 150 }, (_, i) => {
+        const sp = species[Math.floor(i / 50)]
+        const base = sp === 'setosa' ? 0 : sp === 'versicolor' ? 1 : 2
+        return {
+          sepal_length: +(5 + base * 0.5 + Math.random()).toFixed(1),
+          sepal_width: +(3 + Math.random() * 0.5).toFixed(1),
+          petal_length: +(1.5 + base * 2 + Math.random()).toFixed(1),
+          petal_width: +(0.2 + base * 0.8 + Math.random() * 0.3).toFixed(1),
+          species: sp,
+        }
+      })
+      return { headers: ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'species'], data }
+    },
+    mtcars: () => {
+      const data = [
+        { name: 'Mazda RX4', mpg: 21, cyl: 6, hp: 110, wt: 2.62 },
+        { name: 'Mazda RX4 Wag', mpg: 21, cyl: 6, hp: 110, wt: 2.875 },
+        { name: 'Datsun 710', mpg: 22.8, cyl: 4, hp: 93, wt: 2.32 },
+        { name: 'Hornet 4 Drive', mpg: 21.4, cyl: 6, hp: 110, wt: 3.215 },
+        { name: 'Hornet Sportabout', mpg: 18.7, cyl: 8, hp: 175, wt: 3.44 },
+        { name: 'Valiant', mpg: 18.1, cyl: 6, hp: 105, wt: 3.46 },
+        { name: 'Duster 360', mpg: 14.3, cyl: 8, hp: 245, wt: 3.57 },
+        { name: 'Merc 240D', mpg: 24.4, cyl: 4, hp: 62, wt: 3.19 },
+        { name: 'Merc 230', mpg: 22.8, cyl: 4, hp: 95, wt: 3.15 },
+        { name: 'Merc 280', mpg: 19.2, cyl: 6, hp: 123, wt: 3.44 },
+        { name: 'Merc 280C', mpg: 17.8, cyl: 6, hp: 123, wt: 3.44 },
+        { name: 'Merc 450SE', mpg: 16.4, cyl: 8, hp: 180, wt: 4.07 },
+        { name: 'Merc 450SL', mpg: 17.3, cyl: 8, hp: 180, wt: 3.73 },
+        { name: 'Merc 450SLC', mpg: 15.2, cyl: 8, hp: 180, wt: 3.78 },
+        { name: 'Cadillac Fleetwood', mpg: 10.4, cyl: 8, hp: 205, wt: 5.25 },
+        { name: 'Lincoln Continental', mpg: 10.4, cyl: 8, hp: 215, wt: 5.424 },
+      ]
+      return { headers: ['name', 'mpg', 'cyl', 'hp', 'wt'], data }
+    },
+  }
+
+  const [dataFile, x, y, color, title, geomSpec = 'point', facetVar] = args
+  let headers: string[]
+  let data: Record<string, unknown>[]
+
+  if (BUILTIN_DATASETS[dataFile]) {
+    const result = BUILTIN_DATASETS[dataFile]()
+    headers = result.headers
+    data = result.data
+  } else if (!args[0].includes('.') && !fileExists(args[0])) {
     console.error(`\nError: "${args[0]}" doesn't look like a file path`)
+    console.error(`\nBuilt-in datasets: iris, mtcars`)
     console.error(`\nDid you mean one of these commands?`)
     console.error(`  inspect <file>  - Show column types`)
     console.error(`  suggest <file>  - Get plot suggestions`)
     console.error(`  history         - List saved plots`)
     console.error(`  help            - Show full usage`)
     process.exit(1)
+  } else {
+    const loaded = loadData(dataFile)
+    headers = loaded.headers
+    data = loaded.data
   }
-
-  const [dataFile, x, y, color, title, geomSpec = 'point', facetVar] = args
-  let { headers, data } = loadData(dataFile)
 
   // Parse geom specification (may include reference lines like point+hline@50)
   const { baseGeom: geomType, refLines } = parseGeomSpec(geomSpec)

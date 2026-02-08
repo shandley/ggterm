@@ -79,11 +79,25 @@ export function calculateLayout(
     // Reserve space for secondary y-axis: ticks (6) + label (2) + padding (1)
     rightMargin = 8 + (hasY2Label ? 2 : 0)
   }
+  // Check if this is a forest plot and compute label width
+  let forestLabelWidth = 0
+  const isForestPlot = spec.geoms.some(g => g.type === 'forest')
+  if (isForestPlot && Array.isArray(spec.data) && spec.data.length > 0) {
+    const yField = typeof spec.aes.y === 'string' ? spec.aes.y : 'study'
+    for (const row of spec.data) {
+      const label = String(row[yField as keyof typeof row] ?? '')
+      if (label.length > forestLabelWidth) forestLabelWidth = label.length
+    }
+  }
+
+  const defaultLeft = 8 + (hasYLabel ? 2 : 0)
+  const neededLeft = forestLabelWidth > 0 ? forestLabelWidth + 2 : defaultLeft
+
   const margins = {
     top: hasTitle ? 2 : 1,
     right: rightMargin,
     bottom: 2 + (hasXLabel ? 1 : 0) + (hasLegend && legendPosition === 'bottom' ? 2 : 0),
-    left: 8 + (hasYLabel ? 2 : 0),
+    left: Math.max(defaultLeft, neededLeft),
   }
 
   // Calculate plot area
@@ -389,8 +403,12 @@ export function renderToCanvas(
   // Render grid lines (behind data)
   renderGridLines(canvas, scales, layout.plotArea, spec.theme)
 
-  // Render axes
-  renderAxes(canvas, scales, layout.plotArea, spec.labels, spec.theme)
+  // Render axes — suppress vertical y-label for forest plots (study labels replace it)
+  const isForest = spec.geoms.some(g => g.type === 'forest')
+  const axisLabels = isForest
+    ? { ...spec.labels, y: undefined }
+    : spec.labels
+  renderAxes(canvas, scales, layout.plotArea, axisLabels, spec.theme)
 
   // Render each geometry layer
   for (const geom of spec.geoms) {
