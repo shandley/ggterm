@@ -338,8 +338,17 @@ export function handleServe(port?: number): void {
     },
   })
 
-  console.log(`ggterm live viewer running at http://localhost:${server.port}`)
-  console.log(`Open in browser or Wave panel: wsh web open http://localhost:${server.port}`)
+  const url = `http://localhost:${server.port}`
+  console.log(`ggterm live viewer running at ${url}`)
+
+  // Auto-open Wave panel if running inside Wave terminal
+  if (process.env.TERM_PROGRAM === 'waveterm') {
+    Bun.spawn(['wsh', 'web', 'open', url])
+    console.log(`Opened Wave panel`)
+  } else {
+    console.log(`Open in browser or Wave panel: wsh web open ${url}`)
+  }
+
   console.log(`Watching ${plotsDir} for new plots...`)
   console.log(`Press Ctrl+C to stop`)
 }
