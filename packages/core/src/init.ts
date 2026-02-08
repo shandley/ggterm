@@ -9,7 +9,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSy
 import { join, extname } from 'path'
 
 // Current version - update when skills change
-const SKILLS_VERSION = '0.3.2'
+const SKILLS_VERSION = '0.3.4'
 
 // Skill templates - these use npx ggterm-plot for portability
 const SKILLS: Record<string, { files: Record<string, string> }> = {
@@ -323,11 +323,12 @@ spec.height = 400
 
 ## Workflow
 
-1. User asks to customize plot (e.g., "make the points blue and increase font size")
-2. Read \`.ggterm/last-plot-vegalite.json\`
-3. Apply the requested modifications
-4. Write the updated spec
-5. Optionally show preview or suggest export
+1. Read \`.ggterm/last-plot-vegalite.json\`
+2. Apply the requested modifications
+3. Write the updated spec back to \`.ggterm/last-plot-vegalite.json\`
+4. **DONE** — the live viewer auto-detects the change and displays the customized plot
+
+**IMPORTANT**: Do NOT re-create the plot with \`npx ggterm-plot\` after customizing. The viewer watches the spec file and auto-updates. Re-running the plot command would overwrite your customizations.
 
 $ARGUMENTS
 `
@@ -359,9 +360,12 @@ Apply expert-curated style presets to Vega-Lite specifications for publication-q
 ## Workflow
 
 1. Read \`.ggterm/last-plot-vegalite.json\`
-2. Apply the requested style preset
-3. Write the updated spec
-4. Inform user they can export with \`/ggterm-publish\`
+2. Apply the requested style preset (only modify \`config\` — do NOT change \`encoding\`, \`data\`, or \`mark\` structure)
+3. Write the updated spec back to \`.ggterm/last-plot-vegalite.json\`
+4. **DONE** — the live viewer auto-detects the change and displays the styled plot
+5. Inform user they can export with \`/ggterm-publish\`
+
+**IMPORTANT**: Do NOT re-create the plot with \`npx ggterm-plot\` after styling. The viewer watches the spec file and auto-updates. Re-running the plot command would overwrite your style changes.
 
 ## Response Format
 
@@ -609,6 +613,8 @@ point, line, histogram, boxplot, bar, violin, density, area, ridgeline, heatmap,
 ## Live Viewer
 
 When \`npx ggterm-plot serve\` is running, plots auto-display in the browser/Wave panel as high-resolution interactive Vega-Lite visualizations instead of ASCII art.
+
+**Style and customize changes also auto-display.** When you modify \`.ggterm/last-plot-vegalite.json\` (via /ggterm-style or /ggterm-customize), the viewer updates automatically. Do NOT re-run \`npx ggterm-plot\` after styling — that would overwrite your changes.
 `
 
   // Only write if doesn't exist or is a ggterm-generated file

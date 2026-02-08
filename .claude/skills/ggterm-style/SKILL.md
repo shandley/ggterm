@@ -22,9 +22,12 @@ Apply expert-curated style presets to Vega-Lite specifications for publication-q
 ## Workflow
 
 1. Read `.ggterm/last-plot-vegalite.json`
-2. Apply the requested style preset
-3. Write the updated spec
-4. Inform user they can export with `/ggterm-publish`
+2. Apply the requested style preset (only modify `config` — do NOT change `encoding`, `data`, or `mark` structure)
+3. Write the updated spec back to `.ggterm/last-plot-vegalite.json`
+4. **DONE** — the live viewer auto-detects the file change and displays the styled plot
+5. Inform user they can export with `/ggterm-publish`
+
+**IMPORTANT**: Do NOT re-create the plot with `npx ggterm-plot` after styling. The viewer watches `.ggterm/last-plot-vegalite.json` and auto-updates when it changes. Re-running the plot command would overwrite your style changes.
 
 ## Style Configurations
 

@@ -16,11 +16,13 @@ After creating a plot, these files exist:
 
 ## Customization Workflow
 
-1. Read the current Vega-Lite spec
+1. Read `.ggterm/last-plot-vegalite.json`
 2. Interpret the user's natural language request
 3. Modify the appropriate properties
-4. Write the updated spec
-5. Show a preview or export
+4. Write the updated spec back to `.ggterm/last-plot-vegalite.json`
+5. **DONE** — the live viewer auto-detects the file change and displays the customized plot
+
+**IMPORTANT**: Do NOT re-create the plot with `npx ggterm-plot` after customizing. The viewer watches `.ggterm/last-plot-vegalite.json` and auto-updates when it changes. Re-running the plot command would overwrite your customizations.
 
 ## Common Customizations
 
