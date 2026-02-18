@@ -25,15 +25,28 @@ Contains:
 
 ## Current Status
 
-- **Version**: 0.3.6
+- **Version**: 0.3.8
 - **npm**: https://www.npmjs.com/package/@ggterm/core
 - **Repo**: https://github.com/shandley/ggterm (public)
 
 ## Bundled Datasets
 
+Built-in datasets work by name in the CLI — no CSV files needed:
+
 ```bash
-.data iris     # 150 rows: sepal_length, sepal_width, petal_length, petal_width, species
-.data mtcars   # 16 rows: mpg, cyl, hp, wt, name
+npx ggterm-plot iris sepal_length sepal_width species "Iris" point
+npx ggterm-plot mtcars mpg hp cyl "Cars" point
+```
+
+| Dataset | Rows | Columns |
+|---------|------|---------|
+| `iris` | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
+| `mtcars` | 16 | mpg, cyl, hp, wt, name |
+
+Also available via programmatic API:
+```bash
+.data iris     # 150 rows
+.data mtcars   # 16 rows
 .data sample N # N random rows: x, y, group, size
 ```
 
@@ -49,33 +62,48 @@ Contains:
 ## CLI Usage
 
 ```bash
-# After npm install (use npx):
-bun packages/core/src/cli-plot.ts data.csv x y
-bun packages/core/src/cli-plot.ts data.json x y color "Title" point
-bun packages/core/src/cli-plot.ts data.jsonl x y - - histogram
+# Using npx (after npm install @ggterm/core):
+npx ggterm-plot iris sepal_length sepal_width species "Iris" point
+npx ggterm-plot data.csv x y color "Title" point
+npx ggterm-plot data.json x y - - histogram
 
 # Reference lines
-bun packages/core/src/cli-plot.ts data.csv x y - - point+hline@50+vline@2
+npx ggterm-plot data.csv x y - - point+hline@50+vline@2
 
 # History and export
-bun packages/core/src/cli-plot.ts history
-bun packages/core/src/cli-plot.ts show 2024-01-26-001
-bun packages/core/src/cli-plot.ts export 2024-01-26-001 output.html
+npx ggterm-plot history
+npx ggterm-plot show 2024-01-26-001
+npx ggterm-plot export 2024-01-26-001 output.html
 
 # Live plot viewer (companion panel for Wave terminal or browser)
-bun packages/core/src/cli-plot.ts serve          # default port 4242
-bun packages/core/src/cli-plot.ts serve 8080     # custom port
-# In Wave terminal: wsh web open http://localhost:4242
+npx ggterm-plot serve          # default port 4242
+npx ggterm-plot serve 8080     # custom port
+
+# Initialize skills for Claude Code
+npx ggterm-plot init
 
 # Inspect and suggest
-bun packages/core/src/cli-plot.ts inspect data.csv
-bun packages/core/src/cli-plot.ts suggest data.csv
+npx ggterm-plot inspect data.csv
+npx ggterm-plot suggest data.csv
+
+# Development (using bun directly):
+bun packages/core/src/cli-plot.ts data.csv x y
+```
+
+## End-User Setup (Fresh Directory)
+
+```bash
+mkdir my-analysis && cd my-analysis
+npm init -y
+npm install @ggterm/core
+npx ggterm-plot init    # Install skills + CLAUDE.md
+npx ggterm-plot serve   # Start live viewer (port 4242)
 ```
 
 ## Testing
 
 ```bash
-bun test             # Run all tests (~1969 tests)
+bun test             # Run all tests (~2158 tests)
 ```
 
 ## Claude Code Skills
@@ -100,29 +128,42 @@ Seven skills in `.claude/skills/` for AI-assisted data analysis:
 
 ## Live Plot Viewer (`ggterm serve`)
 
-SSE-powered companion panel for real-time plot visualization. Watches
-`.ggterm/plots/` for new files and auto-pushes interactive Vega-Lite specs to
-connected browsers. Designed for use with Wave terminal to create a minimal
-data analysis IDE: terminal (Claude Code) + plot viewer.
+SSE-powered companion panel for real-time plot visualization. Creates a minimal
+data analysis IDE: terminal (Claude Code) + live plot viewer (Wave panel or browser).
 
-**Architecture**: `serve.ts` uses `node:http` for HTTP + Server-Sent Events,
-`fs.watch()` on the plots directory, and embeds a dark-themed HTML client with
-Vega-Lite CDN. When `savePlotToHistory()` writes a new plot file, the watcher
-fires, converts the spec to Vega-Lite, and pushes it to all connected clients.
-Node.js compatible (works with `npx`).
+**Architecture**: `serve.ts` uses `node:http` + Server-Sent Events, `fs.watch()`
+on `.ggterm/plots/` (new plots) and `.ggterm/last-plot-vegalite.json` (style changes).
+Embeds a dark-themed HTML client with Vega-Lite CDN rendering. Node.js compatible
+(works with `npx`).
 
-**Current features**: auto-display of new plots, history panel sidebar (press `h`),
-keyboard shortcuts (`h`/`s`/`p`/`f`/`?`/arrows), SVG/PNG export, dark theme,
-metadata bar (plot ID, description, timestamp), Wave terminal auto-detection.
+**Features**:
+- Auto-display of new plots via SSE push
+- Style/customize changes auto-update in viewer (watches `last-plot-vegalite.json`)
+- History panel sidebar (press `h`)
+- Keyboard shortcuts (`h`/`s`/`p`/`f`/`?`/arrows)
+- SVG/PNG export from viewer
+- ResizeObserver for responsive plot reflow
+- Plot ID deduplication to prevent duplicate history entries
+- Wave terminal auto-detection (`wsh web open`)
+- EADDRINUSE friendly error with kill command
+
+**Style/Customize workflow**: Skills edit `.ggterm/last-plot-vegalite.json` (Vega-Lite
+config). The serve watcher detects the change and pushes an `update` SSE message
+that replaces the current plot in-place (no new history entry). Skills must NEVER
+edit `.ggterm/last-plot.json` (ggterm terminal format — changes won't appear in viewer).
 
 ### Future Enhancements
 
-1. ~~**Full history panel**~~ — Done (c3bf2bb)
-2. ~~**Auto `wsh` detection**~~ — Done (73924e0)
-3. **Plot diffing** - Side-by-side comparison mode for iterating on visualizations
-4. ~~**Keyboard shortcuts**~~ — Done (c3bf2bb)
-5. **Wave widget auto-install** - Write to `~/.waveterm/config/widgets.json` on first run for permanent sidebar button
-6. **Plot annotations** - Click to add notes (e.g., "version for paper") saved to history provenance
+1. **Plot diffing** - Side-by-side comparison mode for iterating on visualizations
+2. **Wave widget auto-install** - Write to `~/.waveterm/config/widgets.json` for permanent sidebar button
+3. **Plot annotations** - Click to add notes saved to history provenance
+
+## `npx ggterm-plot init`
+
+Generates `.claude/skills/` (7 skills) and `CLAUDE.md` in the current directory.
+CLAUDE.md is read by Claude Code at conversation start, ensuring immediate awareness
+of built-in datasets and plotting commands. Skills are lazy-loaded on demand.
+Safe to re-run — only overwrites ggterm-generated files.
 
 ## Next Steps
 
