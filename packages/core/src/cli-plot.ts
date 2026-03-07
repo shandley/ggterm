@@ -1113,6 +1113,16 @@ function handlePlot(args: string[]): void {
     command: commandStr,
   })
 
+  // Also save Vega-Lite spec so style/customize skills can edit it
+  try {
+    const { plotSpecToVegaLite } = require('./export')
+    const vlSpec = plotSpecToVegaLite(spec, { interactive: true })
+    writeFileSync(
+      join(getGGTermDir(), 'last-plot-vegalite.json'),
+      JSON.stringify(vlSpec, null, 2)
+    )
+  } catch { /* non-critical — viewer will still work via SSE */ }
+
   if (serveActive) {
     console.log(`[${plotId}] → live viewer`)
   } else {

@@ -150,11 +150,13 @@ function buildEncoding(
   // X axis
   if (aes.x) {
     const xType = inferFieldType(data, aes.x)
+    const effectiveXType = isHeatmap && xType === 'quantitative' ? 'ordinal' : xType
     encoding.x = {
       field: aes.x,
-      // For heatmaps, prefer ordinal/nominal for proper grid layout
-      type: isHeatmap && xType === 'quantitative' ? 'ordinal' : xType,
+      type: effectiveXType,
       ...(xType === 'temporal' ? { timeUnit: 'yearmonthdate' } : {}),
+      // Don't force zero for quantitative axes — zoom to data range
+      ...(effectiveXType === 'quantitative' ? { scale: { zero: false } } : {}),
     }
   }
 
@@ -165,10 +167,12 @@ function buildEncoding(
       encoding.y = { aggregate: 'count', type: 'quantitative' }
     } else {
       const yType = inferFieldType(data, aes.y)
+      const effectiveYType = isHeatmap && yType === 'quantitative' ? 'ordinal' : yType
       encoding.y = {
         field: aes.y,
-        // For heatmaps, prefer ordinal/nominal for proper grid layout
-        type: isHeatmap && yType === 'quantitative' ? 'ordinal' : yType,
+        type: effectiveYType,
+        // Don't force zero for quantitative axes — zoom to data range
+        ...(effectiveYType === 'quantitative' ? { scale: { zero: false } } : {}),
       }
     }
   }
@@ -312,21 +316,36 @@ function buildHistogramSpec(
 
 /**
  * Build boxplot spec
+ *
+ * Boxplots need one quantitative axis (the distribution) and one
+ * categorical axis (the grouping). Auto-detect which is which and
+ * swap x/y if needed so the boxplot renders correctly.
  */
 function buildBoxplotSpec(
   data: Record<string, unknown>[],
   aes: AestheticMapping
 ): Partial<VegaLiteSpec> {
+  const xType = inferFieldType(data, aes.x)
+  const yType = aes.y ? inferFieldType(data, aes.y) : 'quantitative'
+
+  // If x is quantitative and y is categorical, swap for standard boxplot layout
+  // (category on x, distribution on y)
+  const needsSwap = xType === 'quantitative' && yType !== 'quantitative'
+  const xField = needsSwap ? aes.y : aes.x
+  const yField = needsSwap ? aes.x : aes.y
+  const xFieldType = needsSwap ? yType : xType
+  const yFieldType = needsSwap ? xType : yType
+
   return {
     mark: { type: 'boxplot', extent: 'min-max' },
     encoding: {
       x: {
-        field: aes.x,
-        type: inferFieldType(data, aes.x),
+        field: xField,
+        type: xFieldType,
       },
       y: {
-        field: aes.y,
-        type: 'quantitative',
+        field: yField,
+        type: yFieldType,
       },
       ...(aes.color
         ? {
