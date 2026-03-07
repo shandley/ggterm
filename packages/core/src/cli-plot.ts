@@ -696,17 +696,23 @@ function handlePlot(args: string[]): void {
   // Built-in datasets
   const BUILTIN_DATASETS: Record<string, () => { headers: string[]; data: Record<string, unknown>[] }> = {
     iris: () => {
-      const species = ['setosa', 'versicolor', 'virginica']
-      const data = Array.from({ length: 150 }, (_, i) => {
-        const sp = species[Math.floor(i / 50)]
-        const base = sp === 'setosa' ? 0 : sp === 'versicolor' ? 1 : 2
-        return {
-          sepal_length: +(5 + base * 0.5 + Math.random()).toFixed(1),
-          sepal_width: +(3 + Math.random() * 0.5).toFixed(1),
-          petal_length: +(1.5 + base * 2 + Math.random()).toFixed(1),
-          petal_width: +(0.2 + base * 0.8 + Math.random() * 0.3).toFixed(1),
+      // Species-specific distributions matching the real Fisher iris dataset ranges
+      const params: Record<string, { sl: [number, number]; sw: [number, number]; pl: [number, number]; pw: [number, number] }> = {
+        setosa:     { sl: [4.3, 5.8], sw: [2.3, 4.4], pl: [1.0, 1.9], pw: [0.1, 0.6] },
+        versicolor: { sl: [4.9, 7.0], sw: [2.0, 3.4], pl: [3.0, 5.1], pw: [1.0, 1.8] },
+        virginica:  { sl: [4.9, 7.9], sw: [2.2, 3.8], pl: [4.5, 6.9], pw: [1.4, 2.5] },
+      }
+      const species = ['setosa', 'versicolor', 'virginica'] as const
+      const rand = (min: number, max: number) => +(min + Math.random() * (max - min)).toFixed(1)
+      const data = species.flatMap(sp => {
+        const p = params[sp]
+        return Array.from({ length: 50 }, () => ({
+          sepal_length: rand(...p.sl),
+          sepal_width: rand(...p.sw),
+          petal_length: rand(...p.pl),
+          petal_width: rand(...p.pw),
           species: sp,
-        }
+        }))
       })
       return { headers: ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'species'], data }
     },
