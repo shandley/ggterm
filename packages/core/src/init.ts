@@ -507,7 +507,7 @@ Generate analysis reports with embedded terminal visualizations.
 
 1. **Keep plots compact** - Use 16-20 lines height for readability
 2. **Include interpretations** - Don't just show plots, explain them
-3. **Save specs** - Include PlotSpec JSON for reproducibility
+3. **Save specs** - Include PlotSpec JSON for re-rendering
 
 $ARGUMENTS
 `

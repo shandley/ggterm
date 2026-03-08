@@ -6,13 +6,13 @@
 
 ^\*^ Corresponding author: shandley@wustl.edu
 
-**Keywords:** data visualization, grammar of graphics, scientific computing, artificial intelligence, terminal interface, reproducibility, bioinformatics
+**Keywords:** data visualization, grammar of graphics, scientific computing, artificial intelligence, terminal interface, plot history, bioinformatics
 
 ---
 
 ## Abstract
 
-Visual exploratory data analysis is fundamental to scientific computing, yet terminal environments, where most computational research occurs, lack advanced visualization capabilities. We present ggterm, a TypeScript implementation of Wilkinson's Grammar of Graphics featuring 65 geometry types and 13 statistical transformations designed for terminal rendering and AI agent integration. ggterm provides complete scientific visualization support including genomics plots (volcano, MA, Manhattan), clinical trial graphics (Kaplan-Meier survival curves, forest plots, ROC curves), statistical diagnostics (Q-Q plots, ECDF, control charts, funnel plots), and hierarchical visualizations (dendrograms, UpSet plots for set intersections). The library implements a declarative, composable API where visualizations are specified as layered grammar components: data, aesthetics, geometries, scales, coordinates, and facets. This enables natural language interaction with AI assistants. All plots are automatically persisted with full provenance metadata in a structured history system, enabling search, retrieval, and reproducibility. Plot specifications are stored as JSON documents that capture the complete analytical context, from data source to visual encoding decisions. We provide eight deterministic skills for Claude Code integration, supporting workflows from data loading through publication-quality export via Vega-Lite. ggterm bridges the gap between rapid terminal exploration and reproducible scientific figures, available under the MIT license at https://github.com/shandley/ggterm.
+Visual exploratory data analysis is fundamental to scientific computing, yet terminal environments, where most computational research occurs, lack advanced visualization capabilities. We present ggterm, a TypeScript implementation of Wilkinson's Grammar of Graphics featuring 65 geometry types and 13 statistical transformations designed for terminal rendering and AI agent integration. ggterm provides complete scientific visualization support including genomics plots (volcano, MA, Manhattan), clinical trial graphics (Kaplan-Meier survival curves, forest plots, ROC curves), statistical diagnostics (Q-Q plots, ECDF, control charts, funnel plots), and hierarchical visualizations (dendrograms, UpSet plots for set intersections). The library implements a declarative, composable API where visualizations are specified as layered grammar components: data, aesthetics, geometries, scales, coordinates, and facets. This enables natural language interaction with AI assistants. All plots are automatically saved to a structured history system with metadata (data source, specification, timestamp), enabling search and retrieval without manual save actions. Plot specifications are stored as JSON documents that capture the visual encoding decisions. We provide eight deterministic skills for Claude Code integration, supporting workflows from data loading through publication-quality export via Vega-Lite. ggterm bridges the gap between rapid terminal exploration and publication-ready scientific figures, available under the MIT license at https://github.com/shandley/ggterm.
 
 ---
 
@@ -30,11 +30,11 @@ We identified four gaps in the current landscape:
 
 2. **Limited scientific visualization support.** Terminal plotting libraries focus on basic chart types. Field-specific visualizations, essential for genomics, clinical research, and statistical analysis, require graphical environments or specialized tools.
 
-3. **No reproducibility infrastructure.** Terminal plots are ephemeral. Once scrolled off-screen, they are lost. There is no standard mechanism to store, retrieve, or reproduce previous visualizations, undermining the reproducibility that scientific workflows require.
+3. **No plot persistence.** Terminal plots are ephemeral. Once scrolled off-screen, they are lost. There is no standard mechanism to store, retrieve, or re-render previous visualizations.
 
 4. **No AI agent integration.** As AI assistants become standard tools in scientific computing, visualization libraries need APIs designed for conversational interaction: declarative specifications that AI can generate, modify, and compose.
 
-ggterm addresses these gaps through a complete Grammar of Graphics implementation featuring 65 geometry types, 13 statistical transformations, structured plot history with provenance tracking, and first-class support for AI agent integration.
+ggterm addresses these gaps through a complete Grammar of Graphics implementation featuring 65 geometry types, 13 statistical transformations, automatic plot history, and first-class support for AI agent integration.
 
 ---
 
@@ -234,9 +234,9 @@ Color support adapts to terminal capabilities through automatic detection:
 - **16-color:** Standard ANSI color set
 - **Monochrome:** Shape-only encoding for basic terminals
 
-### Plot History and Provenance
+### Plot History
 
-Every rendered plot is automatically persisted to a structured history system (Figure 3). The history captures complete provenance enabling reproducibility:
+Every rendered plot is automatically saved to a structured history system (Figure 3). Each entry captures metadata for retrieval and re-rendering:
 
 ```
 .ggterm/
@@ -430,7 +430,7 @@ The forest plot displays individual study effects with confidence intervals, plu
 | Publication export | ✓ | ✓ | - | ✓ |
 | Declarative API | ✓ | - | - | Partial |
 
-ggterm uniquely combines Grammar of Graphics architecture, complete scientific visualization support, reproducibility infrastructure, and AI integration.
+ggterm uniquely combines Grammar of Graphics architecture, complete scientific visualization support, automatic plot history, and AI integration.
 
 ---
 
@@ -442,11 +442,11 @@ Terminal-based workflows dominate scientific computing. Researchers SSH into clu
 
 The 65 geometry types cover analytical needs across fields. Genomics researchers can create volcano plots and Manhattan plots directly on the analysis server. Clinical researchers can generate Kaplan-Meier curves and forest plots during data review. Statisticians can assess model assumptions with Q-Q plots and residual diagnostics. This field coverage reduces context-switching between exploration and specialized visualization tools.
 
-### Reproducibility Through Structured History
+### Persistent Plot History
 
-Scientific visualization often occurs during exploratory phases when documentation is sparse. The automatic history system captures every plot with full provenance (data source, specification, timestamp) without requiring explicit save actions. Months later, researchers can retrieve the exact visualization shown in a committee meeting or regenerate a figure at publication resolution.
+Scientific visualization often occurs during exploratory phases when documentation is sparse. The automatic history system saves every plot with metadata (data source, specification, timestamp) without requiring explicit save actions. Researchers can later retrieve a visualization shown in a committee meeting or re-render a figure at publication resolution.
 
-The JSON specification format ensures plots remain reproducible across ggterm versions. Specifications describe intent (show these variables with this geometry) rather than implementation (draw pixels at these coordinates), enabling forward compatibility as rendering improves.
+The JSON specification format provides forward compatibility across ggterm versions. Specifications describe intent (show these variables with this geometry) rather than implementation (draw pixels at these coordinates), so plots can be re-rendered as the rendering engine improves.
 
 ### AI Integration as Primary Interface
 
@@ -515,10 +515,10 @@ We thank the members of the Handley Lab and the Washington University School of 
 
 ## Figures
 
-**Figure 1.** ggterm architecture showing the Grammar of Graphics layer system and rendering pipeline. Data flows through grammar layers (aesthetics, geometries, scales, facets, coordinates, theme) into a plot specification, with three output paths: terminal rendering via Unicode and ANSI color, publication export via Vega-Lite to PNG/SVG/PDF, and automatic persistence to the history system with provenance tracking.
+**Figure 1.** ggterm architecture showing the Grammar of Graphics layer system and rendering pipeline. Data flows through grammar layers (aesthetics, geometries, scales, facets, coordinates, theme) into a plot specification, with three output paths: terminal rendering via Unicode and ANSI color, publication export via Vega-Lite to PNG/SVG/PDF, and automatic persistence to the structured history system.
 
 **Figure 2.** Geometry type coverage across analytical fields. (A) Taxonomy of 65 geometry types organized into eight categories by purpose; directional variants (e.g., `errorbar`/`errorbarh`) are grouped with their parent type. (B) Examples of scientific visualizations rendered directly in the terminal, showing a volcano plot for differential expression analysis (left), a Kaplan-Meier survival curve (center), and a forest plot for meta-analysis (right). All panels are actual ggterm output captured from terminal sessions.
 
-**Figure 3.** Plot history and provenance system. Every rendered plot is automatically persisted with full provenance metadata. Left: terminal rendering triggers auto-save. Center: the plot specification captures both provenance (id, timestamp, data source, command, geometry types) and the complete grammar specification (data, aesthetics, geometries, scales, coordinates, theme, labels), stored as date-stamped JSON files with an append-only history index. Right: three retrieval paths enable browsing by date, searching by geometry type, and re-rendering at different dimensions or exporting via Vega-Lite.
+**Figure 3.** Plot history system. Every rendered plot is automatically saved with metadata. Left: terminal rendering triggers auto-save. Center: the plot file captures both metadata (id, timestamp, data source, command, geometry types) and the complete grammar specification (data, aesthetics, geometries, scales, coordinates, theme, labels), stored as date-stamped JSON files with an append-only history index. Right: three retrieval paths enable browsing by date, searching by geometry type, and re-rendering at different dimensions or exporting via Vega-Lite.
 
 **Figure 4.** AI-assisted analysis workflow. A conversational sequence demonstrating iterative visualization refinement: the user requests a visualization in natural language, the AI translates to a Grammar of Graphics specification, the plot renders in the terminal, and the user requests modifications that layer onto the existing specification. The workflow progresses from initial exploration through iterative refinement to publication export.

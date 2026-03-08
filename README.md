@@ -84,7 +84,7 @@ Or bring your own CSV, JSON, or JSONL files.
 ggterm runs as a companion to Claude Code. The live viewer sits in a browser panel (or [Wave terminal](https://www.waveterm.dev/) side panel) and automatically displays every plot you create:
 
 - **Instant display** — plots appear as interactive Vega-Lite visualizations (tooltips, zoom, pan)
-- **Plot history** — arrow keys to browse previous plots, full provenance tracking
+- **Plot history** — every plot saved automatically, browse with arrow keys, search and retrieve
 - **Style in place** — apply publication presets (Wilke, Tufte, Nature, Economist, APA) without re-running
 - **Export** — download SVG/PNG directly from the viewer, or generate standalone HTML
 

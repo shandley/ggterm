@@ -28,7 +28,7 @@ ggterm is a comprehensive Grammar of Graphics primitive catalog for programmatic
 - [x] CLI tool (`npx ggterm-plot`) with `setup`, `serve`, `init`, `inspect`, `suggest`, `history`, `export`
 - [x] Interactive REPL (`npx ggterm`)
 - [x] Live plot viewer — SSE-powered browser panel with history sidebar, keyboard shortcuts, SVG/PNG export
-- [x] Plot history with provenance tracking (`.ggterm/plots/`, `.ggterm/history.jsonl`)
+- [x] Plot history with automatic metadata (`.ggterm/plots/`, `.ggterm/history.jsonl`)
 - [x] HTML export with embedded Vega-Embed
 - [x] Publication style presets (Wilke, Tufte, Nature, Economist, Minimal, APA)
 - [x] Built-in datasets (iris, mtcars, sample generator)

@@ -151,7 +151,7 @@ Each stored plot includes:
 - **geomTypes**: List of geometries used (point, line, histogram, etc.)
 - **aesthetics**: Mapped variables (x, y, color, etc.)
 
-To see full provenance, read the plot file directly:
+To see full metadata, read the plot file directly:
 ```bash
 cat .ggterm/plots/2024-01-26-001.json
 ```

@@ -247,7 +247,7 @@ gg(data)
 
 ## Saving Plot Specifications
 
-For reproducibility, save the PlotSpec alongside output:
+For re-rendering later, save the PlotSpec alongside output:
 
 ```typescript
 import { writeFileSync } from 'fs'

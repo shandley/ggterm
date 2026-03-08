@@ -28,7 +28,7 @@ The clean boundary is `PlotSpec` (`packages/core/src/types.ts:195-205`). Everyth
 ### Contains
 
 - **Layer 1**: Grammar engine with fluent API, 65 geometry types, 73 scales, stats, coords, facets, themes
-- **Layer 2**: Terminal ASCII renderer, Vega-Lite export backend, CLI, live viewer, plot history with provenance
+- **Layer 2**: Terminal ASCII renderer, Vega-Lite export backend, CLI, live viewer, plot history with automatic metadata
 - **Layer 3**: 8 Claude Code skills for AI-assisted data analysis workflows
 
 ## Current Status

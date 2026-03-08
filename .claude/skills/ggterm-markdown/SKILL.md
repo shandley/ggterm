@@ -16,7 +16,7 @@ A well-structured analysis report includes:
 2. **Data Summary** - Shape, columns, key statistics
 3. **Visualizations** - Embedded plots with interpretations
 4. **Findings** - Key insights from the analysis
-5. **Appendix** - Plot specifications for reproducibility
+5. **Appendix** - Plot specifications for reference
 
 ## Basic Report Template
 
@@ -256,7 +256,7 @@ writeFileSync('eda-report.md', report)
 
 1. **Keep plots compact** - Use 16-20 lines height for readability
 2. **Include interpretations** - Don't just show plots, explain them
-3. **Save specs** - Always include PlotSpec JSON for reproducibility
+3. **Save specs** - Always include PlotSpec JSON for re-rendering
 4. **Use collapsible sections** - `<details>` tags keep reports clean
 5. **Match audience** - Adjust technical depth to readers
 
