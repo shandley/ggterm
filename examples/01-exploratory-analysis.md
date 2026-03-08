@@ -1,10 +1,12 @@
 # Exploratory Data Analysis
 
-This vignette demonstrates exploring the **mtcars** dataset through natural language conversation.
+Discover patterns in the **mtcars** dataset through conversation with Claude Code. Plots appear in the live browser viewer as interactive Vega-Lite visualizations.
+
+**Prerequisites:** Run `npx ggterm-plot setup` to start the live viewer.
 
 ## Dataset: mtcars
 
-The mtcars dataset contains performance data for 16 cars from Motor Trend magazine:
+Performance data for 16 cars from Motor Trend magazine:
 
 | Column | Description |
 |--------|-------------|
@@ -18,190 +20,104 @@ The mtcars dataset contains performance data for 16 cars from Motor Trend magazi
 
 ## Conversation
 
-### Understanding the Data
+### Round 1: Understanding the Data
 
 **You:** Load the mtcars dataset. What's in it?
 
-**AI:** *Loads and inspects the data:*
-```
-mtcars: 16 rows × 5 columns
+**Claude:** Loads the data and summarizes the structure.
 
-Column   Type       Range           Sample Values
-──────────────────────────────────────────────────────────
-name     string     16 unique       Mazda RX4, Datsun 710
-mpg      numeric    10.4 – 24.4     21, 22.8, 18.7
-cyl      numeric    4, 6, 8         6, 4, 8
-hp       numeric    62 – 245        110, 93, 175
-wt       numeric    2.32 – 5.42     2.62, 2.32, 3.44
-```
+> 16 cars with 5 variables. MPG ranges from 10.4 to 24.4, horsepower from 62 to 245. Three cylinder groups: 4, 6, and 8.
 
 ---
 
-### Initial Visualization
+### Round 2: First Visualization
 
 **You:** Show me the relationship between weight and fuel efficiency.
 
-**AI:** *Creates scatter plot:*
-```
-                    Weight vs Fuel Efficiency
-  mpg
-   25 ┤●                ●
-      │  ●           ●
-   22 ┤     ●     ●
-      │        ●
-   19 ┤           ●  ●
-      │              ●  ●
-   16 ┤                 ●  ●
-      │                    ●
-   13 ┤                       ●
-      │                          ●  ●
-   10 ┤
-      └────────────────────────────────────────
-       2.5     3.0     3.5     4.0     4.5     5.0
-                      Weight (1000 lbs)
+**Claude:** Creates a scatter plot via `/ggterm-plot`.
 
-Clear negative correlation - heavier cars get worse mileage.
-```
+> **In the viewer:** A scatter plot with weight on the x-axis and MPG on the y-axis. Hover any point to see the car name and exact values. A clear negative correlation — heavier cars get worse mileage.
 
 ---
 
-### Adding Context
+### Round 3: Adding Context
 
 **You:** Color by number of cylinders.
 
-**AI:** *Adds color encoding:*
-```
-                Weight vs MPG by Cylinders
-  mpg
-   25 ┤▲                ▲              ▲ 4-cyl
-      │  ▲           ▲                 ● 6-cyl
-   22 ┤     ▲     ▲                    ■ 8-cyl
-      │        ●
-   19 ┤           ●  ●
-      │              ●  ●
-   16 ┤                 ■  ■
-      │                    ■
-   13 ┤                       ■
-      │                          ■  ■
-   10 ┤
-      └────────────────────────────────────────
-       2.5     3.0     3.5     4.0     4.5     5.0
-                      Weight (1000 lbs)
+**Claude:** Adds color encoding — the plot updates in the viewer.
 
-4-cylinder cars (▲) cluster at low weight/high MPG.
-8-cylinder cars (■) cluster at high weight/low MPG.
-```
+> **In the viewer:** Points are now colored by cylinder count with a legend showing 4-cyl, 6-cyl, and 8-cyl groups. Three clear clusters emerge:
+> - **4-cylinder cars** (light, fuel-efficient) — top-left
+> - **6-cylinder cars** (moderate) — middle
+> - **8-cylinder cars** (heavy, thirsty) — bottom-right
+>
+> Hover reveals names: the Datsun 710 and Merc 240D lead efficiency, while the Cadillac Fleetwood and Lincoln Continental anchor the heavy end.
 
 ---
 
-### Distribution Analysis
+### Round 4: Adding a Trend Line
+
+**You:** Add a trend line to show the overall pattern.
+
+**Claude:** Adds a regression line overlay.
+
+> **In the viewer:** A dashed trend line appears across the scatter plot, confirming the negative correlation. Cars above the line are more efficient than expected for their weight; cars below are less efficient.
+
+---
+
+### Round 5: Distribution
 
 **You:** What's the distribution of horsepower?
 
-**AI:** *Creates histogram:*
-```
-                    Horsepower Distribution
-  count
-    5 ┤    ████
-      │    ████
-    4 ┤    ████  ████
-      │    ████  ████
-    3 ┤    ████  ████  ████
-      │    ████  ████  ████
-    2 ┤    ████  ████  ████  ████
-      │    ████  ████  ████  ████        ████
-    1 ┤    ████  ████  ████  ████  ████  ████
-      │    ████  ████  ████  ████  ████  ████
-    0 ┤────████──████──████──████──████──████────
-           60    100   140   180   220   260
-                     Horsepower
+**Claude:** Creates a histogram.
 
-Range: 62 - 245 HP
-Median: 123 HP
-Most cars in the 90-180 HP range.
-```
+> **In the viewer:** A histogram of horsepower with automatic binning. Most cars cluster between 90–180 HP, with a few high-performance outliers above 200. The distribution is right-skewed.
 
 ---
 
-### Grouped Comparison
+### Round 6: Grouped Comparison
 
-**You:** Compare horsepower across cylinder counts.
+**You:** Compare horsepower across cylinder counts with box plots.
 
-**AI:** *Creates box plots:*
-```
-              Horsepower by Cylinder Count
+**Claude:** Creates grouped box plots.
 
-  HP
-  250 ┤                              ──┬──
-      │                             ┌──┼──┐
-  200 ┤                             │  │  │
-      │              ──┬──          │  │  │
-  150 ┤             ┌──┼──┐         └──┼──┘
-      │             │  │  │            │
-  100 ┤  ──┬──      └──┼──┘         ──┴──
-      │ ┌──┼──┐        │
-   75 ┤ │  │  │     ──┴──
-      │ └──┼──┘
-   50 ┤  ──┴──
-      └────────────────────────────────────
-          4-cyl       6-cyl       8-cyl
-
-8-cylinder engines have highest HP (median ~180).
-4-cylinder engines most efficient (median ~90 HP).
-```
+> **In the viewer:** Three box plots side by side. 4-cylinder cars have the lowest HP (median ~90), 8-cylinder the highest (median ~180). The IQR for 8-cylinder is widest, showing more variation. Hover the boxes to see exact quartile values.
 
 ---
 
-### Efficiency Analysis
+### Round 7: Revisiting Earlier Work
 
-**You:** Which cars have the best efficiency for their weight class?
+**You:** Go back to the weight vs MPG scatter — I want to see that again.
 
-**AI:** *Adds reference line and labels:*
-```
-                Weight vs MPG (with trend)
-  mpg
-   25 ┤Datsun 710●     ●Merc 230
-      │  ●Merc 240D ●
-   22 ┤     ●     ●
-      │ ───────────────────────────────── trend
-   19 ┤           ●  ●
-      │              ●  ●
-   16 ┤                 ●  ●
-      │                    ●Merc 450SL
-   13 ┤                       ●
-      │                          ●  ●
-   10 ┤                          Cadillac●
-      └────────────────────────────────────────
-       2.5     3.0     3.5     4.0     4.5     5.0
+**Claude:** Retrieves it via `/ggterm-history`.
 
-Above trend line = better than average efficiency.
-Datsun 710 and Merc 240D are efficiency leaders.
-```
+> **In the viewer:** The colored scatter plot from Round 3 reappears with all styling intact. You can also press `h` in the viewer to open the history sidebar and browse all plots from this session with arrow keys.
 
 ---
 
-### Export
+### Round 8: Customizing for a Report
 
-**You:** Export for my report.
+**You:** Clean up the axis labels — use "Weight (1000 lbs)" and "Fuel Efficiency (MPG)". Add a subtitle "Motor Trend 1974".
 
-**AI:** *Creates interactive HTML:*
-```
-Created mtcars-analysis.html
+**Claude:** Applies customizations via `/ggterm-customize`.
 
-Open in browser to:
-- Pan and zoom the visualization
-- Download as PNG or SVG
-- Hover for car details
-```
+> **In the viewer:** Labels update in place. The plot now reads as a polished figure with proper axis labels and subtitle.
 
 ---
 
 ## Key Insights
 
 This exploratory session revealed:
-1. Strong weight-MPG inverse correlation
-2. Clear clustering by cylinder count
-3. 4-cylinder cars dominate efficiency
-4. Datsun 710 and Merc 240D are efficiency outliers
 
-All discovered through conversation, not code.
+1. **Strong weight-MPG inverse correlation** — heavier cars consistently get worse mileage
+2. **Clear clustering by cylinder count** — 4/6/8 cylinder groups occupy distinct regions
+3. **4-cylinder cars dominate efficiency** — Datsun 710 and Merc 240D are the efficiency leaders
+4. **Horsepower distribution is right-skewed** — most cars are moderate, a few are high-performance
+
+All discovered through conversation. The interactive viewer made it easy to hover for details, zoom into clusters, and browse through the analysis history.
+
+## Skills Used
+
+- `/ggterm-plot` — creating all visualizations
+- `/ggterm-customize` — refining labels and titles
+- `/ggterm-history` — revisiting earlier plots

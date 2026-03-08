@@ -1,6 +1,6 @@
 # ggterm Geometry Reference
 
-Quick reference for all 68 geometry types in ggterm.
+Quick reference for all 65 geometry types in ggterm.
 
 ## Core Statistical
 

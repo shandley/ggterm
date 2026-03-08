@@ -118,7 +118,7 @@ Examples:
   # Set custom dimensions
   $ ggterm -w 100 -H 30
 
-Documentation: https://github.com/handleylab/ggterm
+Documentation: https://github.com/shandley/ggterm
 `)
 }
 

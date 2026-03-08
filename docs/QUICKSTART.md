@@ -1,427 +1,208 @@
-# ggterm Quick Start Guide
+# Quick Start Guide
 
-Get up and running with ggterm in 5 minutes.
+Get up and running with ggterm in one command.
 
-## Installation
+## Setup
 
 ```bash
-# Using bun (recommended)
-bun add @ggterm/core
-
-# Using npm
-npm install @ggterm/core
-
-# Using yarn
-yarn add @ggterm/core
+mkdir my-analysis && cd my-analysis
+npx ggterm-plot setup
 ```
+
+This installs ggterm, generates a welcome plot, opens the live viewer in your browser, and starts the server. You're ready to go.
 
 ## Your First Plot
 
-Create a simple scatter plot:
+With the live viewer open and Claude Code running, just describe what you want:
 
-```typescript
-import { gg, geom_point } from '@ggterm/core'
+**You:** Load the iris dataset and show me sepal length vs petal length
 
-// Sample data
-const data = [
-  { x: 1, y: 4 },
-  { x: 2, y: 7 },
-  { x: 3, y: 5 },
-  { x: 4, y: 9 },
-  { x: 5, y: 6 }
-]
+**Claude:** Loads 150 rows and creates a scatter plot.
 
-// Create and render the plot
-const plot = gg(data)
-  .aes({ x: 'x', y: 'y' })
-  .geom(geom_point())
-  .labs({ title: 'My First Plot' })
+> **In the viewer:** An interactive scatter plot appears — 150 points showing the relationship between sepal and petal length. Hover any point to see exact measurements. Pan and zoom with your mouse.
 
-console.log(plot.render({ width: 60, height: 15 }))
-```
+**You:** Color by species
 
-Run it:
-```bash
-npx tsx my-plot.ts
-```
+**Claude:** Adds species color encoding.
 
-## Adding Layers
+> **In the viewer:** Points are now colored by species (setosa, versicolor, virginica) with a legend. Three distinct clusters emerge — setosa with short petals, virginica with long petals.
 
-Combine multiple geometries:
+## Iterative Refinement
 
-```typescript
-import { gg, geom_point, geom_line } from '@ggterm/core'
+Every change updates the viewer in place. No re-running, no page refresh.
 
-const plot = gg(data)
-  .aes({ x: 'x', y: 'y' })
-  .geom(geom_line())         // Draw lines first
-  .geom(geom_point())        // Points on top
-  .labs({
-    title: 'Line with Points',
-    x: 'Time',
-    y: 'Value'
-  })
+**You:** Add a trend line
 
-console.log(plot.render({ width: 60, height: 15 }))
-```
+> **In the viewer:** A regression line appears overlaid on the scatter plot, showing the strong positive correlation between sepal and petal length.
 
-## Color by Category
+**You:** Make the title "Iris Morphology" and label the axes properly
 
-Map a variable to color:
-
-```typescript
-import { gg, geom_point } from '@ggterm/core'
-
-const data = [
-  { x: 1, y: 4, group: 'A' },
-  { x: 2, y: 7, group: 'B' },
-  { x: 3, y: 5, group: 'A' },
-  { x: 4, y: 9, group: 'B' },
-  { x: 5, y: 6, group: 'A' }
-]
-
-const plot = gg(data)
-  .aes({ x: 'x', y: 'y', color: 'group' })
-  .geom(geom_point({ size: 2 }))
-  .labs({ title: 'Colored by Group' })
-
-console.log(plot.render({ width: 60, height: 15 }))
-```
+> **In the viewer:** Title and axis labels update immediately.
 
 ## Common Plot Types
 
-### Bar Chart
+ggterm supports 65 geometry types. Here are the most common, all available through natural language:
 
-```typescript
-import { gg, geom_bar } from '@ggterm/core'
+| You say... | What appears in the viewer |
+|------------|---------------------------|
+| "Show me X vs Y" | Scatter plot with automatic scales |
+| "Plot X over time" | Line chart with temporal axis |
+| "Show the distribution of X" | Histogram with automatic binning |
+| "Compare groups with box plots" | Grouped boxplots with quartiles |
+| "Show a bar chart of X by Y" | Bar chart with labels |
+| "Create a heatmap of X vs Y" | Color-encoded tile grid |
+| "Show density of X by group" | Overlaid density curves |
+| "Make a violin plot of X by group" | Distribution shape comparison |
 
-const data = [
-  { category: 'A', value: 30 },
-  { category: 'B', value: 45 },
-  { category: 'C', value: 25 }
-]
+See the [Geometry Reference](./GEOM-REFERENCE.md) for all 65 plot types including scientific visualizations (volcano plots, Kaplan-Meier curves, forest plots), specialized charts (treemaps, sankey diagrams, calendar heatmaps), and diagnostics (Q-Q plots, ROC curves, control charts).
 
-const plot = gg(data)
-  .aes({ x: 'category', y: 'value' })
-  .geom(geom_bar({ stat: 'identity' }))
-  .labs({ title: 'Sales by Category' })
+## Style Presets
 
-console.log(plot.render({ width: 60, height: 15 }))
-```
+Apply publication-quality styling with the `/ggterm-style` skill:
 
-### Histogram
+**You:** Style this like a Nature journal figure
 
-```typescript
-import { gg, geom_histogram } from '@ggterm/core'
+**Claude:** Applies the Nature preset via `/ggterm-style`.
 
-// Generate random data
-const data = Array.from({ length: 100 }, () => ({
-  value: Math.random() * 100
-}))
+> **In the viewer:** The plot updates in place — compact dimensions, small fonts, no grid, ready for journal submission.
 
-const plot = gg(data)
-  .aes({ x: 'value' })
-  .geom(geom_histogram({ bins: 20 }))
-  .labs({ title: 'Distribution' })
+### Available Presets
 
-console.log(plot.render({ width: 60, height: 15 }))
-```
-
-### Line Chart
-
-```typescript
-import { gg, geom_line } from '@ggterm/core'
-
-const data = [
-  { time: 1, value: 10 },
-  { time: 2, value: 25 },
-  { time: 3, value: 18 },
-  { time: 4, value: 35 },
-  { time: 5, value: 28 }
-]
-
-const plot = gg(data)
-  .aes({ x: 'time', y: 'value' })
-  .geom(geom_line())
-  .labs({ title: 'Time Series' })
-
-console.log(plot.render({ width: 60, height: 15 }))
-```
-
-### Heatmap
-
-```typescript
-import { gg, geom_tile, scale_fill_viridis } from '@ggterm/core'
-
-const data = []
-for (let x = 0; x < 5; x++) {
-  for (let y = 0; y < 5; y++) {
-    data.push({ x, y, value: Math.random() })
-  }
-}
-
-const plot = gg(data)
-  .aes({ x: 'x', y: 'y', fill: 'value' })
-  .geom(geom_tile())
-  .scale(scale_fill_viridis())
-  .labs({ title: 'Heatmap' })
-
-console.log(plot.render({ width: 60, height: 15 }))
-```
-
-## Customizing Scales
-
-### Axis Limits
-
-```typescript
-import { gg, geom_point, scale_x_continuous, scale_y_continuous } from '@ggterm/core'
-
-const plot = gg(data)
-  .aes({ x: 'x', y: 'y' })
-  .geom(geom_point())
-  .scale(scale_x_continuous({ limits: [0, 10] }))
-  .scale(scale_y_continuous({ limits: [0, 100] }))
-
-console.log(plot.render({ width: 60, height: 15 }))
-```
-
-### Log Scale
-
-```typescript
-import { gg, geom_point, scale_y_log10 } from '@ggterm/core'
-
-const plot = gg(data)
-  .aes({ x: 'x', y: 'y' })
-  .geom(geom_point())
-  .scale(scale_y_log10())
-
-console.log(plot.render({ width: 60, height: 15 }))
-```
-
-### Custom Colors
-
-```typescript
-import { gg, geom_point, scale_color_manual } from '@ggterm/core'
-
-const plot = gg(data)
-  .aes({ x: 'x', y: 'y', color: 'group' })
-  .geom(geom_point())
-  .scale(scale_color_manual({
-    values: {
-      'A': '#e41a1c',
-      'B': '#377eb8',
-      'C': '#4daf4a'
-    }
-  }))
-
-console.log(plot.render({ width: 60, height: 15 }))
-```
-
-## Adding Reference Lines
-
-```typescript
-import { gg, geom_point, geom_hline, geom_vline } from '@ggterm/core'
-
-const plot = gg(data)
-  .aes({ x: 'x', y: 'y' })
-  .geom(geom_point())
-  .geom(geom_hline({ yintercept: 50, linetype: 'dashed' }))
-  .geom(geom_vline({ xintercept: 0, linetype: 'dashed' }))
-
-console.log(plot.render({ width: 60, height: 15 }))
-```
-
-## Faceting (Small Multiples)
-
-```typescript
-import { gg, geom_point, facet_wrap } from '@ggterm/core'
-
-const plot = gg(data)
-  .aes({ x: 'x', y: 'y' })
-  .geom(geom_point())
-  .facet(facet_wrap('category', { ncol: 2 }))
-
-console.log(plot.render({ width: 80, height: 20 }))
-```
-
-## Themes
-
-### Built-in Themes
-
-```typescript
-import { gg, geom_point, themeDark, themeMinimal } from '@ggterm/core'
-
-// Dark theme
-const plot1 = gg(data)
-  .aes({ x: 'x', y: 'y' })
-  .geom(geom_point())
-  .theme(themeDark())
-
-// Minimal theme
-const plot2 = gg(data)
-  .aes({ x: 'x', y: 'y' })
-  .geom(geom_point())
-  .theme(themeMinimal())
-```
-
-## Streaming Data
-
-Real-time updates:
-
-```typescript
-import { gg, geom_line, geom_point } from '@ggterm/core'
-
-const data: Array<{ time: number; value: number }> = []
-let time = 0
-
-const plot = gg(data)
-  .aes({ x: 'time', y: 'value' })
-  .geom(geom_line())
-  .geom(geom_point())
-  .labs({ title: 'Live Data' })
-
-setInterval(() => {
-  // Add new point
-  data.push({
-    time: time++,
-    value: Math.sin(time * 0.1) * 50 + 50 + Math.random() * 10
-  })
-
-  // Keep last 50 points
-  if (data.length > 50) data.shift()
-
-  // Re-render
-  console.clear()
-  console.log(plot.render({ width: 80, height: 20 }))
-}, 200)
-```
-
-## Render Options
-
-```typescript
-const output = plot.render({
-  width: 80,              // Characters wide
-  height: 24,             // Characters tall
-  renderer: 'auto',       // 'braille', 'block', 'sixel', 'auto'
-  colorMode: 'truecolor'  // 'none', '16', '256', 'truecolor', 'auto'
-})
-```
-
-## CLI Tool
-
-Plot directly from CSV files without writing code:
-
-```bash
-# Basic usage
-bun packages/core/src/cli-plot.ts <file> <x> <y> [color] [title] [geom] [facet]
-
-# Scatter plot from CSV
-bun packages/core/src/cli-plot.ts data.csv x y
-
-# With color mapping
-bun packages/core/src/cli-plot.ts data.csv x y category "Sales by Region"
-
-# Histogram (use '-' to skip color)
-bun packages/core/src/cli-plot.ts data.csv value - "Distribution" histogram
-
-# Faceted plot (small multiples)
-bun packages/core/src/cli-plot.ts data.csv x y color "Title" point region
-```
-
-**Available geoms** (29 types): point, line, path, step, bar, col, histogram, freqpoly, boxplot, violin, area, ribbon, rug, errorbar, errorbarh, crossbar, linerange, pointrange, smooth, segment, rect, raster, tile, text, label, contour, contour_filled, density_2d, qq
-
-## Exporting to HTML
-
-Create interactive, publication-ready visualizations:
-
-```bash
-# After creating a plot, export to HTML
-bun packages/core/src/cli-plot.ts export output.html
-
-# Export includes:
-# - Interactive Vega-Lite chart
-# - PNG download button
-# - SVG download button
-# - Zoom and pan controls
-```
-
-The HTML export uses Vega-Lite, so you can further customize it in the Vega Editor.
-
-## Publication Style Presets
-
-Apply expert-curated style presets to your exported plots using Claude Code's `/ggterm-style` skill:
-
-```bash
-# 1. Create and export a plot
-bun packages/core/src/cli-plot.ts data.csv x y color "Title"
-bun packages/core/src/cli-plot.ts export
-
-# 2. Apply a style preset (in Claude Code)
-/ggterm-style wilke    # Clean, minimal (Claus Wilke)
-/ggterm-style tufte    # Maximum data-ink ratio (Edward Tufte)
-/ggterm-style economist # The Economist magazine style
-/ggterm-style nature   # Nature journal format
-/ggterm-style apa      # APA publication guidelines
-/ggterm-style minimal  # Distraction-free
-```
-
-### Available Style Presets
-
-| Style | Best For | Key Features |
-|-------|----------|--------------|
-| **wilke** | Academic papers | Subtle Y-grid, clean sans-serif, no bold titles |
-| **tufte** | Minimalist presentations | No grid, no borders, serif font, grayscale |
+| Preset | Best For | Character |
+|--------|----------|-----------|
+| **wilke** | Academic papers | Subtle Y-grid, clean sans-serif, colorblind-safe |
+| **tufte** | Minimalist presentations | No grid, no borders, serif font, maximum data-ink |
 | **economist** | Editorial/magazine | Blue-gray background, white gridlines, bold colors |
 | **nature** | Nature journal | Compact (180x150px), small fonts, publication-ready |
 | **apa** | Psychology papers | Times New Roman, italic titles, grayscale |
 | **minimal** | Web/presentations | No decoration, system fonts |
 
-### Style Comparison
+## Customizing Plots
+
+Use the `/ggterm-customize` skill for natural language refinements:
+
+**You:** Make the legend horizontal and move it to the bottom. Increase the font size.
+
+**Claude:** Applies customizations via `/ggterm-customize`.
+
+> **In the viewer:** Legend repositions to the bottom in a horizontal layout. All text scales up.
+
+## Exporting
+
+Use the `/ggterm-publish` skill to generate publication-ready output:
+
+**You:** Export as PNG for my paper
+
+**Claude:** Generates output via `/ggterm-publish`.
 
 ```
-Wilke:     Clean academic style with subtle horizontal gridlines
-Tufte:     Pure data - removes all non-data ink
-Economist: Distinctive editorial look with colored background
+Created: iris-morphology.png (600x400px)
+Also available: iris-morphology.svg, iris-morphology.html
 ```
+
+Export formats: PNG, SVG, HTML (interactive). The HTML export includes pan/zoom controls and download buttons.
 
 ## Plot History
 
-All plots are automatically saved with provenance metadata:
+Every plot is automatically saved with provenance metadata.
+
+**In the viewer:** Press `h` to open the history sidebar. Use arrow keys to browse previous plots. Each entry shows the plot title, timestamp, and the command that created it.
+
+**You:** Show me the scatter plot I made earlier
+
+**Claude:** Retrieves it via `/ggterm-history`.
+
+> **In the viewer:** The earlier plot reappears with all its styling intact.
+
+### Viewer Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `h` | Toggle history sidebar |
+| `←` `→` | Browse previous/next plots |
+| `s` | Download as SVG |
+| `p` | Download as PNG |
+| `f` | Toggle fullscreen |
+| `?` | Show all shortcuts |
+
+## Built-in Datasets
+
+Start exploring immediately — no files needed:
+
+| Dataset | Rows | Columns |
+|---------|------|---------|
+| **iris** | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
+| **mtcars** | 16 | mpg, cyl, hp, wt, name |
+
+```
+You: Load the iris dataset
+You: Load mtcars and show me MPG vs horsepower
+```
+
+Or bring your own CSV, JSON, or JSONL files.
+
+## CLI Direct Usage
+
+For scripting or quick plots without Claude Code:
 
 ```bash
-# List all historical plots
-bun packages/core/src/cli-plot.ts history
+# Plot from a built-in dataset
+npx ggterm-plot iris sepal_length sepal_width species "Iris" point
 
-# Search history
-bun packages/core/src/cli-plot.ts history scatter
-bun packages/core/src/cli-plot.ts history sales
+# Plot from a CSV file
+npx ggterm-plot data.csv x y color "Title" point
 
-# Show a specific plot again
-bun packages/core/src/cli-plot.ts show 2024-01-26-001
+# Histogram
+npx ggterm-plot data.csv value - "Distribution" histogram
 
-# Export a historical plot
-bun packages/core/src/cli-plot.ts export 2024-01-26-001 output.html
+# Reference lines
+npx ggterm-plot data.csv x y - - point+hline@50+vline@2
+
+# History and export
+npx ggterm-plot history
+npx ggterm-plot export 2024-01-26-001 output.html
+
+# Start the live viewer
+npx ggterm-plot serve
 ```
+
+## Interactive REPL
+
+For programmatic exploration without AI:
+
+```bash
+npx ggterm
+```
+
+```
+ggterm> .data iris
+Loaded Iris dataset: 150 rows, 5 columns
+
+ggterm> gg(data).aes({x: "sepal_length", y: "petal_length", color: "species"}).geom(geom_point())
+```
+
+See the [REPL Reference](./REPL.md) for full documentation.
+
+## Skills Reference
+
+ggterm includes 8 Claude Code skills for AI-assisted workflows:
+
+| Skill | Purpose |
+|-------|---------|
+| `/data-load` | Load CSV, JSON, JSONL data files |
+| `/ggterm-plot` | Create visualizations from data |
+| `/ggterm-style` | Apply publication style presets |
+| `/ggterm-customize` | Natural language plot customization |
+| `/ggterm-publish` | Export to PNG, SVG, HTML |
+| `/ggterm-history` | Browse and retrieve previous plots |
+| `/ggterm-markdown` | Generate reports with embedded plots |
+| `/ggterm-help` | Get help with ggterm features |
 
 ## Next Steps
 
-- [Geometry Reference](./GEOM-REFERENCE.md) - All 68 plot types
-- [API Reference](./API.md) - Full documentation
-- [Migration from ggplot2](./MIGRATION-GGPLOT2.md) - For R users
-- [Migration from Vega-Lite](./MIGRATION-VEGALITE.md) - For Vega-Lite users
-
-## Running Examples
-
-```bash
-# Clone the repo
-git clone https://github.com/handleylab/ggterm.git
-cd ggterm
-
-# Install dependencies
-bun install
-
-# Run examples
-npx tsx examples/basic.ts
-npx tsx examples/streaming-demo.ts
-npx tsx examples/extended-grammar-demo.ts
-```
+- [Exploratory Analysis](../examples/01-exploratory-analysis.md) — Discover patterns through conversation
+- [Publication Figures](../examples/02-publication-figures.md) — Iterate to publication quality
+- [Streaming Dashboard](../examples/03-streaming-dashboard.md) — Real-time monitoring
+- [Comparative Analysis](../examples/04-comparative-analysis.md) — Statistical comparisons
+- [Geometry Reference](./GEOM-REFERENCE.md) — All 65 plot types
+- [API Reference](./API.md) — Programmatic TypeScript API

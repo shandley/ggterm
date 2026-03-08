@@ -1,80 +1,74 @@
 # ggterm Examples
 
-AI-forward examples demonstrating prompt-driven data visualization with real datasets.
+Walkthrough examples demonstrating AI-driven data visualization with Claude Code and the live browser viewer.
 
-## Bundled Datasets
+## Prerequisites
 
-These examples use datasets built into ggterm:
+```bash
+npx ggterm-plot setup
+```
 
-| Dataset | Rows | Columns | Load Command |
-|---------|------|---------|--------------|
-| **iris** | 150 | sepal_length, sepal_width, petal_length, petal_width, species | `.data iris` |
-| **mtcars** | 16 | mpg, cyl, hp, wt, name | `.data mtcars` |
-| **sample** | n | x, y, group, size | `.data sample <n>` |
+This starts the live viewer in your browser. All plots created during these examples appear there automatically as interactive Vega-Lite visualizations with tooltips, pan, and zoom.
 
 ## Vignettes
 
-| Example | Dataset | Description |
-|---------|---------|-------------|
-| [01-exploratory-analysis](./01-exploratory-analysis.md) | mtcars | Explore car performance through conversation |
-| [02-publication-figures](./02-publication-figures.md) | iris | Create publication-ready species comparison |
-| [03-streaming-dashboard](./03-streaming-dashboard.md) | sample | Build real-time monitoring dashboard |
-| [04-comparative-analysis](./04-comparative-analysis.md) | iris | Compare distributions across species |
+Each vignette is a conversation with Claude Code. You describe what you want, Claude creates the plot, and it appears instantly in the viewer.
 
-## Quick Start
+| Example | Dataset | What You'll Learn |
+|---------|---------|-------------------|
+| [01 — Exploratory Analysis](./01-exploratory-analysis.md) | mtcars | Discover patterns through conversation, iterative refinement |
+| [02 — Publication Figures](./02-publication-figures.md) | iris | Style presets, customization, and export for journal submission |
+| [03 — Streaming Dashboard](./03-streaming-dashboard.md) | sample | Real-time monitoring with live-updating viewer |
+| [04 — Comparative Analysis](./04-comparative-analysis.md) | iris | Distribution comparison, statistical annotations, faceting |
 
-Give your AI assistant access to ggterm, then use natural language:
+## Skills Demonstrated
 
-```
-"Load the iris dataset and show me sepal length vs petal length"
+| Skill | Used In |
+|-------|---------|
+| `/data-load` | 01, 02, 03, 04 |
+| `/ggterm-plot` | 01, 02, 03, 04 |
+| `/ggterm-style` | 02 |
+| `/ggterm-customize` | 01, 02, 04 |
+| `/ggterm-publish` | 02, 04 |
+| `/ggterm-history` | 01, 03 |
+| `/ggterm-markdown` | 04 |
+| `/ggterm-help` | — |
 
-"Color by species"
+## Built-in Datasets
 
-"Add reference lines at the classification boundaries"
+These examples use datasets bundled with ggterm — no files needed:
 
-"Export for my paper"
-```
-
-Or explore specialized visualizations:
-
-```
-"Show my GitHub commit activity as a calendar heatmap"
-
-"Create a sankey diagram showing user flow through the funnel"
-
-"Build a flame graph from my CPU profile data"
-```
-
-Or try with mtcars:
-
-```
-"Load mtcars and show me the relationship between weight and fuel efficiency"
-
-"Color by number of cylinders"
-
-"Which cars have the best efficiency for their weight?"
-```
+| Dataset | Rows | Columns | Load Command |
+|---------|------|---------|--------------|
+| **iris** | 150 | sepal_length, sepal_width, petal_length, petal_width, species | "Load the iris dataset" |
+| **mtcars** | 16 | mpg, cyl, hp, wt, name | "Load the mtcars dataset" |
+| **sample** | n | x, y, group, size | "Generate 50 sample points" |
 
 ## Specialized Visualizations
 
-Beyond standard charts, ggterm includes domain-specific visualizations:
+Beyond standard charts, ggterm includes 65 geometry types across domains:
 
-| Type | Use Case |
-|------|----------|
-| **Calendar heatmap** | GitHub-style activity over time |
-| **Flame graph** | Performance profiling, call stacks |
-| **Sankey diagram** | Flows between categories |
-| **Treemap** | Hierarchical data as nested rectangles |
-| **Correlation matrix** | Pairwise variable relationships |
-| **Ridgeline plots** | Distribution comparisons across groups |
-| **Kaplan-Meier curves** | Survival analysis |
-| **Forest plots** | Meta-analysis effect sizes |
-| **UpSet plots** | Modern set intersections |
-| **Dendrograms** | Hierarchical clustering |
+| Category | Types |
+|----------|-------|
+| **Essentials** | scatter, line, bar, area, histogram, density, boxplot, violin |
+| **Advanced** | ridgeline, beeswarm, heatmap, treemap, sankey, calendar heatmap, lollipop, waffle |
+| **Scientific** | volcano plot, Manhattan plot, Kaplan-Meier, forest plot, ROC curve, Q-Q plot |
+| **Diagnostics** | ECDF, funnel plot, control chart, scree plot, correlation matrix, UpSet plot |
 
-See the [Geometry Reference](../docs/GEOM-REFERENCE.md) for all 68 geometry types.
+See the [Geometry Reference](../docs/GEOM-REFERENCE.md) for the full catalog.
 
-## Requirements
+## Programmatic API
 
-- Node.js 18+
-- An AI assistant with code execution (Claude Code, Cursor, etc.)
+The TypeScript examples demonstrate the programmatic API for developers:
+
+| File | Description |
+|------|-------------|
+| [basic.ts](./basic.ts) | Minimal scatter plot |
+| [demo.ts](./demo.ts) | 7 plot types from CSV data |
+| [streaming-demo.ts](./streaming-demo.ts) | Real-time data with live statistics |
+| [extended-grammar-demo.ts](./extended-grammar-demo.ts) | Heatmaps, error bars, annotations, bubble charts |
+
+```bash
+npx tsx examples/basic.ts
+npx tsx examples/streaming-demo.ts
+```

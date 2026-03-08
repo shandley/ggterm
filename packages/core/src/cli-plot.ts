@@ -477,7 +477,7 @@ function generateSuggestions(
   const categorical = columns.filter(c => c.type === 'categorical')
   const dates = columns.filter(c => c.type === 'date')
 
-  const cliBase = `bun packages/core/src/cli-plot.ts ${dataFile}`
+  const cliBase = `npx ggterm-plot ${dataFile}`
 
   // 1. If we have dates and numeric, suggest time series
   if (dates.length > 0 && numeric.length > 0) {

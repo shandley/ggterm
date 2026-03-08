@@ -966,10 +966,10 @@ gg(data)
 
 ```bash
 # Basic ridgeline plot
-bun packages/core/src/cli-plot.ts data.csv temp month - "Temperatures" ridgeline
+npx ggterm-plot data.csv temp month - "Temperatures" ridgeline
 
 # Using joy alias
-bun packages/core/src/cli-plot.ts data.csv value category - "Distribution" joy
+npx ggterm-plot data.csv value category - "Distribution" joy
 ```
 
 ### geom_qq() / geom_qq_line()
@@ -997,7 +997,7 @@ gg(data)
 
 ```bash
 # Q-Q plot for normality check
-bun packages/core/src/cli-plot.ts data.csv value - - "Normality Check" qq
+npx ggterm-plot data.csv value - - "Normality Check" qq
 ```
 
 ### geom_beeswarm() / geom_quasirandom()
@@ -1037,10 +1037,10 @@ gg(data)
 
 ```bash
 # Basic beeswarm plot
-bun packages/core/src/cli-plot.ts data.csv group value - "Comparison" beeswarm
+npx ggterm-plot data.csv group value - "Comparison" beeswarm
 
 # Using quasirandom alias
-bun packages/core/src/cli-plot.ts data.csv treatment response - "Response" quasirandom
+npx ggterm-plot data.csv treatment response - "Response" quasirandom
 ```
 
 ### geom_dumbbell()
@@ -1080,7 +1080,7 @@ gg(data)
 
 ```bash
 # Dumbbell plot with xend in data
-bun packages/core/src/cli-plot.ts data.csv start category - "Comparison" dumbbell
+npx ggterm-plot data.csv start category - "Comparison" dumbbell
 ```
 
 ### geom_lollipop()
@@ -1120,10 +1120,10 @@ gg(data)
 
 ```bash
 # Vertical lollipop
-bun packages/core/src/cli-plot.ts data.csv category value - "Sales" lollipop
+npx ggterm-plot data.csv category value - "Sales" lollipop
 
 # With custom baseline
-bun packages/core/src/cli-plot.ts data.csv product profit - "Profit vs Target" lollipop
+npx ggterm-plot data.csv product profit - "Profit vs Target" lollipop
 ```
 
 ---
@@ -2166,10 +2166,10 @@ Generic distraction-free style:
 
 ```bash
 # 1. Create a plot
-bun packages/core/src/cli-plot.ts data.csv x y color "Title" point
+npx ggterm-plot data.csv x y color "Title" point
 
 # 2. Export to save Vega-Lite spec
-bun packages/core/src/cli-plot.ts export output.html
+npx ggterm-plot export output.html
 
 # 3. Apply style (in Claude Code)
 /ggterm-style wilke

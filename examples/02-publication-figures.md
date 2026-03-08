@@ -1,6 +1,8 @@
 # Publication Figures
 
-This vignette demonstrates creating publication-ready figures using the **iris** dataset through iterative refinement.
+Iteratively refine iris plots to publication quality using style presets, customization, and export. This vignette showcases the full style → customize → publish pipeline.
+
+**Prerequisites:** Run `npx ggterm-plot setup` to start the live viewer.
 
 ## Dataset: iris
 
@@ -18,289 +20,186 @@ Fisher's classic iris dataset with measurements for 150 flowers across 3 species
 
 ## Conversation
 
-### Initial Plot
+### Round 1: Initial Plot
 
 **You:** Load the iris dataset. Show me petal length vs petal width.
 
-**AI:** *Creates initial scatter plot:*
-```
-                    Petal Dimensions
-  petal_width
-    2.5 ┤                              ●●●●●
-        │                           ●●●●●●●●
-    2.0 ┤                        ●●●●●●●●●
-        │                     ●●●●●●●●●
-    1.5 ┤                  ●●●●●●●●
-        │               ●●●●●●●
-    1.0 ┤            ●●●●●●
-        │
-    0.5 ┤
-        │●●●●●●●●●●●●
-    0.0 ┤
-        └──────────────────────────────────────
-         1      2      3      4      5      6
-                    Petal Length (cm)
+**Claude:** Creates a scatter plot via `/ggterm-plot`.
 
-Two clear clusters visible.
-```
+> **In the viewer:** 150 points showing the relationship between petal length and width. Two clear clusters are immediately visible — a tight group of small petals and a larger spread of bigger petals. Hover any point to see exact measurements.
 
 ---
 
-### Adding Species
+### Round 2: Adding Species
 
 **You:** Color by species to see the groupings.
 
-**AI:** *Adds species color encoding:*
-```
-                 Petal Dimensions by Species
-  petal_width
-    2.5 ┤                              ■■■■■
-        │                           ■■■■■■■■
-    2.0 ┤                        ■■■■■■■■■
-        │                     ■■■■●●●●●
-    1.5 ┤                  ●●●●●●●●
-        │               ●●●●●●●
-    1.0 ┤            ●●●●●●
-        │
-    0.5 ┤
-        │▲▲▲▲▲▲▲▲▲▲▲▲
-    0.0 ┤
-        └──────────────────────────────────────
-         1      2      3      4      5      6
+**Claude:** Adds species color encoding.
 
-        ▲ setosa    ● versicolor    ■ virginica
-
-Setosa (▲) clearly separable. Versicolor/virginica overlap.
-```
+> **In the viewer:** Points separate into three colored groups with a legend:
+> - **Setosa** — small, tightly clustered in the bottom-left (short petals)
+> - **Versicolor** — intermediate, some overlap with virginica
+> - **Virginica** — largest petals, top-right cluster
+>
+> The species boundaries become obvious: setosa is completely separable, while versicolor and virginica overlap slightly.
 
 ---
 
-### Adding Decision Boundaries
+### Round 3: Classification Boundaries
 
 **You:** Add reference lines at petal length 2.5 and petal width 0.75 to show the species boundaries.
 
-**AI:** *Adds reference lines:*
-```
-                 Petal Dimensions by Species
-  petal_width
-    2.5 ┤             │                ■■■■■
-        │             │             ■■■■■■■■
-    2.0 ┤             │          ■■■■■■■■■
-        │             │       ■■■■●●●●●
-    1.5 ┤             │    ●●●●●●●●
-        │             │ ●●●●●●●
-    1.0 ┤             │●●●●●
-        │             │
-   0.75 ┤─────────────┼────────────────────────
-        │▲▲▲▲▲▲▲▲▲▲▲▲ │
-    0.0 ┤             │
-        └──────────────────────────────────────
-         1     2    2.5    4      5      6
+**Claude:** Adds horizontal and vertical reference lines.
 
-Setosa: petal_length < 2.5 AND petal_width < 0.75
-```
+> **In the viewer:** Two dashed lines divide the plot into regions. Setosa sits entirely below petal_width = 0.75 and left of petal_length = 2.5. The boundary achieves perfect separation for setosa.
 
 ---
 
-### Faceted View
+### Round 4: Faceted View
 
 **You:** Show each species in its own panel for clearer comparison.
 
-**AI:** *Creates faceted plot:*
-```
-┌─────────── setosa ────────────┐  ┌────────── versicolor ─────────┐
-│ petal_width                   │  │ petal_width                   │
-│  0.6 ┤    ●●●●●               │  │  1.8 ┤              ●●●       │
-│      │   ●●●●●●●              │  │      │           ●●●●●●       │
-│  0.4 ┤  ●●●●●●●●●             │  │  1.4 ┤        ●●●●●●●●        │
-│      │ ●●●●●●●●●●             │  │      │     ●●●●●●●●           │
-│  0.2 ┤●●●●●●●●                │  │  1.0 ┤  ●●●●●●●               │
-│      └───────────────────     │  │      └───────────────────     │
-│       1.0   1.2   1.4   1.6   │  │       3.0   3.5   4.0   4.5   │
-│          petal_length         │  │          petal_length         │
-└───────────────────────────────┘  └───────────────────────────────┘
+**Claude:** Creates a faceted plot.
 
-┌─────────── virginica ─────────┐
-│ petal_width                   │
-│  2.5 ┤           ●●●●●        │
-│      │        ●●●●●●●●        │
-│  2.0 ┤     ●●●●●●●●●●         │
-│      │  ●●●●●●●●●             │
-│  1.5 ┤●●●●●●                  │
-│      └───────────────────     │
-│       4.5   5.0   5.5   6.0   │
-│          petal_length         │
-└───────────────────────────────┘
-```
+> **In the viewer:** Three panels side by side, one per species. Each shows the petal length vs width relationship within that species only. The scale differences become apparent — setosa petals range 1–2 cm, while virginica spans 4.5–7 cm. Pan and zoom work independently in each panel.
 
 ---
 
-### Publication Polish
-
-**You:** This looks good. Make it publication-ready with proper title and axis labels.
-
-**AI:** *Applies publication styling:*
-```
-    Figure 1: Petal Morphology Across Iris Species
-
-  Petal Width (cm)                        ● I. setosa
-    2.5 ┤             │                ■■  ▲ I. versicolor
-        │             │             ■■■■■  ■ I. virginica
-    2.0 ┤             │          ■■■■■■■
-        │             │       ■■■▲▲▲▲▲
-    1.5 ┤             │    ▲▲▲▲▲▲▲▲
-        │             │ ▲▲▲▲▲▲▲
-    1.0 ┤             │▲▲▲▲▲
-        │             │
-   0.75 ┤─────────────┼──────────────────────── threshold
-        │●●●●●●●●●●●● │
-    0.0 ┤             │
-        └──────────────────────────────────────────────
-         1      2    2.5    4      5      6
-
-              Petal Length (cm)
-
-    Dashed lines indicate species classification boundaries.
-    n = 150 (50 per species)
-```
-
----
-
-### Export
-
-**You:** Export as SVG for journal submission.
-
-**AI:** *Creates publication export:*
-```
-Created iris-petal-morphology.html
-
-Open in browser and click "Download SVG" for vector graphics.
-The SVG is suitable for Nature/Science figure requirements.
-
-Figure dimensions: 600x400px (adjustable in Vega-Lite spec)
-Resolution: Vector (infinite)
-```
-
----
-
-### Applying Publication Styles
+### Round 5: Applying a Style Preset
 
 **You:** Style this like Claus Wilke's book.
 
-**AI:** *Applies Wilke style preset:*
-```
-Applied Wilke style to your plot.
+**Claude:** Applies the Wilke preset via `/ggterm-style`.
 
-Changes:
-- Font: Helvetica Neue (clean sans-serif)
-- Title: Normal weight, left-aligned
-- Gridlines: Y-axis only, subtle gray (#ebebeb)
-- X-axis: No grid (reduces visual clutter)
-- Colors: Colorblind-safe palette
-- Axis labels: No bold, dark gray (#333333)
-
-Export with /ggterm-publish to generate PNG/SVG/PDF.
-```
+> **In the viewer:** The plot transforms in place:
+> - Clean sans-serif font (Helvetica Neue)
+> - Subtle horizontal gridlines only
+> - No bold titles — understated, academic tone
+> - Colorblind-safe palette
+> - Left-aligned title
+>
+> The data stands out without visual clutter. This is the recommended style for academic papers.
 
 ---
 
-### Alternative Styles
+### Round 6: Comparing Styles
 
-**You:** What other styles are available?
+**You:** Try Tufte style instead.
 
-**AI:** Six publication-quality presets:
+**Claude:** Switches to Tufte via `/ggterm-style`.
 
-| Style | Description |
-|-------|-------------|
-| **wilke** | Claus Wilke's *Fundamentals of Data Visualization* - clean, minimal |
-| **tufte** | Edward Tufte - maximum data-ink ratio, no grid |
-| **economist** | The Economist - blue-gray background, white gridlines |
-| **nature** | Nature journal - compact 180x150px, small fonts |
-| **apa** | APA guidelines - Times New Roman, italic titles |
-| **minimal** | Generic - no decoration, system fonts |
+> **In the viewer:** A dramatic shift:
+> - No gridlines, no borders, no tick marks
+> - Serif font (Georgia) — elegant and literary
+> - Grayscale palette with different point shapes per species
+> - Maximum data-ink ratio — nothing that doesn't represent data
+>
+> *"Above all else, show the data."* — Edward Tufte
 
----
+**You:** Show me Economist style.
 
-### Tufte Style Example
+**Claude:** Switches to Economist via `/ggterm-style`.
 
-**You:** Try Tufte style.
+> **In the viewer:** The distinctive editorial look:
+> - Light blue-gray background (#d5e4eb)
+> - White horizontal gridlines
+> - Bold black baseline on x-axis
+> - Deep, saturated colors
+> - Legend at top-right
+>
+> Designed for magazine publication — high visual impact.
 
-**AI:** *Applies Tufte style:*
-```
-Applied Tufte style to your plot.
+**You:** Go back to Wilke — that's best for my paper.
 
-Changes:
-- Font: Georgia (elegant serif)
-- No axis domain lines
-- No gridlines (data should speak for itself)
-- No tick marks
-- Grayscale palette
-- Different point shapes per species (redundant encoding)
-
-"Above all else, show the data." - Edward Tufte
-```
+**Claude:** Reapplies Wilke preset.
 
 ---
 
-### Economist Style Example
+### Round 7: Fine-Tuning
 
-**You:** Show me the Economist style.
+**You:** Change the title to "Figure 1: Petal Morphology Across Iris Species". Make axis labels italic. Add a caption with the sample size.
 
-**AI:** *Applies Economist style:*
-```
-Applied Economist style to your plot.
+**Claude:** Applies refinements via `/ggterm-customize`.
 
-Changes:
-- Background: Light blue-gray (#d5e4eb)
-- Gridlines: White horizontal lines
-- X-axis: Bold black baseline
-- Title: Bold with subtitle support
-- Colors: Economist palette (deep blue, cyan, orange)
-- Legend: Top-right position
-
-This editorial style is designed for magazine publication.
-```
+> **In the viewer:** Title, labels, and caption update in place. The figure now looks ready for a journal methods section — properly labeled with italicized axis text and an "n = 150 (50 per species)" caption.
 
 ---
 
-## Figure Evolution
+### Round 8: Export
 
-The figure evolved through conversation:
-1. Basic scatter plot
-2. Added species color encoding
-3. Added classification boundaries
-4. Faceted by species
-5. Publication styling and labels
-6. Exported as vector graphics
-7. Applied Wilke style preset
-8. Explored alternative styles (Tufte, Economist)
+**You:** Export as SVG for journal submission.
 
-Total prompts: 9
+**Claude:** Generates output via `/ggterm-publish`.
+
+```
+Created: iris-petal-morphology.svg (vector, infinite resolution)
+Also created: iris-petal-morphology.png (600x400px, 300 DPI)
+Also created: iris-petal-morphology.html (interactive)
+```
+
+> The SVG is suitable for Nature/Science figure requirements. Vector graphics scale perfectly at any size.
 
 ---
 
 ## Style Presets Reference
 
-### Wilke Style (Recommended for Academic Papers)
-- Subtle Y-axis gridlines only
-- No bold axis titles
+All 6 publication-quality presets, with their design philosophy:
+
+### Wilke (Recommended for Academic Papers)
+- Subtle Y-axis gridlines only — guides the eye without clutter
+- Clean sans-serif typography (Helvetica Neue)
 - Colorblind-safe palettes
-- ~1.6:1 aspect ratio
+- No bold titles — the data speaks for itself
+- Based on Claus Wilke's *Fundamentals of Data Visualization*
 
-### Tufte Style (Maximum Data-Ink)
-- No grid, no borders, no ticks
-- Serif typography (Georgia)
-- Grayscale when possible
-- Direct labeling over legends
+### Tufte (Maximum Data-Ink Ratio)
+- No grid, no borders, no tick marks — only data
+- Serif typography (Georgia) — elegant, literary
+- Grayscale with redundant shape encoding
+- Direct labeling preferred over legends
+- Based on Edward Tufte's *The Visual Display of Quantitative Information*
 
-### Economist Style (Editorial/Magazine)
+### Nature (Journal Submission)
+- Compact dimensions (180x150px) — fits journal column width
+- Small fonts (8–10pt) for dense layouts
+- No grid — minimal decoration
+- Publication-ready without modifications
+
+### Economist (Editorial/Magazine)
 - Signature blue-gray background
-- White gridlines
-- Bold colors and titles
-- Legend at top
+- White horizontal gridlines — distinctive look
+- Bold colors and titles — high visual impact
+- Legend at top-right
 
-### Nature Style (Journal Submission)
-- Compact dimensions (180x150px)
-- Small fonts (8-10pt)
-- No grid
-- Publication-ready dimensions
+### APA (Psychology/Social Science)
+- Times New Roman — APA style guide requirement
+- Italic titles and axis labels
+- Grayscale — APA recommends avoiding color when possible
+- Figure numbering support
+
+### Minimal (Web/Presentations)
+- No decoration, no grid, no borders
+- System fonts — works everywhere
+- Maximum whitespace — clean presentation slides
+
+---
+
+## Figure Evolution
+
+The figure evolved through 8 conversation rounds:
+
+1. Basic scatter plot → saw two clusters
+2. Added species coloring → identified three groups
+3. Added classification boundaries → perfect setosa separation
+4. Faceted by species → compared within-group patterns
+5. Applied Wilke style → academic tone
+6. Compared Tufte and Economist → chose Wilke
+7. Fine-tuned labels and caption → publication-ready
+8. Exported as SVG → ready for submission
+
+## Skills Used
+
+- `/ggterm-plot` — creating visualizations
+- `/ggterm-style` — applying publication presets (Wilke, Tufte, Economist)
+- `/ggterm-customize` — fine-tuning titles, labels, captions
+- `/ggterm-publish` — exporting SVG/PNG for journal submission

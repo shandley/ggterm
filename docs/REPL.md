@@ -2,6 +2,8 @@
 
 An interactive shell for exploring data and building plots with the grammar of graphics.
 
+> **Tip:** The REPL provides a direct terminal interface to ggterm's grammar engine. For the full interactive experience with Vega-Lite visualization in the browser, use `npx ggterm-plot setup` and talk to Claude Code instead. See the [Quick Start Guide](./QUICKSTART.md).
+
 ## Quick Start
 
 ```bash

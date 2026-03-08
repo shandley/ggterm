@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="ggterm_logo.png" alt="ggterm logo" width="200">
+</p>
+
 # ggterm
 
 [![npm version](https://img.shields.io/npm/v/@ggterm/core.svg)](https://www.npmjs.com/package/@ggterm/core)

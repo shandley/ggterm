@@ -20,7 +20,7 @@ bibliography: references.bib
 
 # Summary
 
-`ggterm` is a TypeScript implementation of Wilkinson's Grammar of Graphics [@wilkinson2005grammar] designed for terminal environments. The library provides 68 geometry types spanning general-purpose visualization, genomics (volcano plots, Manhattan plots), clinical research (Kaplan-Meier survival curves, forest plots), and statistical diagnostics (Q-Q plots, control charts). Visualizations are constructed through a declarative, composable API where users specify data mappings, geometries, scales, and facets as layered components. This architecture enables natural language interaction with AI assistants, allowing researchers to create and refine visualizations through conversation rather than memorizing syntax.
+`ggterm` is a TypeScript implementation of Wilkinson's Grammar of Graphics [@wilkinson2005grammar] designed for terminal environments. The library provides 65 geometry types spanning general-purpose visualization, genomics (volcano plots, Manhattan plots), clinical research (Kaplan-Meier survival curves, forest plots), and statistical diagnostics (Q-Q plots, control charts). Visualizations are constructed through a declarative, composable API where users specify data mappings, geometries, scales, and facets as layered components. This architecture enables natural language interaction with AI assistants, allowing researchers to create and refine visualizations through conversation rather than memorizing syntax.
 
 All plots are automatically persisted with full provenance metadata (data source, specification, timestamp), enabling reproducibility without manual save actions. The library exports to Vega-Lite [@satyanarayan2017vegalite] for publication-quality PNG, SVG, and PDF output. `ggterm` bridges the gap between rapid terminal-based exploration and reproducible scientific figures.
 
@@ -45,7 +45,7 @@ gg(data)
   .labs({ title: 'Differential Expression' })
 ```
 
-**68 Geometry Types.** The library includes:
+**65 Geometry Types.** The library includes:
 
 - Standard visualizations: scatter, line, bar, histogram, boxplot, violin, density
 - Scientific: volcano, MA, Manhattan, heatmap, correlation, biplot
@@ -58,13 +58,13 @@ gg(data)
 
 **Publication Export.** Plots export to Vega-Lite specifications, then convert to PNG, SVG, or PDF via standard tools. Style presets (Tufte, Nature, Economist) apply publication-appropriate formatting.
 
-**AI Integration.** Seven deterministic skills for Claude Code enable natural language workflows from data loading through publication export. The Grammar of Graphics design supports iterative refinement: each modification layers onto existing specifications.
+**AI Integration.** Eight deterministic skills for Claude Code enable natural language workflows from data loading through publication export. The Grammar of Graphics design supports iterative refinement: each modification layers onto existing specifications.
 
 # Comparison with Related Software
 
 Terminal visualization libraries like `plotext` (Python) and `termgraph` (Python) provide basic chart types through imperative APIs. `gnuplot` offers more geometry types but lacks the Grammar of Graphics' compositional design. None provide scientific visualization support (survival curves, forest plots), plot history for reproducibility, or AI agent integration.
 
-`ggterm` uniquely combines Grammar of Graphics architecture, 68 geometry types covering scientific fields, automatic provenance tracking, and first-class AI assistant support in a terminal-native package.
+`ggterm` uniquely combines Grammar of Graphics architecture, 65 geometry types covering scientific fields, automatic provenance tracking, and first-class AI assistant support in a terminal-native package.
 
 # Acknowledgements
 

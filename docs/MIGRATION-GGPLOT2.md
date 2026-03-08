@@ -377,6 +377,6 @@ console.log(plot.render({ width: 80, height: 24 }))
 
 ## See Also
 
-- [Geometry Reference](./GEOM-REFERENCE.md) - All 68 plot types
+- [Geometry Reference](./GEOM-REFERENCE.md) - All 65 plot types
 - [API Reference](./API.md) - Complete API documentation
 - [Migration from Vega-Lite](./MIGRATION-VEGALITE.md) - For Vega-Lite users
