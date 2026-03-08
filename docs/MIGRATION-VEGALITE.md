@@ -498,6 +498,6 @@ gg(data)
 
 ## See Also
 
-- [Geometry Reference](./GEOM-REFERENCE.md) - All 65 plot types
+- [Geometry Reference](./GEOM-REFERENCE.md) - All 66 plot types
 - [API Reference](./API.md) - Complete API documentation
 - [Migration from ggplot2](./MIGRATION-GGPLOT2.md) - For R/ggplot2 users

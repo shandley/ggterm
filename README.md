@@ -59,6 +59,7 @@ ggterm includes specialized visualizations across domains:
 | **Advanced** | ridgeline, beeswarm, heatmap, treemap, sankey, calendar heatmap, lollipop, waffle |
 | **Scientific** | volcano plot, Manhattan plot, Kaplan-Meier curves, forest plot, ROC curve, Q-Q plot, Bland-Altman, PCA biplot |
 | **Diagnostics** | ECDF, funnel plot, control chart, scree plot, correlation matrix, UpSet plot, dendrogram |
+| **Terminal-Native** | sparkline, braille (8x resolution), bullet chart, waffle chart |
 
 See the full [Geometry Reference](./docs/GEOM-REFERENCE.md).
 
@@ -87,6 +88,7 @@ ggterm runs as a companion to Claude Code. The live viewer sits in a browser pan
 - **Command palette** — press `Cmd+K` to fuzzy-search 80+ commands, all 66 geom types, style presets, and export actions
 - **Plot history** — every plot saved automatically; press `h` for the history sidebar, arrow keys to browse, `Home`/`End` to jump
 - **Help panel** — press `?` for a 5-tab reference (Getting Started, Plot Types, Shortcuts, Styles, Export)
+- **Data inventory** — on setup, ggterm scans your directory for CSV, TSV, JSON, and JSONL files, analyzes column types and ranges, and writes a catalog so Claude already knows your data before you ask
 - **Style in place** — apply publication presets (Wilke, Tufte, Nature, Economist, APA) without re-running; viewer updates live
 - **Export** — press `s`/`p` for SVG/PNG directly from the viewer, or generate standalone HTML
 
@@ -102,6 +104,7 @@ See complete AI-driven workflows with real data:
 | [Publication Figures](./examples/02-publication-figures.md) | Iteratively refine iris plots to publication quality |
 | [Streaming Dashboard](./examples/03-streaming-dashboard.md) | Build a real-time monitoring display |
 | [Comparative Analysis](./examples/04-comparative-analysis.md) | Compare distributions with statistical annotations |
+| [Scientific Visualizations](./examples/05-scientific-visualizations.md) | Volcano, Manhattan, Kaplan-Meier, forest, ROC plots |
 
 ## Installation Options
 

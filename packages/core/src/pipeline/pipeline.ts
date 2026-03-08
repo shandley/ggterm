@@ -65,9 +65,9 @@ export function calculateLayout(
   const hasYLabel = !!spec.labels.y
   const hasY2 = !!spec.aes.y2 || spec.scales.some(s => s.aesthetic === 'y2')
   const hasY2Label = !!spec.labels.y2
-  // Check for any legend-worthy aesthetics (color or size)
+  // Check for any legend-worthy aesthetics (color, fill, or size)
   const hasLegend =
-    spec.theme.legend.position !== 'none' && (!!spec.aes.color || !!spec.aes.size)
+    spec.theme.legend.position !== 'none' && (!!spec.aes.color || !!spec.aes.fill || !!spec.aes.size)
 
   // Calculate margins
   const legendPosition = spec.theme.legend.position

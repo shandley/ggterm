@@ -1233,9 +1233,27 @@ export function plotSpecToVegaLite(
     vlSpec.encoding = buildEncoding(spec.aes, spec.data, { type: 'point', params: {} })
   }
 
-  // Apply axis labels (swap x/y labels if boxplot swapped axes)
-  const xLabel = boxplotSwapped ? spec.labels.y : spec.labels.x
-  const yLabel = boxplotSwapped ? spec.labels.x : spec.labels.y
+  // Handle coord_flip: swap x and y encodings in Vega-Lite
+  const isFlipped = spec.coord?.type === 'flip'
+  if (isFlipped) {
+    const swapEncoding = (enc: Record<string, unknown> | undefined) => {
+      if (!enc) return
+      const tmp = enc.x
+      enc.x = enc.y
+      enc.y = tmp
+    }
+    if (vlSpec.encoding) swapEncoding(vlSpec.encoding)
+    if (vlSpec.layer) {
+      for (const layer of vlSpec.layer) {
+        if (layer.encoding) swapEncoding(layer.encoding)
+      }
+    }
+  }
+
+  // Apply axis labels (swap x/y labels if boxplot swapped axes or coord_flip)
+  const axesSwapped = boxplotSwapped || isFlipped
+  const xLabel = axesSwapped ? spec.labels.y : spec.labels.x
+  const yLabel = axesSwapped ? spec.labels.x : spec.labels.y
   if (vlSpec.encoding) {
     if (xLabel && vlSpec.encoding.x) {
       (vlSpec.encoding.x as Record<string, unknown>).title = xLabel

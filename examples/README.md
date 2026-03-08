@@ -20,19 +20,20 @@ Each vignette is a conversation with Claude Code. You describe what you want, Cl
 | [02 — Publication Figures](./02-publication-figures.md) | iris | Style presets, customization, and export for journal submission |
 | [03 — Streaming Dashboard](./03-streaming-dashboard.md) | sample | Real-time monitoring with live-updating viewer |
 | [04 — Comparative Analysis](./04-comparative-analysis.md) | iris | Distribution comparison, statistical annotations, faceting |
+| [05 — Scientific Visualizations](./05-scientific-visualizations.md) | your data | Volcano, Manhattan, Kaplan-Meier, forest, ROC, Bland-Altman |
 
 ## Skills Demonstrated
 
 | Skill | Used In |
 |-------|---------|
-| `/data-load` | 01, 02, 03, 04 |
-| `/ggterm-plot` | 01, 02, 03, 04 |
-| `/ggterm-style` | 02 |
+| `/data-load` | 01, 02, 03, 04, 05 |
+| `/ggterm-plot` | 01, 02, 03, 04, 05 |
+| `/ggterm-style` | 02, 05 |
 | `/ggterm-customize` | 01, 02, 04 |
-| `/ggterm-publish` | 02, 04 |
-| `/ggterm-history` | 01, 03 |
+| `/ggterm-publish` | 02, 04, 05 |
+| `/ggterm-history` | 01, 03, 05 |
 | `/ggterm-markdown` | 04 |
-| `/ggterm-help` | — |
+| `/ggterm-help` | 05 |
 
 ## Built-in Datasets
 
@@ -54,6 +55,7 @@ Beyond standard charts, ggterm includes 66 geometry types across domains:
 | **Advanced** | ridgeline, beeswarm, heatmap, treemap, sankey, calendar heatmap, lollipop, waffle |
 | **Scientific** | volcano plot, Manhattan plot, Kaplan-Meier, forest plot, ROC curve, Q-Q plot |
 | **Diagnostics** | ECDF, funnel plot, control chart, scree plot, correlation matrix, UpSet plot |
+| **Terminal-Native** | sparkline, braille (8x resolution), bullet chart, waffle chart |
 
 See the [Geometry Reference](../docs/GEOM-REFERENCE.md) for the full catalog.
 

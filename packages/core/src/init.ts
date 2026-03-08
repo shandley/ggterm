@@ -605,7 +605,11 @@ $ARGUMENTS
  */
 function findDataFiles(dir: string, maxDepth = 2): string[] {
   const dataFiles: string[] = []
-  const dataExtensions = ['.csv', '.json', '.jsonl']
+  const dataExtensions = ['.csv', '.tsv', '.json', '.jsonl']
+  const skipDirs = new Set([
+    'node_modules', '__pycache__', '.venv', 'venv', '.tox',
+    '.mypy_cache', '.pytest_cache', '.next', 'dist', 'build',
+  ])
 
   function scan(currentDir: string, depth: number) {
     if (depth > maxDepth) return
@@ -613,8 +617,8 @@ function findDataFiles(dir: string, maxDepth = 2): string[] {
     try {
       const entries = readdirSync(currentDir)
       for (const entry of entries) {
-        // Skip hidden directories and node_modules
-        if (entry.startsWith('.') || entry === 'node_modules') continue
+        // Skip hidden directories and common non-data directories
+        if (entry.startsWith('.') || skipDirs.has(entry)) continue
 
         const fullPath = join(currentDir, entry)
         try {
@@ -645,9 +649,10 @@ function getDataFileInfo(filePath: string): { rows: number; cols: number } | nul
     const content = readFileSync(filePath, 'utf-8')
     const ext = extname(filePath).toLowerCase()
 
-    if (ext === '.csv') {
+    if (ext === '.csv' || ext === '.tsv') {
       const lines = content.trim().split('\n')
-      const headerCols = lines[0]?.split(',').length || 0
+      const sep = ext === '.tsv' || (lines[0] && lines[0].includes('\t')) ? '\t' : ','
+      const headerCols = lines[0]?.split(sep).length || 0
       return { rows: Math.max(0, lines.length - 1), cols: headerCols }
     } else if (ext === '.json') {
       const data = JSON.parse(content)
@@ -665,6 +670,375 @@ function getDataFileInfo(filePath: string): { rows: number; cols: number } | nul
     // Skip files we can't parse
   }
   return null
+}
+
+// Date pattern for value parsing
+const datePattern = /^\d{4}-\d{2}-\d{2}/
+
+interface ColumnInfo {
+  name: string
+  type: 'numeric' | 'categorical' | 'date' | 'mixed'
+  uniqueCount: number
+  sampleValues: string[]
+  min?: number
+  max?: number
+  nullCount: number
+}
+
+/**
+ * Load a data file safely (returns null on error, never exits).
+ * Samples first maxRows rows for performance on large files.
+ */
+function loadDataSafe(
+  filePath: string,
+  maxRows = 1000
+): { headers: string[]; data: Record<string, unknown>[]; totalRows: number } | null {
+  try {
+    const content = readFileSync(filePath, 'utf-8')
+    const ext = extname(filePath).toLowerCase()
+
+    if (ext === '.csv' || ext === '.tsv') {
+      const lines = content.trim().split('\n')
+      if (lines.length < 2) return null
+
+      const sep = ext === '.tsv' || (lines[0] && lines[0].includes('\t')) ? '\t' : ','
+      const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ''))
+      if (headers.length === 0) return null
+
+      const totalRows = lines.length - 1
+      const sampleLines = lines.slice(1, 1 + maxRows)
+
+      const data = sampleLines.map(line => {
+        const values = line.split(sep)
+        const row: Record<string, unknown> = {}
+        headers.forEach((h, i) => {
+          const val = values[i]?.trim().replace(/^"|"$/g, '')
+          if (!val || val === '') {
+            row[h] = null
+          } else if (datePattern.test(val)) {
+            row[h] = new Date(val).getTime()
+          } else {
+            const num = Number(val)
+            row[h] = isNaN(num) ? val : num
+          }
+        })
+        return row
+      })
+
+      return { headers, data, totalRows }
+    }
+
+    if (ext === '.json') {
+      const parsed = JSON.parse(content)
+      const arr = Array.isArray(parsed) ? parsed : parsed?.data
+      if (!Array.isArray(arr) || arr.length === 0) return null
+
+      const headers = Object.keys(arr[0])
+      if (headers.length === 0) return null
+
+      const totalRows = arr.length
+      const sample = arr.slice(0, maxRows)
+      const data = sample.map((row: Record<string, unknown>) => {
+        const converted: Record<string, unknown> = {}
+        for (const key of headers) {
+          const val = row[key]
+          if (val === null || val === undefined) {
+            converted[key] = null
+          } else if (typeof val === 'string' && datePattern.test(val)) {
+            converted[key] = new Date(val).getTime()
+          } else {
+            converted[key] = val
+          }
+        }
+        return converted
+      })
+
+      return { headers, data, totalRows }
+    }
+
+    if (ext === '.jsonl') {
+      const lines = content.trim().split('\n').filter(l => l.trim())
+      if (lines.length === 0) return null
+
+      const first = JSON.parse(lines[0])
+      const headers = Object.keys(first)
+      if (headers.length === 0) return null
+
+      const totalRows = lines.length
+      const sampleLines = lines.slice(0, maxRows)
+      const data = sampleLines.map(line => {
+        const obj = JSON.parse(line)
+        const converted: Record<string, unknown> = {}
+        for (const key of headers) {
+          const val = obj[key]
+          if (val === null || val === undefined) {
+            converted[key] = null
+          } else if (typeof val === 'string' && datePattern.test(val)) {
+            converted[key] = new Date(val).getTime()
+          } else {
+            converted[key] = val
+          }
+        }
+        return converted
+      })
+
+      return { headers, data, totalRows }
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Analyze column types and statistics (safe version, no process.exit)
+ */
+function analyzeColumnsSafe(headers: string[], data: Record<string, unknown>[]): ColumnInfo[] {
+  return headers.map(name => {
+    const values = data.map(row => row[name])
+    const nonNullValues = values.filter(v => v !== null && v !== undefined)
+    const uniqueValues = [...new Set(nonNullValues)]
+
+    let numericCount = 0
+    let dateCount = 0
+    let stringCount = 0
+
+    for (const val of nonNullValues) {
+      if (typeof val === 'number') {
+        if (val > 946684800000 && val < 4102444800000) {
+          dateCount++
+        } else {
+          numericCount++
+        }
+      } else if (typeof val === 'string') {
+        stringCount++
+      }
+    }
+
+    let type: ColumnInfo['type']
+    if (dateCount > nonNullValues.length * 0.8) {
+      type = 'date'
+    } else if (numericCount > nonNullValues.length * 0.8) {
+      type = 'numeric'
+    } else if (stringCount > nonNullValues.length * 0.8) {
+      type = 'categorical'
+    } else {
+      type = 'mixed'
+    }
+
+    const sampleValues = uniqueValues.slice(0, 4).map(v => {
+      if (type === 'date' && typeof v === 'number') {
+        return new Date(v).toISOString().split('T')[0]
+      }
+      return String(v)
+    })
+
+    let min: number | undefined
+    let max: number | undefined
+    if (type === 'numeric') {
+      const nums = nonNullValues.filter(v => typeof v === 'number') as number[]
+      if (nums.length > 0) {
+        min = Math.min(...nums)
+        max = Math.max(...nums)
+      }
+    }
+
+    return {
+      name,
+      type,
+      uniqueCount: uniqueValues.length,
+      sampleValues,
+      min,
+      max,
+      nullCount: values.length - nonNullValues.length,
+    }
+  })
+}
+
+/**
+ * Generate plot suggestions based on column types
+ */
+function generateSuggestionsSafe(
+  relPath: string,
+  columns: ColumnInfo[]
+): Array<{ description: string; command: string }> {
+  const suggestions: Array<{ description: string; command: string }> = []
+  const numeric = columns.filter(c => c.type === 'numeric')
+  const categorical = columns.filter(c => c.type === 'categorical')
+  const dates = columns.filter(c => c.type === 'date')
+  const cliBase = `npx ggterm-plot ${relPath}`
+
+  if (dates.length > 0 && numeric.length > 0) {
+    suggestions.push({
+      description: `Time series: ${numeric[0].name} over ${dates[0].name}`,
+      command: `${cliBase} ${dates[0].name} ${numeric[0].name} - - line`,
+    })
+  }
+
+  if (numeric.length >= 2) {
+    const colorCol = categorical.length > 0 ? categorical[0].name : '-'
+    suggestions.push({
+      description: `Scatter: ${numeric[0].name} vs ${numeric[1].name}${colorCol !== '-' ? ` (by ${colorCol})` : ''}`,
+      command: `${cliBase} ${numeric[0].name} ${numeric[1].name} ${colorCol} - point`,
+    })
+  }
+
+  if (numeric.length > 0) {
+    if (categorical.length > 0) {
+      suggestions.push({
+        description: `Distribution: ${numeric[0].name} by ${categorical[0].name}`,
+        command: `${cliBase} ${numeric[0].name} - ${categorical[0].name} - freqpoly`,
+      })
+    } else {
+      suggestions.push({
+        description: `Distribution: ${numeric[0].name}`,
+        command: `${cliBase} ${numeric[0].name} - - - histogram`,
+      })
+    }
+  }
+
+  if (numeric.length > 0 && categorical.length > 0 && categorical[0].uniqueCount <= 10) {
+    suggestions.push({
+      description: `Box plot: ${numeric[0].name} by ${categorical[0].name}`,
+      command: `${cliBase} ${categorical[0].name} ${numeric[0].name} - - boxplot`,
+    })
+  }
+
+  return suggestions
+}
+
+/**
+ * Generate a data inventory markdown file for Claude Code.
+ * Scans data files, analyzes columns, and writes .ggterm/data-inventory.md
+ */
+function generateDataInventory(cwd: string): void {
+  const dataFiles = findDataFiles(cwd, 5)
+  if (dataFiles.length === 0) return
+
+  const MAX_ANALYZE = 20
+  const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+
+  const now = new Date().toISOString().split('T')[0]
+  const lines: string[] = [
+    '# Data Inventory',
+    '',
+    `Generated by \`npx ggterm-plot init\` on ${now}. Re-run to update after adding new data files.`,
+    '',
+    '## Summary',
+    '',
+    '| File | Rows | Columns | Types |',
+    '|------|------|---------|-------|',
+  ]
+
+  interface FileAnalysis {
+    relPath: string
+    totalRows: number
+    headers: string[]
+    columns: ColumnInfo[] | null
+    suggestions: Array<{ description: string; command: string }>
+  }
+
+  const analyses: FileAnalysis[] = []
+
+  for (const file of dataFiles.slice(0, MAX_ANALYZE)) {
+    const relPath = file.replace(cwd + '/', '')
+
+    // Check file size
+    let fileSize = 0
+    try {
+      fileSize = statSync(file).size
+    } catch { continue }
+
+    if (fileSize > MAX_FILE_SIZE) {
+      // Too large for column analysis, just report dimensions
+      const info = getDataFileInfo(file)
+      if (info) {
+        lines.push(`| ${relPath} | ${info.rows.toLocaleString()} | ${info.cols} | (file too large for analysis) |`)
+        analyses.push({ relPath, totalRows: info.rows, headers: [], columns: null, suggestions: [] })
+      }
+      continue
+    }
+
+    const result = loadDataSafe(file)
+    if (!result) {
+      // Fall back to basic info
+      const info = getDataFileInfo(file)
+      if (info) {
+        lines.push(`| ${relPath} | ${info.rows.toLocaleString()} | ${info.cols} | (parse error) |`)
+      }
+      continue
+    }
+
+    const columns = analyzeColumnsSafe(result.headers, result.data)
+    const suggestions = generateSuggestionsSafe(relPath, columns)
+
+    // Build type summary
+    const typeCounts: Record<string, number> = {}
+    for (const col of columns) {
+      typeCounts[col.type] = (typeCounts[col.type] || 0) + 1
+    }
+    const typeSummary = Object.entries(typeCounts)
+      .map(([type, count]) => `${count} ${type}`)
+      .join(', ')
+
+    lines.push(`| ${relPath} | ${result.totalRows.toLocaleString()} | ${result.headers.length} | ${typeSummary} |`)
+    analyses.push({
+      relPath,
+      totalRows: result.totalRows,
+      headers: result.headers,
+      columns,
+      suggestions,
+    })
+  }
+
+  if (dataFiles.length > MAX_ANALYZE) {
+    lines.push('')
+    lines.push(`*${dataFiles.length - MAX_ANALYZE} additional files not shown.*`)
+  }
+
+  // Per-file detail sections
+  for (const analysis of analyses) {
+    if (!analysis.columns) continue
+
+    lines.push('')
+    lines.push(`## ${analysis.relPath}`)
+    lines.push('')
+    lines.push(`${analysis.totalRows.toLocaleString()} rows, ${analysis.headers.length} columns`)
+    lines.push('')
+    lines.push('| Column | Type | Unique | Range | Samples |')
+    lines.push('|--------|------|--------|-------|---------|')
+
+    for (const col of analysis.columns) {
+      let range = ''
+      if (col.type === 'numeric' && col.min !== undefined && col.max !== undefined) {
+        range = `${col.min} to ${col.max}`
+      } else if (col.type === 'categorical') {
+        range = `${col.uniqueCount} categories`
+      } else if (col.type === 'date') {
+        range = 'date range'
+      }
+      const samples = col.sampleValues.join(', ')
+      lines.push(`| ${col.name} | ${col.type} | ${col.uniqueCount} | ${range} | ${samples} |`)
+    }
+
+    if (analysis.suggestions.length > 0) {
+      lines.push('')
+      lines.push('Suggested plots:')
+      for (const s of analysis.suggestions) {
+        lines.push(`- ${s.description}`)
+        lines.push(`  \`${s.command}\``)
+      }
+    }
+  }
+
+  lines.push('')
+
+  const ggtermDir = join(cwd, '.ggterm')
+  mkdirSync(ggtermDir, { recursive: true })
+  writeFileSync(join(ggtermDir, 'data-inventory.md'), lines.join('\n'))
+  console.log(`Data inventory: ${analyses.length} file${analyses.length !== 1 ? 's' : ''} cataloged → .ggterm/data-inventory.md`)
+  console.log('')
 }
 
 /**
@@ -825,6 +1199,10 @@ When \`npx ggterm-plot serve\` is running, plots auto-display in the browser/Wav
 
 **Style and customize changes also auto-display.** When you modify \`.ggterm/last-plot-vegalite.json\` (via /ggterm-style or /ggterm-customize), the viewer updates automatically. Do NOT re-run \`npx ggterm-plot\` after styling — that would overwrite your changes.
 
+## Data in This Directory
+
+See \`.ggterm/data-inventory.md\` for a catalog of data files found in this directory, including column types, value ranges, and suggested visualizations. Re-run \`npx ggterm-plot init\` to update after adding new files.
+
 ## Help
 
 - Press \`Cmd+K\` in the live viewer for the command palette (search geoms, actions, styles)
@@ -876,8 +1254,8 @@ When \`npx ggterm-plot serve\` is running, plots auto-display in the browser/Wav
   console.log('  • mtcars (16 rows: mpg, cyl, hp, wt, name)')
   console.log('')
 
-  // Discover data files
-  const dataFiles = findDataFiles(cwd)
+  // Discover data files and generate inventory
+  const dataFiles = findDataFiles(cwd, 5)
   if (dataFiles.length > 0) {
     console.log('Data files:')
     for (const file of dataFiles.slice(0, 10)) {
@@ -893,6 +1271,9 @@ When \`npx ggterm-plot serve\` is running, plots auto-display in the browser/Wav
       console.log(`  ... and ${dataFiles.length - 10} more`)
     }
     console.log('')
+
+    // Generate data inventory for Claude Code
+    generateDataInventory(cwd)
   }
 
   // Show recent plots

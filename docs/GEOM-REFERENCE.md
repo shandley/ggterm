@@ -15,7 +15,7 @@ Quick reference for all 66 geometry types in ggterm.
 | `geom_boxplot` | Box-and-whisker | `outlier_shape`, `notch` | `boxplot` |
 | `geom_violin` | Violin plot | `draw_quantiles`, `scale` | `violin` |
 | `geom_area` | Filled area under line | `alpha`, `position` | `area` |
-| `geom_ribbon` | Filled range (ymin/ymax) | `alpha` | - |
+| `geom_ribbon` | Filled range (ymin/ymax) | `alpha` | `ribbon` |
 
 ## Lines & Paths
 
@@ -24,11 +24,11 @@ Quick reference for all 66 geometry types in ggterm.
 | `geom_path` | Connect points in data order | `linewidth`, `linetype` | `path` |
 | `geom_step` | Step function | `direction` ('hv', 'vh', 'mid') | `step` |
 | `geom_smooth` | Fitted curve + CI | `method` ('lm', 'loess'), `se` | `smooth` |
-| `geom_segment` | Line segment (x,y → xend,yend) | `arrow`, `linewidth` | - |
+| `geom_segment` | Line segment (x,y → xend,yend) | `arrow`, `linewidth` | `segment` |
 | `geom_curve` | Curved segment | `curvature`, `arrow` | - |
-| `geom_hline` | Horizontal reference line | `yintercept`, `linetype` | - |
-| `geom_vline` | Vertical reference line | `xintercept`, `linetype` | - |
-| `geom_abline` | Diagonal line (y=mx+b) | `slope`, `intercept` | - |
+| `geom_hline` | Horizontal reference line | `yintercept`, `linetype` | `hline` |
+| `geom_vline` | Vertical reference line | `xintercept`, `linetype` | `vline` |
+| `geom_abline` | Diagonal line (y=mx+b) | `slope`, `intercept` | `abline` |
 
 ## Distribution & Comparison
 
@@ -41,36 +41,36 @@ Quick reference for all 66 geometry types in ggterm.
 | `geom_joy` | Alias for ridgeline | - | `joy` |
 | `geom_beeswarm` | Jittered points avoiding overlap | `method`, `cex` | `beeswarm` |
 | `geom_quasirandom` | Quasi-random jitter | - | `quasirandom` |
-| `geom_rug` | Marginal tick marks | `sides` ('b', 'l', 't', 'r') | - |
+| `geom_rug` | Marginal tick marks | `sides` ('b', 'l', 't', 'r') | `rug` |
 
 ## Error & Uncertainty
 
 | Geom | Description | Key Options | CLI |
 |------|-------------|-------------|-----|
 | `geom_errorbar` | Vertical error bars | `width` | `errorbar` |
-| `geom_errorbarh` | Horizontal error bars | `height` | - |
-| `geom_linerange` | Vertical line (no caps) | - | - |
-| `geom_pointrange` | Point + vertical line | - | - |
-| `geom_crossbar` | Box with middle line | `width`, `fatten` | - |
+| `geom_errorbarh` | Horizontal error bars | `height` | `errorbarh` |
+| `geom_linerange` | Vertical line (no caps) | - | `linerange` |
+| `geom_pointrange` | Point + vertical line | - | `pointrange` |
+| `geom_crossbar` | Box with middle line | `width`, `fatten` | `crossbar` |
 
 ## 2D & Spatial
 
 | Geom | Description | Key Options | CLI |
 |------|-------------|-------------|-----|
 | `geom_tile` | Rectangular tiles | `width`, `height` | `tile` |
-| `geom_raster` | Fast tiles (regular grid) | - | - |
+| `geom_raster` | Fast tiles (regular grid) | - | `raster` |
 | `geom_bin2d` | 2D histogram bins | `bins`, `binwidth` | `bin2d` |
 | `geom_density_2d` | 2D density contours | `bandwidth` | `density_2d` |
 | `geom_contour` | Contour lines | `bins`, `binwidth` | `contour` |
-| `geom_contour_filled` | Filled contour regions | `bins` | - |
-| `geom_rect` | Rectangle (xmin/xmax/ymin/ymax) | `alpha` | - |
+| `geom_contour_filled` | Filled contour regions | `bins` | `contour_filled` |
+| `geom_rect` | Rectangle (xmin/xmax/ymin/ymax) | `alpha` | `rect` |
 
 ## Text & Annotation
 
 | Geom | Description | Key Options | CLI |
 |------|-------------|-------------|-----|
-| `geom_text` | Text labels | `nudge_x`, `nudge_y`, `hjust` | - |
-| `geom_label` | Text with background box | `label_padding` | - |
+| `geom_text` | Text labels | `nudge_x`, `nudge_y`, `hjust` | `text` |
+| `geom_label` | Text with background box | `label_padding` | `label` |
 
 ## Terminal-Optimized
 
@@ -134,19 +134,23 @@ Quick reference for all 66 geometry types in ggterm.
 
 ```bash
 # Basic pattern
-ggterm <file> <x> <y> [color] [title] [geom]
+npx ggterm-plot <file> <x> <y> [color] [title] [geom]
 
 # Examples
-ggterm data.csv x y                           # Auto-detect geom
-ggterm data.csv x y group "Title" point       # Scatter by group
-ggterm data.csv value - - "Distribution" histogram
-ggterm results.csv log2FC pvalue gene "DE" volcano
-ggterm survival.csv time status treatment "KM" kaplan_meier
+npx ggterm-plot data.csv x y                           # Auto-detect geom
+npx ggterm-plot data.csv x y group "Title" point       # Scatter by group
+npx ggterm-plot data.csv value - - "Distribution" histogram
+npx ggterm-plot results.csv log2FC pvalue gene "DE" volcano
+npx ggterm-plot survival.csv time status treatment "KM" kaplan_meier
+
+# Built-in datasets
+npx ggterm-plot iris sepal_length sepal_width species "Iris" point
+npx ggterm-plot mtcars mpg hp cyl "Cars" point
 
 # Special
-ggterm data.csv x y - - point+hline@50        # Add reference line
-ggterm history                                 # View plot history
-ggterm export <id> output.png                  # Export to image
+npx ggterm-plot data.csv x y - - point+hline@50        # Add reference line
+npx ggterm-plot history                                 # View plot history
+npx ggterm-plot export <id> output.html                 # Export to HTML
 ```
 
 ## Aesthetic Mappings

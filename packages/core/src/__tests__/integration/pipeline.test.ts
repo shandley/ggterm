@@ -8,7 +8,7 @@ import { describe, expect, it } from 'bun:test'
 import { gg } from '../../grammar'
 import { geom_point } from '../../geoms/point'
 import { geom_line } from '../../geoms/line'
-import { geom_bar } from '../../geoms/bar'
+import { geom_bar, geom_col } from '../../geoms/bar'
 import { geom_area } from '../../geoms/area'
 import { geom_text } from '../../geoms/text'
 import {
@@ -23,7 +23,9 @@ import {
 } from '../../scales/continuous'
 import { scale_color_discrete, scale_color_manual } from '../../scales/color'
 import { defaultTheme } from '../../themes/default'
-import { coordCartesian } from '../../coords/cartesian'
+import { coordCartesian, coordFlip } from '../../coords/cartesian'
+import { plotSpecToVegaLite } from '../../export/vega-lite'
+import { renderToCanvas } from '../../pipeline'
 
 describe('Rendering Pipeline Integration', () => {
   describe('basic rendering', () => {
@@ -926,6 +928,87 @@ describe('Rendering Pipeline Integration', () => {
 
       expect(output).toBeDefined()
       expect(output).toContain('Magnitude')
+    })
+  })
+
+  describe('bar chart advanced features (GitHub issues)', () => {
+    const barData = [
+      { site: '782', y: 217, country: 'US' },
+      { site: '783', y: 150, country: 'UK' },
+      { site: '784', y: 300, country: 'US' },
+      { site: '785', y: 100, country: 'UK' },
+    ]
+
+    it('stat=identity with custom y-values', () => {
+      const plot = gg(barData)
+        .aes({ x: 'site', y: 'y' })
+        .geom(geom_bar({ stat: 'identity' }))
+
+      const output = plot.render({ width: 60, height: 20 })
+      expect(output).toBeDefined()
+      expect(output).toContain('782')
+      expect(output).toContain('300')
+    })
+
+    it('fill aesthetic produces colored bars with legend', () => {
+      const plot = gg(barData)
+        .aes({ x: 'site', y: 'y', fill: 'country' })
+        .geom(geom_bar({ stat: 'identity' }))
+
+      // Terminal rendering: legend should appear
+      const canvas = renderToCanvas(plot.spec(), { width: 80, height: 24 })
+      const output = canvas.toString()
+      expect(output).toContain('US')
+      expect(output).toContain('UK')
+    })
+
+    it('fill aesthetic maps to color in Vega-Lite export', () => {
+      const plot = gg(barData)
+        .aes({ x: 'site', y: 'y', fill: 'country' })
+        .geom(geom_bar({ stat: 'identity' }))
+
+      const vlSpec = plotSpecToVegaLite(plot.spec())
+      const colorEnc = vlSpec.encoding?.color as Record<string, unknown>
+      expect(colorEnc).toBeDefined()
+      expect(colorEnc.field).toBe('country')
+    })
+
+    it('coord_flip produces horizontal bars in Vega-Lite', () => {
+      const plot = gg(barData)
+        .aes({ x: 'site', y: 'y' })
+        .geom(geom_bar({ stat: 'identity' }))
+        .coord(coordFlip())
+
+      const vlSpec = plotSpecToVegaLite(plot.spec())
+      // After flip, x should have the quantitative field (y) and y should have nominal (site)
+      const xEnc = vlSpec.encoding?.x as Record<string, unknown>
+      const yEnc = vlSpec.encoding?.y as Record<string, unknown>
+      expect(xEnc.field).toBe('y')
+      expect(xEnc.type).toBe('quantitative')
+      expect(yEnc.field).toBe('site')
+      expect(yEnc.type).toBe('nominal')
+    })
+
+    it('coord_flip renders in terminal without error', () => {
+      const plot = gg(barData)
+        .aes({ x: 'site', y: 'y', fill: 'country' })
+        .geom(geom_bar({ stat: 'identity' }))
+        .coord(coordFlip())
+
+      const output = plot.render({ width: 60, height: 20 })
+      expect(output).toBeDefined()
+      expect(output.length).toBeGreaterThan(0)
+    })
+
+    it('geom_col uses stat=identity by default', () => {
+      const plot = gg(barData)
+        .aes({ x: 'site', y: 'y', fill: 'country' })
+        .geom(geom_col())
+
+      const canvas = renderToCanvas(plot.spec(), { width: 80, height: 24 })
+      const output = canvas.toString()
+      expect(output).toContain('US')
+      expect(output).toContain('UK')
     })
   })
 })

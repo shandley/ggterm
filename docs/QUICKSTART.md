@@ -54,7 +54,7 @@ ggterm supports 66 geometry types. Here are the most common, all available throu
 | "Show density of X by group" | Overlaid density curves |
 | "Make a violin plot of X by group" | Distribution shape comparison |
 
-See the [Geometry Reference](./GEOM-REFERENCE.md) for all 65 plot types including scientific visualizations (volcano plots, Kaplan-Meier curves, forest plots), specialized charts (treemaps, sankey diagrams, calendar heatmaps), and diagnostics (Q-Q plots, ROC curves, control charts).
+See the [Geometry Reference](./GEOM-REFERENCE.md) for all 66 plot types including scientific visualizations (volcano plots, Kaplan-Meier curves, forest plots), specialized charts (treemaps, sankey diagrams, calendar heatmaps), and diagnostics (Q-Q plots, ROC curves, control charts).
 
 ## Style Presets
 
@@ -209,5 +209,5 @@ ggterm includes 8 Claude Code skills for AI-assisted workflows:
 - [Publication Figures](../examples/02-publication-figures.md) — Iterate to publication quality
 - [Streaming Dashboard](../examples/03-streaming-dashboard.md) — Real-time monitoring
 - [Comparative Analysis](../examples/04-comparative-analysis.md) — Statistical comparisons
-- [Geometry Reference](./GEOM-REFERENCE.md) — All 65 plot types
+- [Geometry Reference](./GEOM-REFERENCE.md) — All 66 plot types
 - [API Reference](./API.md) — Programmatic TypeScript API

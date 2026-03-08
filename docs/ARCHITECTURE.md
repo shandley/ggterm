@@ -2,7 +2,7 @@
 
 ## Overview
 
-ggterm implements Leland Wilkinson's Grammar of Graphics as a layered system that transforms data into a backend-agnostic `PlotSpec`. This specification is then consumed by rendering backends — currently terminal ASCII art and Vega-Lite — but the grammar layer has no knowledge of how plots are rendered.
+ggterm implements Leland Wilkinson's Grammar of Graphics as a layered system that transforms data into a backend-agnostic `PlotSpec`. This specification is then consumed by rendering backends (currently terminal and Vega-Lite), but the grammar layer has no knowledge of how plots are rendered.
 
 ## The Seven Layers
 
@@ -40,9 +40,8 @@ ggterm implements Leland Wilkinson's Grammar of Graphics as a layered system tha
 The foundation. Accepts arrays of records.
 
 ```typescript
-interface DataSource {
-  records: Record<string, unknown>[]
-}
+type DataRecord = Record<string, unknown>
+type DataSource = DataRecord[]
 ```
 
 #### 2. Aesthetics Layer
@@ -91,9 +90,9 @@ stat_summary({ fun: 'mean' })       // Group summaries
 #### 6. Coordinates Layer
 
 ```typescript
-coord_cartesian()     // Default: x horizontal, y vertical
-coord_flip()          // Swap x and y
-coord_polar()         // Polar coordinates
+coordCartesian()     // Default: x horizontal, y vertical
+coordFlip()          // Swap x and y
+coordPolar()         // Polar coordinates
 ```
 
 #### 7. Facets Layer
@@ -130,9 +129,9 @@ interface PlotSpec {
 
 `PlotSpec` is the clean boundary between grammar and rendering. It is:
 
-- **Declarative** — describes *what* to visualize, not *how* to render it
-- **JSON-serializable** — can be stored, transmitted, or converted to any format
-- **Backend-agnostic** — no terminal codes, no Vega-Lite constructs, no rendering logic
+- **Declarative**: describes *what* to visualize, not *how* to render it
+- **JSON-serializable**: can be stored, transmitted, or converted to any format
+- **Backend-agnostic**: no terminal codes, no Vega-Lite constructs, no rendering logic
 
 The fluent API (`grammar.ts`) builds a PlotSpec. The `.spec()` method extracts it. The `.render()` method passes it to a backend.
 
@@ -172,10 +171,10 @@ plot.render()  // → PlotSpec → Terminal Backend → ANSI string
 
 Transforms a `PlotSpec` into ANSI-colored terminal output:
 
-1. **Stat transforms** — apply binning, density, smoothing to data
-2. **Scale computation** — map data values to canvas positions
-3. **Geometry rendering** — each geom writes to an abstract `Canvas` buffer
-4. **Canvas output** — convert cell buffer to ANSI escape sequences
+1. **Stat transforms**: apply binning, density, smoothing to data
+2. **Scale computation**: map data values to canvas positions
+3. **Geometry rendering**: each geom writes to an abstract `Canvas` buffer
+4. **Canvas output**: convert cell buffer to ANSI escape sequences
 
 The canvas is a 2D grid of cells:
 
@@ -184,11 +183,13 @@ interface CanvasCell {
   char: string           // Character to display
   fg: RGBA              // Foreground color (24-bit truecolor)
   bg: RGBA              // Background color
-  attrs: CellAttributes  // Bold, italic, etc.
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
 }
 ```
 
-Resolution is enhanced using Unicode braille patterns (U+2800-U+28FF), where each character cell is a 2x4 dot matrix — an 80x24 terminal becomes 160x96 effective dots.
+Resolution is enhanced using Unicode braille patterns (U+2800-U+28FF), where each character cell is a 2x4 dot matrix. An 80x24 terminal becomes 160x96 effective dots.
 
 ### Backend: Vega-Lite Exporter
 
@@ -196,17 +197,17 @@ Resolution is enhanced using Unicode braille patterns (U+2800-U+28FF), where eac
 
 Converts a `PlotSpec` to a [Vega-Lite](https://vega.github.io/vega-lite/) JSON specification:
 
-1. **Mark mapping** — geom types → Vega-Lite mark types (point, line, bar, etc.)
-2. **Encoding** — aesthetic mappings → Vega-Lite encoding channels
-3. **Field type inference** — introspect data to determine quantitative/nominal/temporal
-4. **Multi-layer support** — multiple geoms → layered Vega-Lite spec
-5. **Faceting** — facet specs → Vega-Lite facet/repeat
+1. **Mark mapping**: geom types to Vega-Lite mark types (point, line, bar, etc.)
+2. **Encoding**: aesthetic mappings to Vega-Lite encoding channels
+3. **Field type inference**: introspect data to determine quantitative/nominal/temporal
+4. **Multi-layer support**: multiple geoms become layered Vega-Lite specs
+5. **Faceting**: facet specs to Vega-Lite facet/repeat
 
 The Vega-Lite spec is used by:
-- **Live viewer** (`serve.ts`) — SSE-powered browser panel that auto-displays new plots
-- **HTML export** — standalone HTML files with embedded Vega-Embed
-- **Publication pipeline** — PNG/SVG/PDF via `vl2png`/`vl2svg`/`vl2pdf`
-- **Style/customize skills** — modify the Vega-Lite config without re-running the grammar
+- **Live viewer** (`serve.ts`): SSE-powered browser panel that auto-displays new plots
+- **HTML export**: standalone HTML files with embedded Vega-Embed
+- **Publication pipeline**: PNG/SVG/PDF via `vl2png`/`vl2svg`/`vl2pdf`
+- **Style/customize skills**: modify the Vega-Lite config without re-running the grammar
 
 ---
 
@@ -229,8 +230,8 @@ function renderToSVG(spec: PlotSpec, options: RenderOptions): string {
 The stat computation and scale building logic in `pipeline.ts` can be reused. Only the final mark rendering step is backend-specific.
 
 Reference implementations:
-- `pipeline/pipeline.ts` — terminal backend (~500 lines)
-- `export/vega-lite.ts` — Vega-Lite backend (~400 lines)
+- `pipeline/pipeline.ts` - terminal backend (~1,000 lines)
+- `export/vega-lite.ts` - Vega-Lite backend (~1,400 lines)
 
 ---
 
@@ -286,18 +287,20 @@ packages/
 Every plot is saved with provenance metadata:
 
 ```typescript
+interface PlotProvenance {
+  id: string              // e.g., "2026-03-07-001"
+  timestamp: string
+  dataFile?: string
+  command?: string
+  description: string
+  geomTypes: string[]
+  aesthetics: string[]
+}
+
 interface HistoricalPlot {
-  _provenance: {
-    id: string            // e.g., "2026-03-07-001"
-    timestamp: string
-    dataFile: string
-    command: string
-    description: string
-    geomTypes: string[]
-    aesthetics: string[]
-  }
+  _provenance: PlotProvenance
   spec: PlotSpec
 }
 ```
 
-Stored as JSON in `.ggterm/plots/` with an append-only index in `.ggterm/history.jsonl`. The raw `PlotSpec` is preserved — plots can be re-rendered with any backend at any time.
+Stored as JSON in `.ggterm/plots/` with an append-only index in `.ggterm/history.jsonl`. The raw `PlotSpec` is preserved, so plots can be re-rendered with any backend at any time.

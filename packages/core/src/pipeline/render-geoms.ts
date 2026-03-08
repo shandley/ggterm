@@ -44,14 +44,16 @@ function getPointShape(shape?: string): string {
 
 /**
  * Get color for a data point
+ * Checks both color and fill aesthetics (fill is the standard for area-based geoms like bars)
  */
 function getPointColor(
   row: Record<string, unknown>,
   aes: AestheticMapping,
   colorScale?: ResolvedColorScale
 ): RGBA {
-  if (colorScale && aes.color) {
-    const value = row[aes.color]
+  const colorField = aes.color || aes.fill
+  if (colorScale && colorField) {
+    const value = row[colorField]
     return colorScale.map(value)
   }
   return DEFAULT_POINT_COLOR

@@ -31,6 +31,7 @@ import {
   scale_fill_viridis,
 } from '../scales'
 import { facet_wrap, facet_grid } from '../facets'
+import { coordFlip, coordCartesian, coordFixed, coordEqual } from '../coords/cartesian'
 
 export interface REPLOptions {
   /** Terminal width */
@@ -303,6 +304,13 @@ export class GGTermREPL {
       // Facets
       facet_wrap,
       facet_grid,
+
+      // Coordinates
+      coordFlip,
+      coord_flip: coordFlip,
+      coordCartesian,
+      coordFixed,
+      coordEqual,
 
       // Themes
       defaultTheme,
