@@ -104,7 +104,7 @@ Export formats: PNG, SVG, HTML (interactive). The HTML export includes pan/zoom 
 
 ## Plot History
 
-Every plot is automatically saved with provenance metadata.
+Every plot is automatically saved with metadata.
 
 **In the viewer:** Press `h` to open the history sidebar. Use arrow keys to browse previous plots. Each entry shows the plot title, timestamp, and the command that created it.
 
@@ -118,12 +118,17 @@ Every plot is automatically saved with provenance metadata.
 
 | Key | Action |
 |-----|--------|
+| `Cmd+K` / `Ctrl+K` | Open command palette (fuzzy search all actions and geom types) |
 | `h` | Toggle history sidebar |
 | `←` `→` | Browse previous/next plots |
+| `Home` / `End` | Jump to first/latest plot |
 | `s` | Download as SVG |
-| `p` | Download as PNG |
+| `p` | Download as PNG (2x resolution) |
 | `f` | Toggle fullscreen |
-| `?` | Show all shortcuts |
+| `?` | Open help panel (5 tabs: Getting Started, Plot Types, Shortcuts, Styles, Export) |
+| `Esc` | Close any open panel |
+
+See the full [Viewer Guide](./VIEWER.md) for command palette details, history sidebar, and more.
 
 ## Built-in Datasets
 

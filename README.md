@@ -47,9 +47,9 @@ Claude: [Generates publication-ready output]
 | "Add a trend line" | Linear or loess regression overlay |
 | "Style like Tufte / Economist / Nature" | Publication style presets |
 | "Export as PNG" | Publication-ready output |
-| "Show me my previous plots" | Browse plot history with provenance |
+| "Show me my previous plots" | Browse plot history |
 
-## 65 Plot Types
+## 66 Plot Types
 
 ggterm includes specialized visualizations across domains:
 
@@ -84,9 +84,11 @@ Or bring your own CSV, JSON, or JSONL files.
 ggterm runs as a companion to Claude Code. The live viewer sits in a browser panel (or [Wave terminal](https://www.waveterm.dev/) side panel) and automatically displays every plot you create:
 
 - **Instant display** — plots appear as interactive Vega-Lite visualizations (tooltips, zoom, pan)
-- **Plot history** — every plot saved automatically, browse with arrow keys, search and retrieve
-- **Style in place** — apply publication presets (Wilke, Tufte, Nature, Economist, APA) without re-running
-- **Export** — download SVG/PNG directly from the viewer, or generate standalone HTML
+- **Command palette** — press `Cmd+K` to fuzzy-search 80+ commands, all 66 geom types, style presets, and export actions
+- **Plot history** — every plot saved automatically; press `h` for the history sidebar, arrow keys to browse, `Home`/`End` to jump
+- **Help panel** — press `?` for a 5-tab reference (Getting Started, Plot Types, Shortcuts, Styles, Export)
+- **Style in place** — apply publication presets (Wilke, Tufte, Nature, Economist, APA) without re-running; viewer updates live
+- **Export** — press `s`/`p` for SVG/PNG directly from the viewer, or generate standalone HTML
 
 Under the hood, ggterm is a comprehensive [Grammar of Graphics](https://www.amazon.com/Grammar-Graphics-Statistics-Computing/dp/0387245448) implementation — the same foundation as R's ggplot2. Every plot is represented as a declarative `PlotSpec` that can be rendered to terminal ASCII art or converted to Vega-Lite for the browser. 66 geometry types, 75 scales, statistical transforms, faceting, and themes — all composable through the grammar.
 
@@ -171,7 +173,8 @@ Every plot is a backend-agnostic `PlotSpec` — a JSON-serializable specificatio
 ## Resources
 
 - [Quick Start Guide](./docs/QUICKSTART.md)
-- [Geometry Reference](./docs/GEOM-REFERENCE.md) — all 65 plot types
+- [Geometry Reference](./docs/GEOM-REFERENCE.md) — all 66 plot types
+- [Live Viewer Guide](./docs/VIEWER.md) — command palette, history, keyboard shortcuts
 - [Architecture](./docs/ARCHITECTURE.md) — PlotSpec, backends, layer model
 - [API Reference](./docs/API.md)
 - [Migration from ggplot2](./docs/MIGRATION-GGPLOT2.md)

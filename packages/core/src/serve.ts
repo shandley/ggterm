@@ -758,7 +758,7 @@ var HELP_TABS = {
 
 // Build geoms tab HTML from catalog
 (function() {
-  var html = '<h3>All 68 Plot Types</h3>';
+  var html = '<h3>All 66 Plot Types</h3>';
   Object.keys(GEOM_CATALOG).forEach(function(cat) {
     html += '<h4>' + cat + '</h4><div class="geom-grid">';
     GEOM_CATALOG[cat].forEach(function(g) {
