@@ -1,7 +1,7 @@
 ---
 name: ggterm-plot
 description: Create terminal data visualizations using Grammar of Graphics. Use when plotting data, creating charts, graphing, visualizing distributions, or when the user mentions plot, chart, graph, histogram, scatter, boxplot, or visualize.
-allowed-tools: Bash(bun:*), Bash(npx:*), Read
+allowed-tools: Bash(npx:*), Read
 ---
 
 # Terminal Plotting with ggterm
@@ -277,7 +277,7 @@ plot.render({
 
 For detailed examples, see [examples/basic-plots.md](examples/basic-plots.md).
 
-### All Available Geoms (68 total)
+### All Available Geoms (66 total)
 
 Point/line: `geom_point`, `geom_line`, `geom_path`, `geom_step`
 Bar: `geom_bar`, `geom_col`, `geom_histogram`, `geom_freqpoly`, `geom_density`

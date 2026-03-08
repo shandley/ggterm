@@ -10,12 +10,12 @@ ggterm is a comprehensive Grammar of Graphics primitive catalog for programmatic
 
 - [x] `PlotSpec` — clean, declarative, JSON-serializable specification (`types.ts`)
 - [x] `gg()` fluent builder API with `.aes()`, `.geom()`, `.scale()`, `.coord()`, `.facet()`, `.theme()`, `.labs()`
-- [x] 65 geometry types across 4 categories:
+- [x] 66 geometry types across 4 categories:
   - Basic: point, line, bar, area, histogram, density, smooth, step, segment, text, rug
   - Distribution: boxplot, violin, ridgeline, beeswarm, ecdf, qq
   - Specialized: heatmap, treemap, sankey, calendar, flame, waffle, upset, dendrogram, corrmat, contour, sparkline, lollipop, dumbbell, bullet
   - Scientific: volcano, manhattan, kaplan-meier, forest, roc, bland-altman, ma, biplot, scree, funnel, control
-- [x] 73 scale functions (continuous, discrete, log, sqrt, reverse, datetime, color, size, shape, alpha, manual)
+- [x] 75 scale functions (continuous, discrete, log, sqrt, reverse, datetime, color, size, shape, alpha, manual)
 - [x] Statistical transforms (bin, density, smooth, summary, boxplot, beeswarm, QQ)
 - [x] Coordinate systems (cartesian, flip, polar)
 - [x] Faceting (wrap, grid, free scales, labellers)

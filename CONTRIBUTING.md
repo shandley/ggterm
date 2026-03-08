@@ -38,8 +38,8 @@ ggterm/
 │       └── src/
 │           ├── types.ts         # PlotSpec and all core interfaces
 │           ├── grammar.ts       # gg() fluent builder API
-│           ├── geoms/           # 65 geometry implementations
-│           ├── scales/          # 73 scale implementations
+│           ├── geoms/           # 66 geometry implementations
+│           ├── scales/          # 75 scale implementations
 │           ├── stats/           # Statistical transforms
 │           ├── coords/          # Coordinate systems
 │           ├── facets/          # Faceting (wrap, grid)

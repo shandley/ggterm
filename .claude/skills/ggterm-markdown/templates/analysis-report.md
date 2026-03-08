@@ -37,9 +37,20 @@ Use this template structure for data analysis reports with ggterm visualizations
 
 ### Distribution Analysis
 
+> **Histogram** — [Describe distribution shape, center, spread, and any notable features like skewness or outliers]
+
+<details>
+<summary>Plot Specification</summary>
+
+```json
+{
+  "data": "...",
+  "aes": { "x": "variable" },
+  "geoms": [{ "type": "histogram", "params": { "bins": 20 } }]
+}
 ```
-[ggterm histogram output]
-```
+
+</details>
 
 **Key observations**:
 - Observation 1
@@ -47,9 +58,20 @@ Use this template structure for data analysis reports with ggterm visualizations
 
 ### Relationship Analysis
 
+> **Scatter plot** — [Describe relationship direction, strength, clusters, and outliers. Note any grouping patterns visible in the color encoding]
+
+<details>
+<summary>Plot Specification</summary>
+
+```json
+{
+  "data": "...",
+  "aes": { "x": "var1", "y": "var2", "color": "group" },
+  "geoms": [{ "type": "point" }]
+}
 ```
-[ggterm scatter plot output]
-```
+
+</details>
 
 **Key observations**:
 - Observation 1
@@ -57,9 +79,20 @@ Use this template structure for data analysis reports with ggterm visualizations
 
 ### Group Comparisons
 
+> **Box plot** — [Describe median differences, spread within groups, overlap between groups, and any outliers]
+
+<details>
+<summary>Plot Specification</summary>
+
+```json
+{
+  "data": "...",
+  "aes": { "x": "group", "y": "value" },
+  "geoms": [{ "type": "boxplot" }]
+}
 ```
-[ggterm boxplot output]
-```
+
+</details>
 
 **Key observations**:
 - Observation 1
@@ -98,35 +131,7 @@ Use this template structure for data analysis reports with ggterm visualizations
 
 ## Appendix
 
-### A. Plot Specifications
-
-<details>
-<summary>Distribution Plot</summary>
-
-```json
-{
-  "data": "...",
-  "aes": { "x": "variable" },
-  "geoms": [{ "type": "histogram", "params": { "bins": 20 } }]
-}
-```
-
-</details>
-
-<details>
-<summary>Scatter Plot</summary>
-
-```json
-{
-  "data": "...",
-  "aes": { "x": "var1", "y": "var2" },
-  "geoms": [{ "type": "point" }]
-}
-```
-
-</details>
-
-### B. Data Quality Notes
+### A. Data Quality Notes
 
 - [Any data quality issues encountered]
 - [Missing value handling]
@@ -134,4 +139,4 @@ Use this template structure for data analysis reports with ggterm visualizations
 
 ---
 
-*Report generated with ggterm - Grammar of Graphics for Terminal*
+*Report generated with ggterm — Grammar of Graphics for Terminal*

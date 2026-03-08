@@ -1,7 +1,7 @@
 ---
 name: ggterm-history
 description: Search and retrieve plots from history. Use when the user asks about previous plots, wants to find a plot they made earlier, re-display a past visualization, or export a historical plot.
-allowed-tools: Bash(bun:*), Bash(npx:*), Read
+allowed-tools: Bash(npx:*), Read
 ---
 
 # Plot History Management

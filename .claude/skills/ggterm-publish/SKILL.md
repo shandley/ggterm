@@ -1,7 +1,7 @@
 ---
 name: ggterm-publish
 description: Export terminal plots to publication-quality formats (PNG, SVG, PDF, HTML). Use when the user wants to save, export, publish, or create a high-quality version of a plot.
-allowed-tools: Bash(bun:*, npx:*, vl2*), Read, Write
+allowed-tools: Bash(npx:*), Bash(node:*), Read, Write
 ---
 
 # Publication Export with ggterm
@@ -64,8 +64,8 @@ cat > plot.html << 'EOF'
 EOF
 
 # Replace placeholder with actual spec
-bun -e "
-const spec = require('./.ggterm/last-plot-vegalite.json');
+node -e "
+const spec = JSON.parse(require('fs').readFileSync('./.ggterm/last-plot-vegalite.json', 'utf-8'));
 const html = require('fs').readFileSync('plot.html', 'utf-8');
 const result = html.replace('SPEC_PLACEHOLDER', JSON.stringify(spec, null, 2));
 require('fs').writeFileSync('plot.html', result);
@@ -77,8 +77,8 @@ require('fs').writeFileSync('plot.html', result);
 To export with different dimensions, modify the Vega-Lite spec first:
 
 ```bash
-bun -e "
-const spec = require('./.ggterm/last-plot-vegalite.json');
+node -e "
+const spec = JSON.parse(require('fs').readFileSync('./.ggterm/last-plot-vegalite.json', 'utf-8'));
 spec.width = 800;
 spec.height = 600;
 require('fs').writeFileSync('.ggterm/last-plot-vegalite.json', JSON.stringify(spec, null, 2));

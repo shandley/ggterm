@@ -12,7 +12,7 @@
 
 ## Abstract
 
-Visual exploratory data analysis is fundamental to scientific computing, yet terminal environments, where most computational research occurs, lack advanced visualization capabilities. We present ggterm, a TypeScript implementation of Wilkinson's Grammar of Graphics featuring 65 geometry types and 13 statistical transformations designed for terminal rendering and AI agent integration. ggterm provides complete scientific visualization support including genomics plots (volcano, MA, Manhattan), clinical trial graphics (Kaplan-Meier survival curves, forest plots, ROC curves), statistical diagnostics (Q-Q plots, ECDF, control charts, funnel plots), and hierarchical visualizations (dendrograms, UpSet plots for set intersections). The library implements a declarative, composable API where visualizations are specified as layered grammar components: data, aesthetics, geometries, scales, coordinates, and facets. This enables natural language interaction with AI assistants. All plots are automatically saved to a structured history system with metadata (data source, specification, timestamp), enabling search and retrieval without manual save actions. Plot specifications are stored as JSON documents that capture the visual encoding decisions. We provide eight deterministic skills for Claude Code integration, supporting workflows from data loading through publication-quality export via Vega-Lite. ggterm bridges the gap between rapid terminal exploration and publication-ready scientific figures, available under the MIT license at https://github.com/shandley/ggterm.
+Visual exploratory data analysis is fundamental to scientific computing, yet terminal environments, where most computational research occurs, lack advanced visualization capabilities. We present ggterm, a TypeScript implementation of Wilkinson's Grammar of Graphics featuring 66 geometry types and 13 statistical transformations designed for terminal rendering and AI agent integration. ggterm provides complete scientific visualization support including genomics plots (volcano, MA, Manhattan), clinical trial graphics (Kaplan-Meier survival curves, forest plots, ROC curves), statistical diagnostics (Q-Q plots, ECDF, control charts, funnel plots), and hierarchical visualizations (dendrograms, UpSet plots for set intersections). The library implements a declarative, composable API where visualizations are specified as layered grammar components: data, aesthetics, geometries, scales, coordinates, and facets. This enables natural language interaction with AI assistants. All plots are automatically saved to a structured history system with metadata (data source, specification, timestamp), enabling search and retrieval without manual save actions. Plot specifications are stored as JSON documents that capture the visual encoding decisions. We provide eight deterministic skills for Claude Code integration, supporting workflows from data loading through publication-quality export via Vega-Lite. ggterm bridges the gap between rapid terminal exploration and publication-ready scientific figures, available under the MIT license at https://github.com/shandley/ggterm.
 
 ---
 
@@ -34,7 +34,7 @@ We identified four gaps in the current landscape:
 
 4. **No AI agent integration.** As AI assistants become standard tools in scientific computing, visualization libraries need APIs designed for conversational interaction: declarative specifications that AI can generate, modify, and compose.
 
-ggterm addresses these gaps through a complete Grammar of Graphics implementation featuring 65 geometry types, 13 statistical transformations, automatic plot history, and first-class support for AI agent integration.
+ggterm addresses these gaps through a complete Grammar of Graphics implementation featuring 66 geometry types, 13 statistical transformations, automatic plot history, and first-class support for AI agent integration.
 
 ---
 
@@ -114,7 +114,7 @@ gg(data).aes({ x: userSpecifiedX, y: userSpecifiedY, color: groupingVar })
 
 ### Geometry Types
 
-ggterm implements 65 geometry types organized by analytical field (Figure 2A):
+ggterm implements 66 geometry types organized by analytical field (Figure 2A):
 
 #### Core Visualizations (25 types)
 Basic building blocks for general-purpose visualization:
@@ -440,7 +440,7 @@ ggterm uniquely combines Grammar of Graphics architecture, complete scientific v
 
 Terminal-based workflows dominate scientific computing. Researchers SSH into clusters, run analyses in containers, and manage remote servers through text interfaces. ggterm brings full-featured visualization to these environments, enabling EDA where data lives rather than requiring file transfers to local graphical tools.
 
-The 65 geometry types cover analytical needs across fields. Genomics researchers can create volcano plots and Manhattan plots directly on the analysis server. Clinical researchers can generate Kaplan-Meier curves and forest plots during data review. Statisticians can assess model assumptions with Q-Q plots and residual diagnostics. This field coverage reduces context-switching between exploration and specialized visualization tools.
+The 66 geometry types cover analytical needs across fields. Genomics researchers can create volcano plots and Manhattan plots directly on the analysis server. Clinical researchers can generate Kaplan-Meier curves and forest plots during data review. Statisticians can assess model assumptions with Q-Q plots and residual diagnostics. This field coverage reduces context-switching between exploration and specialized visualization tools.
 
 ### Persistent Plot History
 
@@ -517,7 +517,7 @@ We thank the members of the Handley Lab and the Washington University School of 
 
 **Figure 1.** ggterm architecture showing the Grammar of Graphics layer system and rendering pipeline. Data flows through grammar layers (aesthetics, geometries, scales, facets, coordinates, theme) into a plot specification, with three output paths: terminal rendering via Unicode and ANSI color, publication export via Vega-Lite to PNG/SVG/PDF, and automatic persistence to the structured history system.
 
-**Figure 2.** Geometry type coverage across analytical fields. (A) Taxonomy of 65 geometry types organized into eight categories by purpose; directional variants (e.g., `errorbar`/`errorbarh`) are grouped with their parent type. (B) Examples of scientific visualizations rendered directly in the terminal, showing a volcano plot for differential expression analysis (left), a Kaplan-Meier survival curve (center), and a forest plot for meta-analysis (right). All panels are actual ggterm output captured from terminal sessions.
+**Figure 2.** Geometry type coverage across analytical fields. (A) Taxonomy of 66 geometry types organized into eight categories by purpose; directional variants (e.g., `errorbar`/`errorbarh`) are grouped with their parent type. (B) Examples of scientific visualizations rendered directly in the terminal, showing a volcano plot for differential expression analysis (left), a Kaplan-Meier survival curve (center), and a forest plot for meta-analysis (right). All panels are actual ggterm output captured from terminal sessions.
 
 **Figure 3.** Plot history system. Every rendered plot is automatically saved with metadata. Left: terminal rendering triggers auto-save. Center: the plot file captures both metadata (id, timestamp, data source, command, geometry types) and the complete grammar specification (data, aesthetics, geometries, scales, coordinates, theme, labels), stored as date-stamped JSON files with an append-only history index. Right: three retrieval paths enable browsing by date, searching by geometry type, and re-rendering at different dimensions or exporting via Vega-Lite.
 

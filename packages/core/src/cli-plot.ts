@@ -122,7 +122,7 @@ const GEOM_TYPES = [
   // Clinical/Statistical
   'kaplan_meier', 'forest', 'roc', 'bland_altman',
   // Statistical diagnostics
-  'qq', 'ecdf', 'funnel', 'control', 'scree',
+  'ecdf', 'funnel', 'control', 'scree',
   // Set/hierarchical
   'upset', 'dendrogram'
 ]

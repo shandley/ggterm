@@ -20,14 +20,14 @@ Single package: `@ggterm/core` in `packages/core/`
 ```
 Layer 3: AI Integration — 8 Claude Code skills, natural language workflows
 Layer 2: Backends & Tooling — Terminal renderer, Vega-Lite exporter, live viewer, CLI, history
-Layer 1: Grammar & Primitives — PlotSpec, 65 geoms, 73 scales, stats, coords, facets, themes
+Layer 1: Grammar & Primitives — PlotSpec, 66 geoms, 75 scales, stats, coords, facets, themes
 ```
 
 The clean boundary is `PlotSpec` (`packages/core/src/types.ts:195-205`). Everything in Layer 1 produces a PlotSpec. Everything in Layer 2 consumes one.
 
 ### Contains
 
-- **Layer 1**: Grammar engine with fluent API, 65 geometry types, 73 scales, stats, coords, facets, themes
+- **Layer 1**: Grammar engine with fluent API, 66 geometry types, 75 scales, stats, coords, facets, themes
 - **Layer 2**: Terminal ASCII renderer, Vega-Lite export backend, CLI, live viewer, plot history with automatic metadata
 - **Layer 3**: 8 Claude Code skills for AI-assisted data analysis workflows
 
@@ -62,8 +62,8 @@ Also available via programmatic API:
 
 - `packages/core/src/types.ts` - PlotSpec interface (the clean boundary)
 - `packages/core/src/grammar.ts` - GGPlot fluent API
-- `packages/core/src/geoms/` - 65 geometry implementations
-- `packages/core/src/scales/` - 73 scale implementations
+- `packages/core/src/geoms/` - 66 geometry implementations
+- `packages/core/src/scales/` - 75 scale implementations
 - `packages/core/src/pipeline/pipeline.ts` - Terminal rendering backend
 - `packages/core/src/export/vega-lite.ts` - Vega-Lite export backend
 - `packages/core/src/cli-plot.ts` - CLI tool

@@ -1,7 +1,7 @@
 {
   "name": "@ggterm/core",
   "version": "0.3.10",
-  "description": "Grammar of Graphics primitive catalog — 65+ geoms, 73 scales, terminal and Vega-Lite backends, AI-composable PlotSpec",
+  "description": "Grammar of Graphics primitive catalog — 66 geoms, 75 scales, terminal and Vega-Lite backends, AI-composable PlotSpec",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -46,7 +46,7 @@ These examples use datasets bundled with ggterm — no files needed:
 
 ## Specialized Visualizations
 
-Beyond standard charts, ggterm includes 65 geometry types across domains:
+Beyond standard charts, ggterm includes 66 geometry types across domains:
 
 | Category | Types |
 |----------|-------|

@@ -15,7 +15,7 @@
 "A visualization layer enabling AI agents to perform exploratory data analysis"
 
 ### Specification Framing (Strong)
-"A Grammar of Graphics **primitive catalog** — 65 geometry types as a backend-agnostic `PlotSpec` specification — designed for programmatic composition by AI agents. The first GoG implementation that treats the specification as the primary artifact and renderers as pluggable consumers."
+"A Grammar of Graphics **primitive catalog** — 66 geometry types as a backend-agnostic `PlotSpec` specification — designed for programmatic composition by AI agents. The first GoG implementation that treats the specification as the primary artifact and renderers as pluggable consumers."
 
 ## Key Differentiators
 

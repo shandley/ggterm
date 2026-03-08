@@ -37,8 +37,8 @@ console.log(plot.render({ width: 60, height: 20 }))
 
 ## Features
 
-- **20+ Geometry Types**: point, line, bar, histogram, boxplot, violin, area, heatmap, contour, and more
-- **50+ Scales**: Continuous, discrete, color (viridis, brewer), date/time
+- **66 Geometry Types**: point, line, bar, histogram, boxplot, violin, area, heatmap, contour, and more
+- **75 Scales**: Continuous, discrete, color (viridis, brewer), date/time
 - **Faceting**: `facet_wrap()` and `facet_grid()` for multi-panel plots
 - **Themes**: Customizable themes for different visual styles
 - **Export**: Convert to Vega-Lite for publication-quality PNG/SVG output

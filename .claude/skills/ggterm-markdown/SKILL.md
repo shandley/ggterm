@@ -1,7 +1,7 @@
 ---
 name: ggterm-markdown
 description: Generate markdown reports with embedded ggterm visualizations. Use when creating analysis reports, documenting results, exporting findings, or when the user wants plots in markdown format for sharing or documentation.
-allowed-tools: Write, Read, Bash(bun:*), Bash(npx:*)
+allowed-tools: Write, Read, Bash(npx:*)
 ---
 
 # Markdown Reports with ggterm

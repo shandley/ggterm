@@ -88,7 +88,7 @@ ggterm runs as a companion to Claude Code. The live viewer sits in a browser pan
 - **Style in place** — apply publication presets (Wilke, Tufte, Nature, Economist, APA) without re-running
 - **Export** — download SVG/PNG directly from the viewer, or generate standalone HTML
 
-Under the hood, ggterm is a comprehensive [Grammar of Graphics](https://www.amazon.com/Grammar-Graphics-Statistics-Computing/dp/0387245448) implementation — the same foundation as R's ggplot2. Every plot is represented as a declarative `PlotSpec` that can be rendered to terminal ASCII art or converted to Vega-Lite for the browser. 65 geometry types, 73 scales, statistical transforms, faceting, and themes — all composable through the grammar.
+Under the hood, ggterm is a comprehensive [Grammar of Graphics](https://www.amazon.com/Grammar-Graphics-Statistics-Computing/dp/0387245448) implementation — the same foundation as R's ggplot2. Every plot is represented as a declarative `PlotSpec` that can be rendered to terminal ASCII art or converted to Vega-Lite for the browser. 66 geometry types, 75 scales, statistical transforms, faceting, and themes — all composable through the grammar.
 
 ## Examples
 

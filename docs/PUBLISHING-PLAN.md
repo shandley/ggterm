@@ -17,8 +17,8 @@ Single package: `@ggterm/core`
 
 Contains everything:
 - Grammar engine with fluent API and PlotSpec specification
-- 65 geometry types (basic, distribution, specialized, scientific)
-- 73 scale functions
+- 66 geometry types (basic, distribution, specialized, scientific)
+- 75 scale functions
 - Terminal ASCII rendering backend
 - Vega-Lite export backend
 - CLI tool with setup/serve/init/inspect/suggest

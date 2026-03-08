@@ -41,7 +41,7 @@ Every change updates the viewer in place. No re-running, no page refresh.
 
 ## Common Plot Types
 
-ggterm supports 65 geometry types. Here are the most common, all available through natural language:
+ggterm supports 66 geometry types. Here are the most common, all available through natural language:
 
 | You say... | What appears in the viewer |
 |------------|---------------------------|

@@ -62,7 +62,7 @@ interface AestheticMapping {
 ```
 
 #### 3. Geometries Layer
-65 geometry types determine the visual representation of data. See [GEOM-REFERENCE.md](./GEOM-REFERENCE.md) for the complete catalog.
+66 geometry types determine the visual representation of data. See [GEOM-REFERENCE.md](./GEOM-REFERENCE.md) for the complete catalog.
 
 | Category | Examples |
 |----------|---------|
@@ -82,7 +82,7 @@ stat_summary({ fun: 'mean' })       // Group summaries
 ```
 
 #### 5. Scales Layer
-73 scale functions map data domain to visual range.
+75 scale functions map data domain to visual range.
 
 **Position:** `scale_x_continuous()`, `scale_x_log10()`, `scale_x_discrete()`, `scale_x_datetime()`
 **Color:** `scale_color_viridis()`, `scale_color_discrete()`, `scale_color_manual()`
@@ -261,8 +261,8 @@ packages/
     └── src/
         ├── types.ts           # PlotSpec and all core interfaces
         ├── grammar.ts         # gg() fluent builder API
-        ├── geoms/             # 65 geometry implementations
-        ├── scales/            # 73 scale implementations
+        ├── geoms/             # 66 geometry implementations
+        ├── scales/            # 75 scale implementations
         ├── stats/             # Statistical transforms
         ├── coords/            # Coordinate systems
         ├── facets/            # Faceting (wrap, grid)

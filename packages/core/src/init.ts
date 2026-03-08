@@ -536,7 +536,7 @@ Provide a quick reference of ggterm capabilities when users ask for help.
 - "Plot x vs y" — scatter plot
 - "Show a histogram of column_name" — distribution
 - "Create a boxplot by group" — comparison
-- Any of 65 geom types (see below)
+- Any of 66 geom types (see below)
 
 ### Styling
 - "Apply Wilke style" — 6 presets: Wilke, Tufte, Nature, Economist, Minimal, APA
@@ -552,7 +552,7 @@ Provide a quick reference of ggterm capabilities when users ask for help.
 - "Show my recent plots" — list history
 - "Find the scatter plot I made earlier" — search history
 
-## All 65 Geom Types
+## All 66 Geom Types
 
 | Category | Types |
 |----------|-------|
