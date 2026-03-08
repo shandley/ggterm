@@ -1328,6 +1328,7 @@ function printUsage(): void {
 ggterm CLI - Terminal plotting tool
 
 Commands:
+  setup [port]                                Quick start: init + serve + open browser
   init                                        Install ggterm skills in current directory
   inspect <file>                              Show column types and statistics
   suggest <file>                              Suggest visualizations with commands
@@ -1347,6 +1348,7 @@ Reference lines (append to geom with +):
   abline@<slope>,<int>   Line with slope and intercept
 
 Examples:
+  ggterm-plot setup                            # Quick start for new projects
   ggterm-plot init                             # Set up skills in current project
   ggterm-plot inspect data.csv
   ggterm-plot data.json x y                    # JSON array of objects
@@ -1374,7 +1376,17 @@ if (args.length === 0) {
 
 const command = args[0]
 
-if (command === 'init') {
+if (command === 'setup') {
+  import('./init').then(({ ensureInit, generateWelcomePlot }) => {
+    const freshInstall = ensureInit()
+    if (freshInstall) {
+      generateWelcomePlot()
+    }
+    import('./serve').then(({ handleServe }) => {
+      handleServe(args[1] ? parseInt(args[1]) : undefined, { openBrowser: true })
+    })
+  })
+} else if (command === 'init') {
   handleInit()
 } else if (command === 'inspect') {
   if (args.length < 2) {

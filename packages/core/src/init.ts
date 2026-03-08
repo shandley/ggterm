@@ -5,11 +5,11 @@
  * Safe to run multiple times - updates skills if version changed
  */
 
-import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSync } from 'fs'
+import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSync, appendFileSync } from 'fs'
 import { join, extname } from 'path'
 
 // Current version - update when skills change
-const SKILLS_VERSION = '0.3.7'
+const SKILLS_VERSION = '0.3.10'
 
 // Skill templates - these use npx ggterm-plot for portability
 const SKILLS: Record<string, { files: Record<string, string> }> = {
@@ -512,6 +512,91 @@ Generate analysis reports with embedded terminal visualizations.
 $ARGUMENTS
 `
     }
+  },
+  'ggterm-help': {
+    files: {
+      'SKILL.md': `---
+name: ggterm-help
+description: Quick reference for ggterm capabilities. Use when the user asks what they can do, what commands are available, what plot types exist, how to use ggterm, or asks for help.
+allowed-tools: Read
+---
+
+# ggterm Quick Reference
+
+Provide a quick reference of ggterm capabilities when users ask for help.
+
+## What You Can Ask Claude Code to Do
+
+### Data Loading
+- "Load data.csv" — reads CSV, JSON, or JSONL files
+- "Use the iris dataset" — built-in iris (150 rows) or mtcars (16 rows)
+- "Inspect my data" — column types and summary statistics
+
+### Plotting
+- "Plot x vs y" — scatter plot
+- "Show a histogram of column_name" — distribution
+- "Create a boxplot by group" — comparison
+- Any of 68 geom types (see below)
+
+### Styling
+- "Apply Wilke style" — 6 presets: Wilke, Tufte, Nature, Economist, Minimal, APA
+- "Change the title to ..." — natural language customization
+- "Make the points blue" — color/font/label changes
+
+### Export
+- "Export as PNG" — raster export
+- "Save as SVG" — vector export
+- "Export to PDF" — PDF via vega-lite CLI
+
+### History
+- "Show my recent plots" — list history
+- "Find the scatter plot I made earlier" — search history
+
+## All 68 Geom Types
+
+| Category | Types |
+|----------|-------|
+| Point/Line | point, line, path, step, smooth, segment, curve |
+| Bar/Area | bar, col, histogram, freqpoly, density, area, ribbon |
+| Distribution | boxplot, violin, ridgeline, joy, beeswarm, quasirandom, density_2d, qq |
+| Comparison | dumbbell, lollipop, waffle, sparkline, bullet, braille |
+| Specialized | calendar, flame, icicle, corrmat, sankey, treemap, volcano, ma, manhattan, heatmap, biplot |
+| Clinical | kaplan_meier, forest, roc, bland_altman |
+| Diagnostics | ecdf, funnel, control, scree, upset, dendrogram |
+| Error/Reference | errorbar, errorbarh, crossbar, linerange, pointrange, rug, hline, vline, abline |
+| Text | text, label |
+| 2D/Tile | tile, raster, bin2d, rect, contour, contour_filled |
+
+## Style Presets
+
+| Style | Description |
+|-------|-------------|
+| Wilke | Clean academic, Helvetica, subtle gridlines |
+| Tufte | Maximum data-ink ratio, Georgia serif, grayscale |
+| Nature | Compact journal format, Arial, thin lines |
+| Economist | Light blue background, bold titles, distinctive |
+| Minimal | Ultra-clean, system font, no chrome |
+| APA | Times New Roman, italic titles, academic |
+
+## Live Viewer
+
+When \\\`npx ggterm-plot serve\\\` is running:
+- Press \\\`Cmd+K\\\` for command palette (search geoms, actions, styles)
+- Press \\\`?\\\` for full help panel (tabbed reference)
+- Press \\\`h\\\` for history sidebar
+- Press \\\`s\\\`/\\\`p\\\` for SVG/PNG export
+- Press \\\`f\\\` for fullscreen
+
+## Workflow
+
+1. Start the viewer: \\\`npx ggterm-plot serve\\\`
+2. Ask Claude to plot data naturally
+3. Iterate with style/customize commands
+4. Export when satisfied
+
+$ARGUMENTS
+`
+    }
   }
 }
 
@@ -613,6 +698,36 @@ function getRecentPlots(dir: string, limit = 3): Array<{ id: string; description
   }
 }
 
+/**
+ * Lightweight init check for use by serve/setup.
+ * Creates skills if missing, but is silent if already initialized.
+ * Returns true if a fresh install was performed.
+ */
+export function ensureInit(): boolean {
+  const cwd = process.cwd()
+  const skillsDir = join(cwd, '.claude', 'skills')
+  const ggtermDir = join(cwd, '.ggterm')
+  const versionFile = join(ggtermDir, 'version.json')
+
+  let installedVersion: string | null = null
+  if (existsSync(versionFile)) {
+    try {
+      const versionData = JSON.parse(readFileSync(versionFile, 'utf-8'))
+      installedVersion = versionData.version
+    } catch {}
+  }
+
+  const needsInstall = !existsSync(skillsDir)
+  const needsUpdate = installedVersion !== SKILLS_VERSION
+
+  if (!needsInstall && !needsUpdate) {
+    return false
+  }
+
+  handleInit()
+  return needsInstall
+}
+
 export function handleInit(): void {
   const cwd = process.cwd()
   const skillsDir = join(cwd, '.claude', 'skills')
@@ -667,9 +782,11 @@ export function handleInit(): void {
 
   // Generate or update CLAUDE.md — this is what Claude Code reads on every conversation start
   const claudeMdPath = join(cwd, 'CLAUDE.md')
-  const claudeMdContent = `# ggterm Data Analysis Project
+  const claudeMdContent = `# ggterm — Grammar of Graphics Visualization
 
-This project uses ggterm (@ggterm/core) for data visualization.
+This project uses ggterm (@ggterm/core), a Grammar of Graphics primitive catalog with terminal and Vega-Lite backends.
+
+Every plot is a \`PlotSpec\` — a declarative specification consumed by two backends: terminal ASCII (instant feedback in the terminal) and Vega-Lite (publication-quality interactive HTML in the browser).
 
 ## IMPORTANT: Built-in Datasets
 
@@ -707,10 +824,16 @@ point, line, histogram, boxplot, bar, violin, density, area, ridgeline, heatmap,
 When \`npx ggterm-plot serve\` is running, plots auto-display in the browser/Wave panel as high-resolution interactive Vega-Lite visualizations instead of ASCII art.
 
 **Style and customize changes also auto-display.** When you modify \`.ggterm/last-plot-vegalite.json\` (via /ggterm-style or /ggterm-customize), the viewer updates automatically. Do NOT re-run \`npx ggterm-plot\` after styling — that would overwrite your changes.
+
+## Help
+
+- Press \`Cmd+K\` in the live viewer for the command palette (search geoms, actions, styles)
+- Press \`?\` for the full help panel (tabbed reference)
+- Ask Claude: "What can ggterm do?" or use \`/ggterm-help\`
 `
 
   // Only write if doesn't exist or is a ggterm-generated file
-  const GGTERM_MARKER = '# ggterm Data Analysis Project'
+  const GGTERM_MARKER = '# ggterm'
   let shouldWriteClaudeMd = !existsSync(claudeMdPath)
   if (!shouldWriteClaudeMd) {
     try {
@@ -723,6 +846,28 @@ When \`npx ggterm-plot serve\` is running, plots auto-display in the browser/Wav
     writeFileSync(claudeMdPath, claudeMdContent)
     console.log('  ✓ CLAUDE.md (project instructions for Claude Code)')
     console.log('')
+  }
+
+  // Generate or update .gitignore
+  const gitignorePath = join(cwd, '.gitignore')
+  const gitignoreEntries = ['.ggterm/', 'node_modules/']
+
+  if (!existsSync(gitignorePath)) {
+    writeFileSync(gitignorePath, gitignoreEntries.join('\n') + '\n')
+    console.log('  ✓ .gitignore')
+    console.log('')
+  } else {
+    const existing = readFileSync(gitignorePath, 'utf-8')
+    const existingLines = existing.split('\n').map(l => l.trim())
+    const linesToAdd = gitignoreEntries.filter(entry =>
+      !existingLines.some(line => line === entry || line === entry.replace('/', ''))
+    )
+    if (linesToAdd.length > 0) {
+      const suffix = existing.endsWith('\n') ? '' : '\n'
+      appendFileSync(gitignorePath, suffix + '\n# ggterm\n' + linesToAdd.join('\n') + '\n')
+      console.log(`  ✓ .gitignore (added: ${linesToAdd.join(', ')})`)
+      console.log('')
+    }
   }
 
   // Show built-in datasets
@@ -763,9 +908,119 @@ When \`npx ggterm-plot serve\` is running, plots auto-display in the browser/Wav
   // Quick tips on first install
   if (needsInstall) {
     console.log('Try:')
+    console.log('  npx ggterm-plot setup   # Quick start: init + viewer + browser')
     console.log('  npx ggterm-plot iris sepal_length sepal_width species "Iris" point')
-    console.log('  npx ggterm-plot serve   # Start live viewer')
     console.log('  "Plot the iris dataset"  # Ask Claude Code')
     console.log('')
+    console.log('Tip: For PNG/SVG/PDF export, install Vega-Lite tools:')
+    console.log('  npm install -g vega-lite vega-cli canvas')
+    console.log('')
   }
+}
+
+/**
+ * Generate a welcome iris scatter plot so the viewer has something to show
+ * immediately. Uses a static Vega-Lite spec to avoid the large import tree
+ * of the full grammar engine.
+ */
+export function generateWelcomePlot(): void {
+  const cwd = process.cwd()
+  const ggtermDir = join(cwd, '.ggterm')
+  const plotsDir = join(ggtermDir, 'plots')
+
+  // Don't overwrite if plots already exist
+  if (existsSync(plotsDir)) {
+    const existing = readdirSync(plotsDir).filter(f => f.endsWith('.json'))
+    if (existing.length > 0) return
+  }
+
+  mkdirSync(plotsDir, { recursive: true })
+
+  // Generate iris data inline (same ranges as BUILTIN_DATASETS in cli-plot.ts)
+  const speciesParams: Record<string, { sl: [number, number]; sw: [number, number]; pl: [number, number]; pw: [number, number] }> = {
+    setosa:     { sl: [4.3, 5.8], sw: [2.3, 4.4], pl: [1.0, 1.9], pw: [0.1, 0.6] },
+    versicolor: { sl: [4.9, 7.0], sw: [2.0, 3.4], pl: [3.0, 5.1], pw: [1.0, 1.8] },
+    virginica:  { sl: [4.9, 7.9], sw: [2.2, 3.8], pl: [4.5, 6.9], pw: [1.4, 2.5] },
+  }
+  const species = ['setosa', 'versicolor', 'virginica'] as const
+  const rand = (min: number, max: number) => +(min + Math.random() * (max - min)).toFixed(1)
+  const irisData = species.flatMap(sp => {
+    const p = speciesParams[sp]
+    return Array.from({ length: 50 }, () => ({
+      sepal_length: rand(...p.sl),
+      sepal_width: rand(...p.sw),
+      petal_length: rand(...p.pl),
+      petal_width: rand(...p.pw),
+      species: sp,
+    }))
+  })
+
+  // Static Vega-Lite spec for iris scatter plot
+  const vlSpec = {
+    $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+    title: 'Welcome to ggterm — Iris Dataset',
+    width: 500,
+    height: 350,
+    data: { values: irisData },
+    mark: { type: 'point', filled: true, opacity: 0.7, size: 60 },
+    encoding: {
+      x: { field: 'sepal_length', type: 'quantitative', title: 'Sepal Length' },
+      y: { field: 'sepal_width', type: 'quantitative', title: 'Sepal Width' },
+      color: { field: 'species', type: 'nominal', title: 'Species' },
+    },
+    params: [{ name: 'hover', select: { type: 'point', on: 'pointerover', clear: 'pointerout' } }],
+  }
+
+  writeFileSync(
+    join(ggtermDir, 'last-plot-vegalite.json'),
+    JSON.stringify(vlSpec, null, 2)
+  )
+
+  // Save to history so it appears in the history sidebar
+  const now = new Date()
+  const dateStr = now.toISOString().split('T')[0]
+  const plotId = `${dateStr}-001`
+  const timestamp = now.toISOString()
+
+  const spec = {
+    data: irisData,
+    aes: { x: 'sepal_length', y: 'sepal_width', color: 'species' },
+    geoms: [{ type: 'point' }],
+    labels: { title: 'Welcome to ggterm — Iris Dataset', x: 'Sepal Length', y: 'Sepal Width' },
+    scales: {},
+    facet: null,
+    theme: {},
+  }
+
+  const historicalPlot = {
+    _provenance: {
+      id: plotId,
+      timestamp,
+      dataFile: 'iris (built-in)',
+      command: 'setup (welcome plot)',
+      description: 'Welcome — Iris sepal_width vs sepal_length by species',
+      geomTypes: ['point'],
+      aesthetics: ['x', 'y', 'color'],
+    },
+    spec,
+  }
+
+  writeFileSync(join(plotsDir, `${plotId}.json`), JSON.stringify(historicalPlot, null, 2))
+
+  // Append to history index
+  const historyFile = join(ggtermDir, 'history.jsonl')
+  const entry = {
+    id: plotId,
+    timestamp,
+    description: historicalPlot._provenance.description,
+    dataFile: 'iris (built-in)',
+    geomTypes: ['point'],
+  }
+  appendFileSync(historyFile, JSON.stringify(entry) + '\n')
+
+  // Write last-plot.json for backward compatibility
+  writeFileSync(join(ggtermDir, 'last-plot.json'), JSON.stringify(spec, null, 2))
+
+  console.log(`  ✓ Welcome plot (iris scatter) → ${plotId}`)
+  console.log('')
 }

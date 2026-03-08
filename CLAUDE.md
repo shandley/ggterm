@@ -1,6 +1,6 @@
 # ggterm
 
-TypeScript implementation of the Grammar of Graphics for terminal interfaces.
+Grammar of Graphics primitive catalog with terminal and Vega-Lite backends.
 
 ## Quick Start
 
@@ -8,24 +8,32 @@ TypeScript implementation of the Grammar of Graphics for terminal interfaces.
 bun install          # Install dependencies
 bun run build        # Build
 bun test             # Run all tests
-bun run packages/core/src/demo.ts  # Run demo
+bun run examples/demo.ts  # Run demo
 ```
 
 ## Architecture
 
 Single package: `@ggterm/core` in `packages/core/`
 
-Contains:
-- Grammar engine with fluent API
-- 68 geometry types (including specialized visualizations and statistical diagnostics)
-- 50+ scales (continuous, discrete, color)
-- CLI for plotting CSV/JSON/JSONL files
-- Vega-Lite export for publication-quality output
-- Plot history with provenance tracking
+### Three Layers
+
+```
+Layer 3: AI Integration — 8 Claude Code skills, natural language workflows
+Layer 2: Backends & Tooling — Terminal renderer, Vega-Lite exporter, live viewer, CLI, history
+Layer 1: Grammar & Primitives — PlotSpec, 65 geoms, 73 scales, stats, coords, facets, themes
+```
+
+The clean boundary is `PlotSpec` (`packages/core/src/types.ts:195-205`). Everything in Layer 1 produces a PlotSpec. Everything in Layer 2 consumes one.
+
+### Contains
+
+- **Layer 1**: Grammar engine with fluent API, 65 geometry types, 73 scales, stats, coords, facets, themes
+- **Layer 2**: Terminal ASCII renderer, Vega-Lite export backend, CLI, live viewer, plot history with provenance
+- **Layer 3**: 8 Claude Code skills for AI-assisted data analysis workflows
 
 ## Current Status
 
-- **Version**: 0.3.8
+- **Version**: 0.3.10
 - **npm**: https://www.npmjs.com/package/@ggterm/core
 - **Repo**: https://github.com/shandley/ggterm (public)
 
@@ -52,16 +60,21 @@ Also available via programmatic API:
 
 ## Key Files
 
+- `packages/core/src/types.ts` - PlotSpec interface (the clean boundary)
 - `packages/core/src/grammar.ts` - GGPlot fluent API
-- `packages/core/src/pipeline/pipeline.ts` - Rendering pipeline
-- `packages/core/src/geoms/` - All geometry implementations
-- `packages/core/src/scales/` - Scale system
+- `packages/core/src/geoms/` - 65 geometry implementations
+- `packages/core/src/scales/` - 73 scale implementations
+- `packages/core/src/pipeline/pipeline.ts` - Terminal rendering backend
+- `packages/core/src/export/vega-lite.ts` - Vega-Lite export backend
 - `packages/core/src/cli-plot.ts` - CLI tool
 - `packages/core/src/serve.ts` - Live plot viewer server
 
 ## CLI Usage
 
 ```bash
+# Quick start (new projects):
+npx ggterm-plot setup             # init + welcome plot + open browser + serve
+
 # Using npx (after npm install @ggterm/core):
 npx ggterm-plot iris sepal_length sepal_width species "Iris" point
 npx ggterm-plot data.csv x y color "Title" point
@@ -76,10 +89,10 @@ npx ggterm-plot show 2024-01-26-001
 npx ggterm-plot export 2024-01-26-001 output.html
 
 # Live plot viewer (companion panel for Wave terminal or browser)
-npx ggterm-plot serve          # default port 4242
+npx ggterm-plot serve          # default port 4242 (auto-inits skills)
 npx ggterm-plot serve 8080     # custom port
 
-# Initialize skills for Claude Code
+# Initialize skills for Claude Code (also run automatically by serve/setup)
 npx ggterm-plot init
 
 # Inspect and suggest
@@ -94,21 +107,26 @@ bun packages/core/src/cli-plot.ts data.csv x y
 
 ```bash
 mkdir my-analysis && cd my-analysis
+npx ggterm-plot setup   # Init skills, welcome plot, open browser, start server
+```
+
+Or step-by-step:
+```bash
 npm init -y
 npm install @ggterm/core
-npx ggterm-plot init    # Install skills + CLAUDE.md
-npx ggterm-plot serve   # Start live viewer (port 4242)
+npx ggterm-plot init    # Install skills + CLAUDE.md + .gitignore
+npx ggterm-plot serve   # Start live viewer (port 4242, auto-inits if needed)
 ```
 
 ## Testing
 
 ```bash
-bun test             # Run all tests (~2158 tests)
+bun test             # Run all tests (2158 tests)
 ```
 
 ## Claude Code Skills
 
-Seven skills in `.claude/skills/` for AI-assisted data analysis:
+Eight skills in `.claude/skills/` for AI-assisted data analysis:
 
 | Skill | Purpose |
 |-------|---------|
@@ -119,6 +137,7 @@ Seven skills in `.claude/skills/` for AI-assisted data analysis:
 | `ggterm-publish` | Export plots to PNG/SVG/PDF/HTML |
 | `ggterm-customize` | Natural language plot customization |
 | `ggterm-style` | Apply publication-quality style presets (Wilke, Tufte, Nature, Economist) |
+| `ggterm-help` | Quick reference for capabilities, geom types, shortcuts |
 
 ## Documentation
 
@@ -158,12 +177,18 @@ edit `.ggterm/last-plot.json` (ggterm terminal format — changes won't appear i
 2. **Wave widget auto-install** - Write to `~/.waveterm/config/widgets.json` for permanent sidebar button
 3. **Plot annotations** - Click to add notes saved to history provenance
 
+## `npx ggterm-plot setup` (Recommended for New Users)
+
+One-command onboarding: runs `init`, generates a welcome plot (iris scatter),
+opens the browser, and starts the live viewer. Ideal for new projects.
+
 ## `npx ggterm-plot init`
 
-Generates `.claude/skills/` (7 skills) and `CLAUDE.md` in the current directory.
-CLAUDE.md is read by Claude Code at conversation start, ensuring immediate awareness
-of built-in datasets and plotting commands. Skills are lazy-loaded on demand.
-Safe to re-run — only overwrites ggterm-generated files.
+Generates `.claude/skills/` (8 skills), `CLAUDE.md`, and `.gitignore` in the
+current directory. CLAUDE.md is read by Claude Code at conversation start, ensuring
+immediate awareness of built-in datasets and plotting commands. Skills are lazy-loaded
+on demand. Safe to re-run — only overwrites ggterm-generated files. Also run
+automatically by `serve` and `setup`.
 
 ## Next Steps
 

@@ -20,6 +20,7 @@ import {
   ensureHistoryDirs,
 } from './history'
 import { plotSpecToVegaLite } from './export'
+import { ensureInit } from './init'
 import type { HistoricalPlot } from './history'
 import type { VegaLiteSpec } from './export'
 
@@ -203,7 +204,67 @@ const CLIENT_HTML = `<!DOCTYPE html>
     text-align: center;
   }
   .waiting .hint { font-size: 12px; margin-top: 8px; color: #30363d; }
-  #shortcuts {
+  /* Command Palette */
+  #palette {
+    display: none;
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    width: 480px;
+    max-width: 90vw;
+    max-height: 60vh;
+    z-index: 25;
+    font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #palette.open { display: flex; }
+  #palette-input {
+    background: #0d1117;
+    border: none;
+    border-bottom: 1px solid #30363d;
+    color: #c9d1d9;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 12px 16px;
+    outline: none;
+    width: 100%;
+  }
+  #palette-input::placeholder { color: #484f58; }
+  #palette-results {
+    overflow-y: auto;
+    max-height: calc(60vh - 48px);
+    padding: 4px 0;
+  }
+  #palette-results::-webkit-scrollbar { width: 6px; }
+  #palette-results::-webkit-scrollbar-track { background: transparent; }
+  #palette-results::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+  .palette-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .palette-item:hover, .palette-item.selected { background: #21262d; }
+  .palette-item .pi-icon { color: #58a6ff; width: 16px; text-align: center; flex-shrink: 0; }
+  .palette-item .pi-label { flex: 1; color: #c9d1d9; }
+  .palette-item .pi-hint { color: #484f58; font-size: 11px; }
+  .palette-group {
+    padding: 6px 16px 2px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #484f58;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  /* Tabbed Help Panel */
+  #help-panel {
     display: none;
     position: fixed;
     top: 50%;
@@ -212,13 +273,66 @@ const CLIENT_HTML = `<!DOCTYPE html>
     background: #161b22;
     border: 1px solid #30363d;
     border-radius: 8px;
-    padding: 20px 24px;
+    width: 600px;
+    max-width: 90vw;
+    max-height: 80vh;
     z-index: 20;
     font-size: 12px;
-    min-width: 220px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    flex-direction: column;
+    overflow: hidden;
   }
-  #shortcuts.open { display: block; }
-  #shortcuts h3 { font-size: 13px; margin-bottom: 12px; color: #c9d1d9; }
+  #help-panel.open { display: flex; }
+  #help-tabs {
+    display: flex;
+    border-bottom: 1px solid #30363d;
+    flex-shrink: 0;
+  }
+  .help-tab {
+    padding: 10px 16px;
+    cursor: pointer;
+    color: #8b949e;
+    border-bottom: 2px solid transparent;
+    font-size: 12px;
+    font-family: inherit;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+  .help-tab:hover { color: #c9d1d9; }
+  .help-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+  #help-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+  }
+  #help-content::-webkit-scrollbar { width: 6px; }
+  #help-content::-webkit-scrollbar-track { background: transparent; }
+  #help-content::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+  #help-content h3 { font-size: 14px; margin-bottom: 10px; color: #c9d1d9; }
+  #help-content h4 { font-size: 12px; margin: 12px 0 6px; color: #58a6ff; }
+  #help-content p { color: #8b949e; line-height: 1.5; margin-bottom: 8px; }
+  #help-content code {
+    background: #21262d;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 11px;
+    color: #c9d1d9;
+  }
+  #help-content pre {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 11px;
+    color: #c9d1d9;
+    overflow-x: auto;
+    margin: 6px 0 12px;
+    white-space: pre-wrap;
+  }
   .shortcut-row { display: flex; justify-content: space-between; padding: 4px 0; }
   .shortcut-row kbd {
     background: #21262d;
@@ -230,6 +344,22 @@ const CLIENT_HTML = `<!DOCTYPE html>
     color: #c9d1d9;
   }
   .shortcut-row span { color: #8b949e; }
+  .geom-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .geom-chip {
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: #c9d1d9;
+  }
+  .geom-chip .gc-name { font-weight: 600; }
+  .geom-chip .gc-desc { color: #8b949e; font-size: 10px; }
   #overlay {
     display: none;
     position: fixed;
@@ -270,23 +400,24 @@ const CLIENT_HTML = `<!DOCTYPE html>
     <div id="actions">
       <button onclick="downloadSVG()" title="Download SVG (s)">SVG</button>
       <button onclick="downloadPNG()" title="Download PNG (p)">PNG</button>
-      <button onclick="toggleShortcuts()" title="Keyboard shortcuts (?)">?</button>
+      <button onclick="toggleHelp()" title="Help (?)">?</button>
     </div>
   </div>
 </div>
 <div id="overlay" onclick="closeOverlays()"></div>
-<div id="shortcuts">
-  <h3>Keyboard Shortcuts</h3>
-  <div class="shortcut-row"><span>Previous plot</span><kbd>&larr;</kbd></div>
-  <div class="shortcut-row"><span>Next plot</span><kbd>&rarr;</kbd></div>
-  <div class="shortcut-row"><span>Latest plot</span><kbd>End</kbd></div>
-  <div class="shortcut-row"><span>First plot</span><kbd>Home</kbd></div>
-  <div class="shortcut-row"><span>Toggle history</span><kbd>h</kbd></div>
-  <div class="shortcut-row"><span>Download SVG</span><kbd>s</kbd></div>
-  <div class="shortcut-row"><span>Download PNG</span><kbd>p</kbd></div>
-  <div class="shortcut-row"><span>Fullscreen</span><kbd>f</kbd></div>
-  <div class="shortcut-row"><span>Show shortcuts</span><kbd>?</kbd></div>
-  <div class="shortcut-row"><span>Close panel</span><kbd>Esc</kbd></div>
+<div id="palette">
+  <input id="palette-input" type="text" placeholder="Type a command... (geom, export, style, shortcut)" autocomplete="off">
+  <div id="palette-results"></div>
+</div>
+<div id="help-panel">
+  <div id="help-tabs">
+    <button class="help-tab active" data-tab="start">Getting Started</button>
+    <button class="help-tab" data-tab="geoms">Plot Types</button>
+    <button class="help-tab" data-tab="shortcuts">Shortcuts</button>
+    <button class="help-tab" data-tab="styles">Styles</button>
+    <button class="help-tab" data-tab="export">Export</button>
+  </div>
+  <div id="help-content"></div>
 </div>
 <script>
 const vis = document.getElementById('vis');
@@ -300,8 +431,13 @@ const nextBtn = document.getElementById('next');
 const histBtn = document.getElementById('hist-btn');
 const sidebar = document.getElementById('sidebar');
 const historyList = document.getElementById('history-list');
-const shortcutsEl = document.getElementById('shortcuts');
 const overlayEl = document.getElementById('overlay');
+const paletteEl = document.getElementById('palette');
+const paletteInput = document.getElementById('palette-input');
+const paletteResults = document.getElementById('palette-results');
+const helpPanel = document.getElementById('help-panel');
+const helpTabs = document.getElementById('help-tabs');
+const helpContent = document.getElementById('help-content');
 
 let history = [];
 let historyIndex = {};
@@ -372,6 +508,25 @@ async function renderSpec(spec) {
     // Retry without interactive params (composite marks like boxplot don't support selections)
     console.warn('Render failed, retrying without params:', e.message);
     const { params, ...cleanSpec } = vegaSpec;
+    // Also strip param-dependent encoding from layers
+    if (cleanSpec.layer) {
+      cleanSpec.layer = cleanSpec.layer.map(l => {
+        if (!l.encoding) return l;
+        const enc = { ...l.encoding };
+        for (const [k, v] of Object.entries(enc)) {
+          if (v && v.condition && v.condition.param) delete enc[k];
+        }
+        return { ...l, encoding: enc };
+      });
+    }
+    // Strip from top-level encoding too
+    if (cleanSpec.encoding) {
+      const enc = { ...cleanSpec.encoding };
+      for (const [k, v] of Object.entries(enc)) {
+        if (v && v.condition && v.condition.param) delete enc[k];
+      }
+      cleanSpec.encoding = enc;
+    }
     const result = await vegaEmbed(vis, cleanSpec, embedOpts);
     view = result.view;
   }
@@ -417,18 +572,257 @@ function toggleHistory() {
   histBtn.classList.toggle('active', open);
 }
 
-function toggleShortcuts() {
-  const open = shortcutsEl.classList.toggle('open');
-  overlayEl.classList.toggle('open', open);
+// --- Geom catalog and command palette data ---
+var GEOM_CATALOG = {
+  'Point/Line': [['point','Scatter plot'],['line','Line chart'],['path','Connected path'],['step','Step function'],['smooth','Fitted trend'],['segment','Line segment'],['curve','Curved segment']],
+  'Bar/Area': [['bar','Category counts'],['col','Bar from values'],['histogram','Distribution'],['freqpoly','Frequency polygon'],['density','Kernel density'],['area','Filled area'],['ribbon','Uncertainty band']],
+  'Distribution': [['boxplot','Box-and-whisker'],['violin','Density shape'],['ridgeline','Stacked densities'],['joy','Joy plot'],['beeswarm','Non-overlapping'],['quasirandom','Quasi-random'],['density_2d','2D density'],['qq','Q-Q plot']],
+  'Comparison': [['dumbbell','Before/after'],['lollipop','Sparse rankings'],['waffle','Part-of-whole'],['sparkline','Inline trend'],['bullet','KPI progress'],['braille','High-res braille']],
+  'Specialized': [['calendar','Activity heatmap'],['flame','Flame graph'],['icicle','Inverted flame'],['corrmat','Correlation matrix'],['sankey','Flow diagram'],['treemap','Hierarchical'],['volcano','Volcano plot'],['ma','MA plot'],['manhattan','Manhattan plot'],['heatmap','Grid heatmap'],['biplot','PCA biplot']],
+  'Clinical': [['kaplan_meier','Survival curves'],['forest','Effect sizes'],['roc','ROC curve'],['bland_altman','Method comparison']],
+  'Diagnostics': [['ecdf','Empirical CDF'],['funnel','Publication bias'],['control','Control chart'],['scree','PCA variance'],['upset','Set intersections'],['dendrogram','Cluster tree']],
+  'Error/Reference': [['errorbar','Vertical error'],['errorbarh','Horizontal error'],['crossbar','Cross bar'],['linerange','Line range'],['pointrange','Point + range'],['rug','Marginal ticks'],['hline','Horizontal line'],['vline','Vertical line'],['abline','Slope-intercept']],
+  'Text': [['text','Text labels'],['label','Boxed labels']],
+  '2D/Tile': [['tile','Tiled grid'],['raster','Raster grid'],['bin2d','2D binning'],['rect','Rectangle'],['contour','Contour lines'],['contour_filled','Filled contours']]
+};
+
+var COMMANDS = [
+  { id:'svg', label:'Export as SVG', cat:'Export', hint:'s', icon:'\\u2913', action: function(){ downloadSVG(); } },
+  { id:'png', label:'Export as PNG', cat:'Export', hint:'p', icon:'\\u2913', action: function(){ downloadPNG(); } },
+  { id:'fullscreen', label:'Toggle Fullscreen', cat:'View', hint:'f', icon:'\\u26F6', action: function(){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } },
+  { id:'history', label:'Toggle History Panel', cat:'View', hint:'h', icon:'\\u2630', action: function(){ toggleHistory(); } },
+  { id:'help', label:'Open Help', cat:'View', hint:'?', icon:'?', action: function(){ toggleHelp(); } },
+  { id:'prev', label:'Previous Plot', cat:'Navigate', hint:'\\u2190', icon:'\\u2190', action: function(){ navigate(currentIdx - 1); } },
+  { id:'next', label:'Next Plot', cat:'Navigate', hint:'\\u2192', icon:'\\u2192', action: function(){ navigate(currentIdx + 1); } },
+  { id:'first', label:'First Plot', cat:'Navigate', hint:'Home', icon:'\\u21E4', action: function(){ navigate(0); } },
+  { id:'last', label:'Latest Plot', cat:'Navigate', hint:'End', icon:'\\u21E5', action: function(){ navigate(history.length - 1); } },
+  { id:'style-wilke', label:'Wilke Style', cat:'Style', hint:'Clean academic', icon:'\\u25CB', action: function(){ showHelpTab('styles'); } },
+  { id:'style-tufte', label:'Tufte Style', cat:'Style', hint:'Max data-ink', icon:'\\u25CB', action: function(){ showHelpTab('styles'); } },
+  { id:'style-nature', label:'Nature Style', cat:'Style', hint:'Journal format', icon:'\\u25CB', action: function(){ showHelpTab('styles'); } },
+  { id:'style-economist', label:'Economist Style', cat:'Style', hint:'Distinctive', icon:'\\u25CB', action: function(){ showHelpTab('styles'); } },
+  { id:'style-minimal', label:'Minimal Style', cat:'Style', hint:'Clean', icon:'\\u25CB', action: function(){ showHelpTab('styles'); } },
+  { id:'style-apa', label:'APA Style', cat:'Style', hint:'Academic', icon:'\\u25CB', action: function(){ showHelpTab('styles'); } }
+];
+
+// Generate geom commands from catalog
+Object.keys(GEOM_CATALOG).forEach(function(cat) {
+  GEOM_CATALOG[cat].forEach(function(g) {
+    COMMANDS.push({ id:'geom-'+g[0], label:'geom_'+g[0], cat:cat, hint:g[1], icon:'\\u25CB', action: function(){ showHelpTab('geoms'); } });
+  });
+});
+
+// --- Command Palette ---
+var paletteSelectedIdx = 0;
+var filteredCommands = [];
+
+function fuzzyMatch(query, text) {
+  query = query.toLowerCase();
+  text = text.toLowerCase();
+  if (text.indexOf(query) >= 0) return true;
+  var qi = 0;
+  for (var i = 0; i < text.length && qi < query.length; i++) {
+    if (text[i] === query[qi]) qi++;
+  }
+  return qi === query.length;
 }
 
-function closeOverlays() {
-  shortcutsEl.classList.remove('open');
+function filterCommands(query) {
+  if (!query) return COMMANDS.slice(0, 20);
+  return COMMANDS.filter(function(c) {
+    return fuzzyMatch(query, c.label) || fuzzyMatch(query, c.cat) || fuzzyMatch(query, c.hint);
+  });
+}
+
+function renderPalette() {
+  var query = paletteInput.value.trim();
+  filteredCommands = filterCommands(query);
+  paletteSelectedIdx = Math.min(paletteSelectedIdx, Math.max(0, filteredCommands.length - 1));
+  var groups = {};
+  filteredCommands.forEach(function(cmd) {
+    if (!groups[cmd.cat]) groups[cmd.cat] = [];
+    groups[cmd.cat].push(cmd);
+  });
+  var html = '';
+  var gi = 0;
+  Object.keys(groups).forEach(function(cat) {
+    html += '<div class="palette-group">' + cat + '</div>';
+    groups[cat].forEach(function(cmd) {
+      var sel = gi === paletteSelectedIdx ? ' selected' : '';
+      html += '<div class="palette-item' + sel + '" data-idx="' + gi + '">'
+        + '<span class="pi-icon">' + cmd.icon + '</span>'
+        + '<span class="pi-label">' + cmd.label + '</span>'
+        + '<span class="pi-hint">' + cmd.hint + '</span>'
+        + '</div>';
+      gi++;
+    });
+  });
+  paletteResults.innerHTML = html || '<div style="padding:12px 16px;color:#484f58">No results</div>';
+  paletteResults.querySelectorAll('.palette-item').forEach(function(el) {
+    el.onclick = function() { executePaletteItem(parseInt(el.dataset.idx)); };
+  });
+  var selected = paletteResults.querySelector('.selected');
+  if (selected) selected.scrollIntoView({ block: 'nearest' });
+}
+
+function executePaletteItem(idx) {
+  var cmd = filteredCommands[idx];
+  if (cmd) { closePalette(); cmd.action(); }
+}
+
+function openPalette() {
+  paletteInput.value = '';
+  paletteSelectedIdx = 0;
+  closeOverlays();
+  paletteEl.classList.add('open');
+  overlayEl.classList.add('open');
+  renderPalette();
+  paletteInput.focus();
+}
+
+function closePalette() {
+  paletteEl.classList.remove('open');
   overlayEl.classList.remove('open');
 }
 
-document.addEventListener('keydown', (e) => {
-  // Ignore when typing in an input
+paletteInput.addEventListener('input', function() {
+  paletteSelectedIdx = 0;
+  renderPalette();
+});
+
+paletteInput.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    paletteSelectedIdx = Math.min(paletteSelectedIdx + 1, filteredCommands.length - 1);
+    renderPalette();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    paletteSelectedIdx = Math.max(paletteSelectedIdx - 1, 0);
+    renderPalette();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    executePaletteItem(paletteSelectedIdx);
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closePalette();
+  }
+});
+
+// --- Tabbed Help Panel ---
+var HELP_TABS = {
+  start: '<h3>Welcome to ggterm</h3>'
+    + '<p>ggterm is a Grammar of Graphics engine for terminal data visualization. This viewer displays interactive, publication-quality plots powered by Vega-Lite.</p>'
+    + '<h4>With Claude Code</h4>'
+    + '<p>Ask Claude to plot data naturally:</p>'
+    + '<pre>"Plot the iris dataset"\\n"Show a histogram of sepal_length by species"\\n"Create a scatter plot of mpg vs hp"</pre>'
+    + '<h4>With the CLI</h4>'
+    + '<pre>npx ggterm-plot iris sepal_length sepal_width species "Iris" point\\nnpx ggterm-plot data.csv x y color "Title" histogram</pre>'
+    + '<h4>Built-in Datasets</h4>'
+    + '<p><code>iris</code> (150 rows) and <code>mtcars</code> (16 rows) work by name &mdash; no CSV files needed.</p>'
+    + '<h4>Quick Tips</h4>'
+    + '<p>Press <code>\\u2318K</code> or <code>Ctrl+K</code> to open the command palette. Use <code>\\u2190</code>/<code>\\u2192</code> to navigate plots. Press <code>h</code> for history.</p>',
+
+  shortcuts: '<h3>Keyboard Shortcuts</h3>'
+    + '<div class="shortcut-row"><span>Command palette</span><kbd>\\u2318K / Ctrl+K</kbd></div>'
+    + '<div class="shortcut-row"><span>Previous plot</span><kbd>\\u2190</kbd></div>'
+    + '<div class="shortcut-row"><span>Next plot</span><kbd>\\u2192</kbd></div>'
+    + '<div class="shortcut-row"><span>Latest plot</span><kbd>End</kbd></div>'
+    + '<div class="shortcut-row"><span>First plot</span><kbd>Home</kbd></div>'
+    + '<div class="shortcut-row"><span>Toggle history</span><kbd>h</kbd></div>'
+    + '<div class="shortcut-row"><span>Download SVG</span><kbd>s</kbd></div>'
+    + '<div class="shortcut-row"><span>Download PNG</span><kbd>p</kbd></div>'
+    + '<div class="shortcut-row"><span>Fullscreen</span><kbd>f</kbd></div>'
+    + '<div class="shortcut-row"><span>Show help</span><kbd>?</kbd></div>'
+    + '<div class="shortcut-row"><span>Close panel</span><kbd>Esc</kbd></div>',
+
+  styles: '<h3>Publication Style Presets</h3>'
+    + '<p>Apply styles via <code>/ggterm-style</code> in Claude Code or by editing <code>.ggterm/last-plot-vegalite.json</code>.</p>'
+    + '<h4>Wilke</h4><p>Clean academic style. Helvetica, subtle Y-gridlines, warm color palette. Best all-around choice.</p>'
+    + '<h4>Tufte</h4><p>Maximum data-ink ratio. Georgia serif, no gridlines, no ticks, grayscale. Inspired by Edward Tufte.</p>'
+    + '<h4>Nature</h4><p>Compact journal format. Arial, small fonts (8pt), thin axis lines. Matches Nature standards.</p>'
+    + '<h4>Economist</h4><p>Light blue background, bold titles, white horizontal gridlines. Matches The Economist style.</p>'
+    + '<h4>Minimal</h4><p>Ultra-clean. System font, no axes, no grids. Lets the data speak.</p>'
+    + '<h4>APA</h4><p>Times New Roman, italic axis titles, grayscale palette. Academic standard.</p>'
+    + '<h4>Usage</h4>'
+    + '<pre>"Apply Wilke style to this plot"\\n"Style this like a Nature paper"\\n/ggterm-style Wilke</pre>',
+
+  export: '<h3>Exporting Plots</h3>'
+    + '<h4>From the Viewer</h4>'
+    + '<p>Press <kbd>s</kbd> to download SVG or <kbd>p</kbd> to download PNG directly.</p>'
+    + '<h4>From the CLI</h4>'
+    + '<pre>npx ggterm-plot export &lt;plot-id&gt; output.html\\nnpx vl2png .ggterm/last-plot-vegalite.json &gt; plot.png\\nnpx vl2svg .ggterm/last-plot-vegalite.json &gt; plot.svg</pre>'
+    + '<h4>From Claude Code</h4>'
+    + '<pre>"Export this plot as PNG"\\n"Save as SVG"\\n/ggterm-publish</pre>'
+    + '<h4>Prerequisites for CLI Export</h4>'
+    + '<pre>npm install -g vega-lite vega-cli canvas</pre>'
+};
+
+// Build geoms tab HTML from catalog
+(function() {
+  var html = '<h3>All 68 Plot Types</h3>';
+  Object.keys(GEOM_CATALOG).forEach(function(cat) {
+    html += '<h4>' + cat + '</h4><div class="geom-grid">';
+    GEOM_CATALOG[cat].forEach(function(g) {
+      html += '<div class="geom-chip"><span class="gc-name">' + g[0] + '</span><br><span class="gc-desc">' + g[1] + '</span></div>';
+    });
+    html += '</div>';
+  });
+  HELP_TABS.geoms = html;
+})();
+
+function showHelpTab(tabId) {
+  if (!helpPanel.classList.contains('open')) {
+    closePalette();
+    helpPanel.classList.add('open');
+    overlayEl.classList.add('open');
+  }
+  helpTabs.querySelectorAll('.help-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.tab === tabId);
+  });
+  var html = HELP_TABS[tabId];
+  if (html) helpContent.innerHTML = html;
+}
+
+helpTabs.addEventListener('click', function(e) {
+  var tab = e.target.closest('.help-tab');
+  if (tab) showHelpTab(tab.dataset.tab);
+});
+
+function toggleHelp() {
+  if (helpPanel.classList.contains('open')) {
+    closeOverlays();
+  } else {
+    closeOverlays();
+    helpPanel.classList.add('open');
+    overlayEl.classList.add('open');
+    showHelpTab('start');
+  }
+}
+
+function closeOverlays() {
+  helpPanel.classList.remove('open');
+  paletteEl.classList.remove('open');
+  overlayEl.classList.remove('open');
+}
+
+// Initialize help content
+showHelpTab('start');
+helpPanel.classList.remove('open');
+overlayEl.classList.remove('open');
+
+document.addEventListener('keydown', function(e) {
+  // Cmd+K / Ctrl+K opens palette (works everywhere)
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    if (paletteEl.classList.contains('open')) {
+      closePalette();
+    } else {
+      closeOverlays();
+      openPalette();
+    }
+    return;
+  }
+
+  // Ignore when typing in palette input
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
   switch (e.key) {
@@ -446,7 +840,7 @@ document.addEventListener('keydown', (e) => {
         document.exitFullscreen();
       }
       break;
-    case '?': toggleShortcuts(); break;
+    case '?': toggleHelp(); break;
     case 'Escape': closeOverlays(); if (sidebar.classList.contains('open')) toggleHistory(); break;
   }
 });
@@ -502,15 +896,22 @@ fetch('/api/history')
   .then(entries => {
     // Populate history with provenance-only stubs (lazy-load specs on navigate)
     history = entries.map(e => ({ provenance: e, spec: null }));
+    if (history.length > 0) {
+      currentIdx = history.length - 1;
+      // Eager-load and render the latest plot
+      navigate(currentIdx);
+    }
     rebuildHistoryList();
+    updateNav();
   })
   .then(() => connect());
 </script>
 </body>
 </html>`
 
-export function handleServe(port?: number): void {
+export function handleServe(port?: number, options?: { openBrowser?: boolean }): void {
   const p = port || 4242
+  ensureInit()
   ensureHistoryDirs()
 
   const clients = new Set<ServerResponse>()
@@ -586,9 +987,14 @@ export function handleServe(port?: number): void {
 
       clients.add(res)
 
-      // Send latest plot immediately
+      // Send latest plot immediately (as 'update' so client doesn't duplicate history)
       const payload = getLatestPayload()
-      if (payload) res.write(`data: ${payload}\n\n`)
+      if (payload) {
+        // Replace 'plot' with 'update' — client already has this in history from /api/history
+        const data = JSON.parse(payload)
+        data.type = 'update'
+        res.write(`data: ${JSON.stringify(data)}\n\n`)
+      }
 
       req.on('close', () => clients.delete(res))
       return
@@ -651,6 +1057,10 @@ export function handleServe(port?: number): void {
     if (process.env.TERM_PROGRAM === 'waveterm') {
       spawn('wsh', ['web', 'open', url], { stdio: 'ignore', detached: true }).unref()
       console.log(`Opened Wave panel`)
+    } else if (options?.openBrowser) {
+      const openCmd = process.platform === 'darwin' ? 'open' : 'xdg-open'
+      spawn(openCmd, [url], { stdio: 'ignore', detached: true }).unref()
+      console.log(`Opened browser at ${url}`)
     } else {
       console.log(`Open in browser or Wave panel: wsh web open ${url}`)
     }

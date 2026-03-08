@@ -43,6 +43,8 @@ interface VegaLiteParam {
 interface VegaLiteLayer {
   mark: string | { type: string; [key: string]: unknown }
   encoding?: Record<string, unknown>
+  data?: { values: Record<string, unknown>[] }
+  params?: VegaLiteParam[]
 }
 
 /**
@@ -135,6 +137,21 @@ function inferFieldType(data: Record<string, unknown>[], field: string): string 
 }
 
 /**
+ * Check if a numeric field should be treated as ordinal (few unique values).
+ * Useful for bar chart x-axes where fields like 'cyl' (4, 6, 8) are categories.
+ */
+function isLowCardinalityNumeric(data: Record<string, unknown>[], field: string): boolean {
+  const values = data.map(d => d[field]).filter(v => v != null && typeof v === 'number')
+  if (values.length === 0) return false
+  const uniqueCount = new Set(values).size
+  // If 20 or fewer unique numeric values, treat as categorical
+  return uniqueCount <= 20 && uniqueCount < values.length * 0.5
+}
+
+/** Geoms where the y-axis should include zero (bar length/area fill encodes value from zero) */
+const ZERO_BASELINE_GEOMS = new Set(['bar', 'col', 'area', 'histogram'])
+
+/**
  * Build Vega-Lite encoding from ggterm aesthetics
  */
 function buildEncoding(
@@ -147,16 +164,23 @@ function buildEncoding(
   // Check if this is a heatmap geom (tile or raster)
   const isHeatmap = geom.type === 'tile' || geom.type === 'raster'
 
+  const isBarLike = ZERO_BASELINE_GEOMS.has(geom.type)
+
   // X axis
   if (aes.x) {
     const xType = inferFieldType(data, aes.x)
-    const effectiveXType = isHeatmap && xType === 'quantitative' ? 'ordinal' : xType
+    // For bar charts, treat low-cardinality numeric fields as ordinal (e.g. cyl: 4, 6, 8)
+    const useOrdinal = isBarLike && xType === 'quantitative' && isLowCardinalityNumeric(data, aes.x)
+    const effectiveXType = isHeatmap && xType === 'quantitative' ? 'ordinal'
+      : useOrdinal ? 'ordinal'
+      : xType
     encoding.x = {
       field: aes.x,
       type: effectiveXType,
       ...(xType === 'temporal' ? { timeUnit: 'yearmonthdate' } : {}),
-      // Don't force zero for quantitative axes — zoom to data range
-      ...(effectiveXType === 'quantitative' ? { scale: { zero: false } } : {}),
+      // Don't force zero for quantitative scatter/line axes — zoom to data range
+      // But skip for bar-like geoms (they need ordinal x or quantitative from zero)
+      ...(effectiveXType === 'quantitative' && !isBarLike ? { scale: { zero: false } } : {}),
     }
   }
 
@@ -171,8 +195,9 @@ function buildEncoding(
       encoding.y = {
         field: aes.y,
         type: effectiveYType,
-        // Don't force zero for quantitative axes — zoom to data range
-        ...(effectiveYType === 'quantitative' ? { scale: { zero: false } } : {}),
+        // Don't force zero for scatter/line — zoom to data range
+        // Bar/area charts MUST start y from zero (bar length encodes value)
+        ...(effectiveYType === 'quantitative' && !isBarLike ? { scale: { zero: false } } : {}),
       }
     }
   }
@@ -215,6 +240,17 @@ function buildEncoding(
     encoding.shape = {
       field: aes.shape,
       type: 'nominal',
+    }
+  }
+
+  // Text channel for text/label geoms — use color field or label field as text content
+  if (geom.type === 'text' || geom.type === 'label') {
+    const textField = aes.label || aes.color || aes.y
+    if (textField) {
+      encoding.text = {
+        field: textField,
+        type: inferFieldType(data, textField),
+      }
     }
   }
 
@@ -289,9 +325,11 @@ function buildHistogramSpec(
   geom: Geom
 ): Partial<VegaLiteSpec> {
   const bins = geom.params?.bins || 20
+  // freqpoly uses line mark, histogram uses bar
+  const mark = geom.type === 'freqpoly' ? 'line' : 'bar'
 
   return {
-    mark: 'bar',
+    mark,
     encoding: {
       x: {
         field: aes.x,
@@ -324,9 +362,16 @@ function buildHistogramSpec(
 function buildBoxplotSpec(
   data: Record<string, unknown>[],
   aes: AestheticMapping
-): Partial<VegaLiteSpec> {
-  const xType = inferFieldType(data, aes.x)
-  const yType = aes.y ? inferFieldType(data, aes.y) : 'quantitative'
+): Partial<VegaLiteSpec> & { _swapped?: boolean } {
+  let xType = inferFieldType(data, aes.x)
+  let yType = aes.y ? inferFieldType(data, aes.y) : 'quantitative'
+
+  // For boxplots, low-cardinality numeric fields should be treated as the
+  // grouping (ordinal) axis, not the distribution axis (e.g. cyl: 4, 6, 8)
+  const xLowCard = xType === 'quantitative' && isLowCardinalityNumeric(data, aes.x)
+  const yLowCard = aes.y && yType === 'quantitative' && isLowCardinalityNumeric(data, aes.y)
+  if (xLowCard && !yLowCard) xType = 'ordinal'
+  if (yLowCard && !xLowCard) yType = 'ordinal'
 
   // If x is quantitative and y is categorical, swap for standard boxplot layout
   // (category on x, distribution on y)
@@ -337,6 +382,7 @@ function buildBoxplotSpec(
   const yFieldType = needsSwap ? xType : yType
 
   return {
+    _swapped: needsSwap,
     mark: { type: 'boxplot', extent: 'min-max' },
     encoding: {
       x: {
@@ -346,6 +392,8 @@ function buildBoxplotSpec(
       y: {
         field: yField,
         type: yFieldType,
+        // Don't force zero — zoom to data range for better box visibility
+        ...(yFieldType === 'quantitative' ? { scale: { zero: false } } : {}),
       },
       ...(aes.color
         ? {
@@ -455,18 +503,142 @@ function buildAblineSpec(
 }
 
 /**
+ * Check if a field exists in the data
+ */
+function fieldExists(data: Record<string, unknown>[], field: string): boolean {
+  return data.length > 0 && field in data[0]
+}
+
+/**
+ * Check if the data has pre-computed range fields (ymin/ymax or xmin/xmax).
+ * If not, we need to use aggregate transforms.
+ */
+function hasYRangeFields(data: Record<string, unknown>[], aes: AestheticMapping): boolean {
+  const yminField = aes.ymin || 'ymin'
+  const ymaxField = aes.ymax || 'ymax'
+  return fieldExists(data, yminField) && fieldExists(data, ymaxField)
+}
+
+function hasXRangeFields(data: Record<string, unknown>[], aes: AestheticMapping): boolean {
+  const xminField = aes.xmin || 'xmin'
+  const xmaxField = aes.xmax || 'xmax'
+  return fieldExists(data, xminField) && fieldExists(data, xmaxField)
+}
+
+/**
+ * Build y-range encoding for pre-computed data (ymin/ymax fields exist).
+ */
+function buildYRangeEncoding(
+  data: Record<string, unknown>[],
+  aes: AestheticMapping
+): { y: Record<string, unknown>; y2: Record<string, unknown> } {
+  const yminField = aes.ymin || 'ymin'
+  const ymaxField = aes.ymax || 'ymax'
+  return {
+    y: { field: yminField, type: 'quantitative' },
+    y2: { field: ymaxField },
+  }
+}
+
+/**
+ * Build x-range encoding for pre-computed data.
+ */
+function buildXRangeEncoding(
+  data: Record<string, unknown>[],
+  aes: AestheticMapping
+): { x: Record<string, unknown>; x2: Record<string, unknown> } {
+  const xminField = aes.xmin || 'xmin'
+  const xmaxField = aes.xmax || 'xmax'
+  return {
+    x: { field: xminField, type: 'quantitative' },
+    x2: { field: xmaxField },
+  }
+}
+
+/**
+ * Pre-aggregate raw data into summary stats per group for range geoms.
+ * Returns [{group, ymin, ymax, ymean}, ...] with one row per group.
+ */
+function aggregateRangeData(
+  data: Record<string, unknown>[],
+  groupField: string,
+  valueField: string
+): Record<string, unknown>[] {
+  // Preserve original group values for type fidelity
+  const groups = new Map<string, { vals: number[]; originalKey: unknown }>()
+  for (const row of data) {
+    const rawKey = row[groupField]
+    const key = String(rawKey ?? '')
+    const val = Number(row[valueField])
+    if (!isFinite(val)) continue
+    if (!groups.has(key)) groups.set(key, { vals: [], originalKey: rawKey })
+    groups.get(key)!.vals.push(val)
+  }
+  const result: Record<string, unknown>[] = []
+  for (const [, { vals, originalKey }] of groups) {
+    const min = Math.min(...vals)
+    const max = Math.max(...vals)
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length
+    result.push({ [groupField]: originalKey, ymin: min, ymax: max, ymean: mean })
+  }
+  return result
+}
+
+/**
+ * Pre-aggregate raw data for horizontal range geoms (errorbarh).
+ */
+function aggregateXRangeData(
+  data: Record<string, unknown>[],
+  groupField: string,
+  valueField: string
+): Record<string, unknown>[] {
+  const groups = new Map<string, { vals: number[]; originalKey: unknown }>()
+  for (const row of data) {
+    const rawKey = row[groupField]
+    const key = String(rawKey ?? '')
+    const val = Number(row[valueField])
+    if (!isFinite(val)) continue
+    if (!groups.has(key)) groups.set(key, { vals: [], originalKey: rawKey })
+    groups.get(key)!.vals.push(val)
+  }
+  const result: Record<string, unknown>[] = []
+  for (const [, { vals, originalKey }] of groups) {
+    const min = Math.min(...vals)
+    const max = Math.max(...vals)
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length
+    result.push({ [groupField]: originalKey, xmin: min, xmax: max, xmean: mean })
+  }
+  return result
+}
+
+/**
  * Build linerange spec (vertical line from ymin to ymax)
  */
 function buildLinerangeSpec(
   data: Record<string, unknown>[],
   aes: AestheticMapping
-): Partial<VegaLiteSpec> {
+): Partial<VegaLiteSpec> & { _aggregatedData?: Record<string, unknown>[] } {
+  if (hasYRangeFields(data, aes)) {
+    return {
+      mark: 'rule',
+      encoding: {
+        x: { field: aes.x, type: inferFieldType(data, aes.x) },
+        ...buildYRangeEncoding(data, aes),
+        ...(aes.color
+          ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
+          : {}),
+      },
+    }
+  }
+  // Pre-aggregate: one rule per group showing min→max
+  const aggData = aggregateRangeData(data, aes.x, aes.y)
   return {
+    _aggregatedData: aggData,
     mark: 'rule',
     encoding: {
       x: { field: aes.x, type: inferFieldType(data, aes.x) },
-      y: { field: aes.ymin || 'ymin', type: 'quantitative' },
-      y2: { field: aes.ymax || 'ymax' },
+      y: { field: 'ymin', type: 'quantitative', scale: { zero: false } },
+      y2: { field: 'ymax' },
       ...(aes.color
         ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
         : {}),
@@ -485,23 +657,45 @@ function buildPointrangeSpec(
     ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
     : {}
 
+  if (hasYRangeFields(data, aes)) {
+    return [
+      {
+        mark: 'rule',
+        encoding: {
+          x: { field: aes.x, type: inferFieldType(data, aes.x) },
+          ...buildYRangeEncoding(data, aes),
+          ...colorEncoding,
+        },
+      },
+      {
+        mark: { type: 'point', filled: true },
+        encoding: {
+          x: { field: aes.x, type: inferFieldType(data, aes.x) },
+          y: { field: aes.y, type: 'quantitative' },
+          ...colorEncoding,
+        },
+      },
+    ]
+  }
+  // Pre-aggregate
+  const aggData = aggregateRangeData(data, aes.x, aes.y)
   return [
-    // Vertical line from ymin to ymax
     {
       mark: 'rule',
+      data: { values: aggData },
       encoding: {
         x: { field: aes.x, type: inferFieldType(data, aes.x) },
-        y: { field: aes.ymin || 'ymin', type: 'quantitative' },
-        y2: { field: aes.ymax || 'ymax' },
+        y: { field: 'ymin', type: 'quantitative', scale: { zero: false } },
+        y2: { field: 'ymax' },
         ...colorEncoding,
       },
     },
-    // Point at y value
     {
-      mark: { type: 'point', filled: true },
+      mark: { type: 'point', filled: true, size: 80 },
+      data: { values: aggData },
       encoding: {
         x: { field: aes.x, type: inferFieldType(data, aes.x) },
-        y: { field: aes.y, type: 'quantitative' },
+        y: { field: 'ymean', type: 'quantitative', scale: { zero: false } },
         ...colorEncoding,
       },
     },
@@ -519,24 +713,46 @@ function buildCrossbarSpec(
     ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
     : {}
 
+  if (hasYRangeFields(data, aes)) {
+    return [
+      {
+        mark: { type: 'bar', width: 20 },
+        encoding: {
+          x: { field: aes.x, type: inferFieldType(data, aes.x) },
+          ...buildYRangeEncoding(data, aes),
+          ...colorEncoding,
+        },
+      },
+      {
+        mark: { type: 'tick', thickness: 2 },
+        encoding: {
+          x: { field: aes.x, type: inferFieldType(data, aes.x) },
+          y: { field: aes.y, type: 'quantitative' },
+          color: { value: 'black' },
+        },
+      },
+    ]
+  }
+  // Pre-aggregate
+  const aggData = aggregateRangeData(data, aes.x, aes.y)
   return [
-    // Rectangle from ymin to ymax
     {
       mark: { type: 'bar', width: 20 },
+      data: { values: aggData },
       encoding: {
         x: { field: aes.x, type: inferFieldType(data, aes.x) },
-        y: { field: aes.ymin || 'ymin', type: 'quantitative' },
-        y2: { field: aes.ymax || 'ymax' },
+        y: { field: 'ymin', type: 'quantitative', scale: { zero: false } },
+        y2: { field: 'ymax' },
         ...colorEncoding,
       },
     },
-    // Horizontal line at y (middle)
     {
       mark: { type: 'tick', thickness: 2 },
+      data: { values: aggData },
       encoding: {
         x: { field: aes.x, type: inferFieldType(data, aes.x) },
-        y: { field: aes.y, type: 'quantitative' },
-        color: { value: 'black' },
+        y: { field: 'ymean', type: 'quantitative', scale: { zero: false } },
+        color: { value: 'white' },
       },
     },
   ]
@@ -548,13 +764,32 @@ function buildCrossbarSpec(
 function buildErrorbarhSpec(
   data: Record<string, unknown>[],
   aes: AestheticMapping
-): Partial<VegaLiteSpec> {
+): Partial<VegaLiteSpec> & { _aggregatedData?: Record<string, unknown>[] } {
+  if (hasXRangeFields(data, aes)) {
+    return {
+      mark: 'rule',
+      encoding: {
+        y: { field: aes.y || aes.x, type: inferFieldType(data, aes.y || aes.x) },
+        ...buildXRangeEncoding(data, aes),
+        ...(aes.color
+          ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
+          : {}),
+      },
+    }
+  }
+  // For errorbarh without xmin/xmax: aggregate y per group, show horizontal range of x
+  // Group by the categorical field (x=species), value from y (sepal_length)
+  // But errorbarh swaps axes: group on y, range on x
+  const groupField = aes.x  // species
+  const valueField = aes.y  // sepal_length
+  const aggData = aggregateXRangeData(data, groupField, valueField)
   return {
+    _aggregatedData: aggData,
     mark: 'rule',
     encoding: {
-      y: { field: aes.y, type: inferFieldType(data, aes.y) },
-      x: { field: aes.xmin || 'xmin', type: 'quantitative' },
-      x2: { field: aes.xmax || 'xmax' },
+      y: { field: groupField, type: inferFieldType(data, groupField) },
+      x: { field: 'xmin', type: 'quantitative', scale: { zero: false } },
+      x2: { field: 'xmax' },
       ...(aes.color
         ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
         : {}),
@@ -568,18 +803,68 @@ function buildErrorbarhSpec(
 function buildRibbonSpec(
   data: Record<string, unknown>[],
   aes: AestheticMapping
-): Partial<VegaLiteSpec> {
+): Partial<VegaLiteSpec> & { _aggregatedData?: Record<string, unknown>[] } {
+  if (hasYRangeFields(data, aes)) {
+    return {
+      mark: { type: 'area', opacity: 0.3 },
+      encoding: {
+        x: { field: aes.x, type: inferFieldType(data, aes.x) },
+        ...buildYRangeEncoding(data, aes),
+        ...(aes.color
+          ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
+          : {}),
+        ...(aes.fill
+          ? { fill: { field: aes.fill, type: inferFieldType(data, aes.fill) } }
+          : {}),
+      },
+    }
+  }
+  // Pre-aggregate for ribbon: need per-x-bin min/max of y, grouped by color
+  // Bin continuous x values so multiple rows fall into each bin
+  const colorField = aes.color
+  const xValues = data.map(d => Number(d[aes.x])).filter(v => isFinite(v))
+  const xMin = Math.min(...xValues)
+  const xMax = Math.max(...xValues)
+  const numBins = 20
+  const binWidth = (xMax - xMin) / numBins || 1
+
+  const groups = new Map<string, number[]>()
+  for (const row of data) {
+    const xNum = Number(row[aes.x])
+    if (!isFinite(xNum)) continue
+    // Snap to bin center
+    const binIdx = Math.min(Math.floor((xNum - xMin) / binWidth), numBins - 1)
+    const binCenter = xMin + (binIdx + 0.5) * binWidth
+    const colorVal = colorField ? String(row[colorField]) : '_all'
+    const key = `${binCenter}|${colorVal}`
+    const val = Number(row[aes.y])
+    if (!isFinite(val)) continue
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(val)
+  }
+  const aggData: Record<string, unknown>[] = []
+  for (const [key, vals] of groups) {
+    const sepIdx = key.lastIndexOf('|')
+    const binCenter = Number(key.slice(0, sepIdx))
+    const colorVal = key.slice(sepIdx + 1)
+    const entry: Record<string, unknown> = {
+      [aes.x]: binCenter,
+      ymin: Math.min(...vals),
+      ymax: Math.max(...vals),
+    }
+    if (colorField && colorVal !== '_all') entry[colorField] = colorVal
+    aggData.push(entry)
+  }
+  aggData.sort((a, b) => Number(a[aes.x]) - Number(b[aes.x]))
   return {
+    _aggregatedData: aggData,
     mark: { type: 'area', opacity: 0.3 },
     encoding: {
       x: { field: aes.x, type: inferFieldType(data, aes.x) },
-      y: { field: aes.ymin || 'ymin', type: 'quantitative' },
-      y2: { field: aes.ymax || 'ymax' },
+      y: { field: 'ymin', type: 'quantitative' },
+      y2: { field: 'ymax' },
       ...(aes.color
         ? { color: { field: aes.color, type: inferFieldType(data, aes.color) } }
-        : {}),
-      ...(aes.fill
-        ? { fill: { field: aes.fill, type: inferFieldType(data, aes.fill) } }
         : {}),
     },
   }
@@ -804,6 +1089,9 @@ export function plotSpecToVegaLite(
     }
   }
 
+  // Track whether boxplot swapped x/y axes (so we can swap labels too)
+  let boxplotSwapped = false
+
   /**
    * Build layer spec for a single geom, handling special cases
    */
@@ -821,6 +1109,7 @@ export function plotSpecToVegaLite(
 
     if (geom.type === 'boxplot') {
       const boxSpec = buildBoxplotSpec(data, spec.aes)
+      boxplotSwapped = !!boxSpec._swapped
       return {
         mark: boxSpec.mark as { type: string },
         encoding: boxSpec.encoding,
@@ -857,16 +1146,17 @@ export function plotSpecToVegaLite(
       return {
         mark: linerangeSpec.mark as string,
         encoding: linerangeSpec.encoding,
+        ...(linerangeSpec._aggregatedData ? { data: { values: linerangeSpec._aggregatedData } } : {}),
       }
     }
 
     if (geom.type === 'pointrange') {
-      // Returns multiple layers
+      // Returns multiple layers (may include layer-level data)
       return buildPointrangeSpec(data, spec.aes)
     }
 
     if (geom.type === 'crossbar') {
-      // Returns multiple layers
+      // Returns multiple layers (may include layer-level data)
       return buildCrossbarSpec(data, spec.aes)
     }
 
@@ -875,6 +1165,7 @@ export function plotSpecToVegaLite(
       return {
         mark: errorhSpec.mark as string,
         encoding: errorhSpec.encoding,
+        ...(errorhSpec._aggregatedData ? { data: { values: errorhSpec._aggregatedData } } : {}),
       }
     }
 
@@ -883,6 +1174,7 @@ export function plotSpecToVegaLite(
       return {
         mark: ribbonSpec.mark as { type: string },
         encoding: ribbonSpec.encoding,
+        ...(ribbonSpec._aggregatedData ? { data: { values: ribbonSpec._aggregatedData } } : {}),
       }
     }
 
@@ -930,6 +1222,10 @@ export function plotSpecToVegaLite(
     } else {
       vlSpec.mark = layerResult.mark
       vlSpec.encoding = layerResult.encoding
+      // If the layer has its own data (e.g. pre-aggregated range geoms), override top-level data
+      if (layerResult.data) {
+        vlSpec.data = layerResult.data
+      }
     }
   } else {
     // Default to point if no geoms
@@ -937,13 +1233,15 @@ export function plotSpecToVegaLite(
     vlSpec.encoding = buildEncoding(spec.aes, spec.data, { type: 'point', params: {} })
   }
 
-  // Apply axis labels
+  // Apply axis labels (swap x/y labels if boxplot swapped axes)
+  const xLabel = boxplotSwapped ? spec.labels.y : spec.labels.x
+  const yLabel = boxplotSwapped ? spec.labels.x : spec.labels.y
   if (vlSpec.encoding) {
-    if (spec.labels.x && vlSpec.encoding.x) {
-      (vlSpec.encoding.x as Record<string, unknown>).title = spec.labels.x
+    if (xLabel && vlSpec.encoding.x) {
+      (vlSpec.encoding.x as Record<string, unknown>).title = xLabel
     }
-    if (spec.labels.y && vlSpec.encoding.y) {
-      (vlSpec.encoding.y as Record<string, unknown>).title = spec.labels.y
+    if (yLabel && vlSpec.encoding.y) {
+      (vlSpec.encoding.y as Record<string, unknown>).title = yLabel
     }
     if (spec.labels.color && vlSpec.encoding.color) {
       (vlSpec.encoding.color as Record<string, unknown>).title = spec.labels.color
@@ -954,11 +1252,11 @@ export function plotSpecToVegaLite(
   if (vlSpec.layer) {
     for (const layer of vlSpec.layer) {
       if (layer.encoding) {
-        if (spec.labels.x && layer.encoding.x) {
-          (layer.encoding.x as Record<string, unknown>).title = spec.labels.x
+        if (xLabel && layer.encoding.x) {
+          (layer.encoding.x as Record<string, unknown>).title = xLabel
         }
-        if (spec.labels.y && layer.encoding.y) {
-          (layer.encoding.y as Record<string, unknown>).title = spec.labels.y
+        if (yLabel && layer.encoding.y) {
+          (layer.encoding.y as Record<string, unknown>).title = yLabel
         }
       }
     }
@@ -972,8 +1270,23 @@ export function plotSpecToVegaLite(
       spec.data as Record<string, unknown>[]
     )
 
+    // Check if layers have their own data (per-layer data causes VL to compile
+    // top-level params into each layer scope, creating duplicate signals)
+    const layersHaveOwnData = vlSpec.layer?.some(l => !!(l as Record<string, unknown>).data)
+
     if (params.length > 0) {
-      vlSpec.params = params
+      if (vlSpec.layer && layersHaveOwnData) {
+        // Put params on only the first non-rule layer to avoid duplicate signals
+        for (const layer of vlSpec.layer) {
+          const markType = typeof layer.mark === 'string' ? layer.mark : layer.mark?.type
+          if (markType !== 'rule') {
+            ;(layer as Record<string, unknown>).params = params
+            break
+          }
+        }
+      } else {
+        vlSpec.params = params
+      }
     }
 
     // Apply encoding modifications (tooltip, opacity, etc.)
@@ -981,11 +1294,19 @@ export function plotSpecToVegaLite(
       if (vlSpec.encoding) {
         Object.assign(vlSpec.encoding, encodingMods)
       }
-      // Also apply to layers
+      // Also apply to layers (skip rule marks like hline/vline — they don't support selections)
       if (vlSpec.layer) {
         for (const layer of vlSpec.layer) {
           if (layer.encoding) {
-            Object.assign(layer.encoding, encodingMods)
+            const markType = typeof layer.mark === 'string' ? layer.mark : layer.mark?.type
+            if (markType === 'rule') {
+              // Only add tooltip to rule layers, not hover/selection params
+              if (encodingMods.tooltip) {
+                layer.encoding.tooltip = encodingMods.tooltip
+              }
+            } else {
+              Object.assign(layer.encoding, encodingMods)
+            }
           }
         }
       }
@@ -1015,9 +1336,16 @@ export function plotSpecToVegaLite(
     if (spec.facet.type === 'wrap') {
       // facet_wrap: single variable
       const facetVar = spec.facet.vars as string
+      // Facet variables must be discrete — use ordinal for low-cardinality numeric fields
+      let facetType = inferFieldType(spec.data as Record<string, unknown>[], facetVar)
+      if (facetType === 'quantitative' && isLowCardinalityNumeric(spec.data as Record<string, unknown>[], facetVar)) {
+        facetType = 'ordinal'
+      } else if (facetType === 'quantitative') {
+        facetType = 'ordinal' // Facets must be discrete
+      }
       vlSpec.facet = {
         field: facetVar,
-        type: inferFieldType(spec.data as Record<string, unknown>[], facetVar),
+        type: facetType,
       }
       // Add columns if specified
       if (spec.facet.ncol) {
@@ -1029,15 +1357,17 @@ export function plotSpecToVegaLite(
       vlSpec.facet = {}
 
       if (vars.rows) {
+        const rowType = inferFieldType(spec.data as Record<string, unknown>[], vars.rows)
         vlSpec.facet.row = {
           field: vars.rows,
-          type: inferFieldType(spec.data as Record<string, unknown>[], vars.rows),
+          type: rowType === 'quantitative' ? 'ordinal' : rowType,
         }
       }
       if (vars.cols) {
+        const colType = inferFieldType(spec.data as Record<string, unknown>[], vars.cols)
         vlSpec.facet.column = {
           field: vars.cols,
-          type: inferFieldType(spec.data as Record<string, unknown>[], vars.cols),
+          type: colType === 'quantitative' ? 'ordinal' : colType,
         }
       }
     }

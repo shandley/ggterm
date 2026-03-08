@@ -2,33 +2,38 @@
 
 ## Current Status
 
-- **npm**: @ggterm/core@0.2.5 published
+- **npm**: @ggterm/core@0.3.10 published
 - **Repo**: https://github.com/shandley/ggterm (public)
-- **Preprint**: Draft ready in `paper/preprint.md` with SVG figures
+- **Preprint**: Draft ready in `paper/drafts/paper-v2.md` with figures
 
 ## Novel Contribution
 
 ### Traditional Framing (Weak)
-"A plotting library for terminals" - competes with plotext, asciichart, termgraph
+"A plotting library for terminals" — competes with plotext, asciichart, termgraph
 
-### AI-Agent Framing (Strong)
-"A visualization layer enabling AI agents to perform exploratory data analysis" - first of its kind
+### AI-Tool Framing (Moderate)
+"A visualization layer enabling AI agents to perform exploratory data analysis"
+
+### Specification Framing (Strong)
+"A Grammar of Graphics **primitive catalog** — 65 geometry types as a backend-agnostic `PlotSpec` specification — designed for programmatic composition by AI agents. The first GoG implementation that treats the specification as the primary artifact and renderers as pluggable consumers."
 
 ## Key Differentiators
 
 | Feature | ggterm | Competitors |
 |---------|--------|-------------|
 | Grammar of Graphics | Full implementation | None |
+| PlotSpec (backend-agnostic spec) | JSON-serializable IR | None |
 | LLM-friendly API | Declarative, composable | Imperative |
-| Geometry types | 30 | 1-15 |
-| Agent Skills | Built-in (6 skills) | None |
+| Geometry types | 65 | 1-15 |
+| Rendering backends | 2 (terminal + Vega-Lite) | 1 |
+| Agent Skills | Built-in (8 skills) | None |
 | Plot history | With provenance | None |
 | Reproducibility | PlotSpec JSON + Vega-Lite | None |
 
 ## Publication Pipeline
 
 ```
-Now                    Week 2-3              Week 4+
+Week 1-2               Week 3-4              Week 5+
  │                        │                    │
  ▼                        ▼                    ▼
 Soft launch           bioRxiv               JOSS
@@ -37,13 +42,7 @@ Soft launch           bioRxiv               JOSS
 
 ## bioRxiv Preprint
 
-**Location**: `paper/preprint.md`
-
-**Figures** (SVG, publication-ready):
-1. `figure1-architecture.svg` - Data flow through grammar layers
-2. `figure2-comparison.svg` - Feature matrix vs competitors
-3. `figure3-iris.svg` - 4-panel iris analysis example
-4. `figure4-workflow.svg` - Conversational AI workflow
+**Location**: `paper/drafts/paper-v2.md`
 
 **Before submission**:
 - [ ] Add author affiliation
@@ -62,7 +61,7 @@ Soft launch           bioRxiv               JOSS
 **Requirements**:
 - [x] OSI-approved license (MIT)
 - [x] Good documentation
-- [x] Comprehensive tests (1,220+)
+- [x] Comprehensive tests (2,158)
 - [x] Feature-complete
 - [ ] 6+ months public development history
 

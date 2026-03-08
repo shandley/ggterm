@@ -3,97 +3,70 @@
 [![npm version](https://img.shields.io/npm/v/@ggterm/core.svg)](https://www.npmjs.com/package/@ggterm/core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Data visualization through conversation.**
+**A Grammar of Graphics primitive catalog for programmatic data visualization.**
 
-ggterm lets you create terminal visualizations by describing what you want in natural language. No commands to memorize, no syntax to learn.
+ggterm is a comprehensive catalog of data visualization primitives — 65 geometry types, 73 scales, statistical transforms, coordinate systems, facets, and themes — specified as a backend-agnostic `PlotSpec`. Any rendering system can consume this specification. Today ggterm ships two backends: terminal ASCII art for instant feedback, and Vega-Lite for publication-quality interactive output. The declarative API makes it ideal for AI agent composition.
 
-```
-You: Load the iris dataset and show me sepal length vs petal length, colored by species.
+## The Specification
 
-AI: [Creates scatter plot with automatic scales, legends, and color mapping]
-```
+Every plot reduces to a `PlotSpec` — a JSON-serializable, backend-agnostic specification:
 
-## How It Works
-
-ggterm is designed for AI assistants. You describe what you want to see, and your AI creates the visualization:
-
-| You say... | AI does... |
-|------------|-----------|
-| "Load the iris dataset" | Loads 150 rows with sepal/petal measurements by species |
-| "Show sepal length vs petal length" | Creates scatter plot with proper axis labels |
-| "Color by species" | Adds color encoding with legend |
-| "Add a trend line" | Overlays linear regression |
-| "Export for my paper" | Generates HTML with PNG/SVG download |
-
-## Bundled Datasets
-
-ggterm includes classic datasets for immediate exploration:
-
-| Dataset | Rows | Columns | Description |
-|---------|------|---------|-------------|
-| **iris** | 150 | sepal_length, sepal_width, petal_length, petal_width, species | Fisher's iris flower measurements |
-| **mtcars** | 16 | mpg, cyl, hp, wt, name | Motor Trend car road tests |
-| **sample** | n | x, y, group, size | Generated random data |
-
-## Examples
-
-See our [example vignettes](./examples/) for complete workflows using real data:
-
-| Example | Dataset | What you'll learn |
-|---------|---------|-------------------|
-| [Exploratory Analysis](./examples/01-exploratory-analysis.md) | mtcars | Explore car performance data through conversation |
-| [Publication Figures](./examples/02-publication-figures.md) | iris | Create publication-ready species comparison |
-| [Streaming Dashboard](./examples/03-streaming-dashboard.md) | sample | Build real-time monitoring displays |
-| [Comparative Analysis](./examples/04-comparative-analysis.md) | iris | Compare distributions across species |
-
-## Getting Started
-
-### Use in Your Project (Recommended)
-
-Add ggterm to any project and use Claude Code for natural language visualization:
-
-```bash
-# In your project directory (e.g., "Epi Analysis")
-cd my-project
-
-# Install ggterm
-npm install @ggterm/core
-
-# Set up Claude Code skills
-npx ggterm-plot init
+```typescript
+interface PlotSpec {
+  data: DataSource        // Input dataset
+  aes: AestheticMapping   // Variable → visual property mapping
+  geoms: Geom[]           // Visual marks (65 types)
+  stats: Stat[]           // Statistical transforms
+  scales: Scale[]         // Data domain → visual range (73 types)
+  coord: Coord            // Coordinate system
+  facet?: Facet           // Small multiples
+  theme: Theme            // Non-data styling
+  labels: Labels          // Title, axis labels, legend titles
+}
 ```
 
-Now open Claude Code and start talking:
+This is the clean boundary. Everything in the grammar layer produces a `PlotSpec`. Everything in the rendering layer consumes one.
+
+## Architecture
 
 ```
-You: Load outbreak_data.csv and show me cases over time by region
-
-Claude: [Creates line chart with automatic date parsing and color encoding]
-
-You: Add a reference line at 100 cases
-
-Claude: [Updates plot with horizontal reference line]
-
-You: Style this like The Economist and export as PNG
-
-Claude: [Applies Economist style preset and generates publication-ready output]
+┌─────────────────────────────────────────────────────────────┐
+│  Layer 3: AI Integration                                     │
+│  8 Claude Code skills, natural language workflows,           │
+│  conversational data analysis                                │
+├─────────────────────────────────────────────────────────────┤
+│  Layer 2: Backends & Tooling                                 │
+│  Terminal renderer, Vega-Lite exporter, live viewer,         │
+│  CLI, plot history with provenance                           │
+├─────────────────────────────────────────────────────────────┤
+│  Layer 1: Grammar & Primitives (the durable core)            │
+│  PlotSpec, 65 geoms, 73 scales, stats, coords, facets,      │
+│  themes — backend-agnostic specification                     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### For Contributors
+Layer 1 is the product. Layers 2 and 3 are today's implementations that consume it.
 
-Clone the repo to develop or contribute:
+## Primitive Catalog
 
-```bash
-git clone https://github.com/shandley/ggterm.git
-cd ggterm
-bun install
+65 geometry types organized by domain:
+
+| Category | Geoms | Examples |
+|----------|-------|---------|
+| **Basic** | point, line, bar, area, histogram, density, smooth, step, segment, text, rug | Scatter, trends, distributions |
+| **Distribution** | boxplot, violin, ridgeline, beeswarm, ecdf, qq | Compare distributions across groups |
+| **Specialized** | heatmap, treemap, sankey, calendar, flame, waffle, upset, dendrogram, corrmat, contour, sparkline, lollipop, dumbbell, bullet | Domain-specific visualizations |
+| **Scientific** | volcano, manhattan, kaplan-meier, forest, roc, bland-altman, ma, biplot, scree, funnel, control | Genomics, clinical trials, meta-analysis, diagnostics |
+
+73 scale functions: continuous, discrete, log, sqrt, reverse, datetime, color (viridis, plasma, inferno, magma, categorical), size, shape, alpha, and manual overrides.
+
+## Two Backends, One Spec
+
+### Backend 1: Terminal ASCII
+
+Instant visualization directly in the terminal using Unicode braille dots and block characters with ANSI truecolor:
+
 ```
-
-### Interactive REPL
-
-For hands-on exploration without AI:
-
-```bash
 npx ggterm
 ```
 
@@ -123,71 +96,86 @@ ggterm> gg(data).aes({x: "sepal_length", y: "petal_length", color: "species"}).g
       ▲ setosa  ● versicolor  ■ virginica
 ```
 
-## What You Can Create
+### Backend 2: Vega-Lite (Browser)
 
-- **Scatter plots** - Relationships between variables
-- **Line charts** - Trends over time
-- **Histograms & Density** - Distributions of single variables
-- **Box plots & Violin** - Compare distributions across groups
-- **Bar charts & Lollipops** - Categorical comparisons
-- **Faceted plots** - Small multiples for comparison
-- **Ridgeline & Beeswarm** - Advanced distribution views
-- **Calendar heatmaps** - GitHub-style activity visualization
-- **Flame graphs** - Performance profiling visualization
-- **Sankey diagrams** - Flow visualization between nodes
-- **Treemaps** - Hierarchical data as nested rectangles
-- **Correlation matrices** - Pairwise variable relationships
-- **Volcano plots** - Differential expression for genomics
-- **MA plots** - Companion to volcano for DE analysis
-- **Manhattan plots** - GWAS visualization across chromosomes
-- **Heatmaps** - Matrix visualization with clustering
-- **PCA biplots** - Scores and loadings together
-- **Kaplan-Meier curves** - Survival analysis for clinical trials
-- **Forest plots** - Meta-analysis effect sizes with CI
-- **ROC curves** - Classifier performance evaluation
-- **Bland-Altman plots** - Method comparison and agreement
-- **Q-Q plots** - Normality assessment
-- **ECDF plots** - Empirical cumulative distribution
-- **Funnel plots** - Publication bias in meta-analysis
-- **Control charts** - Statistical process control
-- **Scree plots** - PCA variance explained
-- **UpSet plots** - Modern set intersections (superior to Venn)
-- **Dendrograms** - Hierarchical clustering trees
-- **And more** - 68 geometry types available
-
-## Export Options
-
-Export any plot to HTML for sharing or publication:
-
-- Interactive pan/zoom in browser
-- Download as PNG or SVG
-- Full Vega-Lite spec for further editing
-
-## Live Plot Viewer
-
-ggterm includes a companion plot viewer that automatically displays new plots in real time. Every plot you create instantly appears as an interactive Vega-Lite visualization — no manual export or refresh needed.
+The same `PlotSpec` is converted to a Vega-Lite specification for interactive, publication-quality output. The live viewer displays plots in real time as you create them:
 
 ```bash
-# Start the live viewer (runs on localhost:4242)
-npx ggterm-plot serve
+npx ggterm-plot serve   # Opens live viewer at localhost:4242
 ```
 
-Open `http://localhost:4242` in a browser alongside your terminal. As you create plots through conversation, they appear automatically in the viewer with:
-
-- **Interactive Vega-Lite rendering** — tooltips, zoom, pan, legend filtering
-- **Plot history navigation** — arrow keys to browse previous plots
-- **SVG/PNG export** — download publication-quality output directly
-- **Dark theme** — designed to sit alongside your terminal
-
-This creates a minimal data analysis IDE: a terminal for conversation with your AI assistant, and a companion panel for high-fidelity plot output.
-
-**Wave terminal users**: `ggterm serve` auto-detects [Wave](https://www.waveterm.dev/) and opens the viewer as a side panel with zero additional setup.
+- Interactive rendering — tooltips, zoom, pan, legend filtering
+- Plot history navigation — arrow keys to browse previous plots
+- SVG/PNG export — download publication-quality output directly
+- Dark theme — designed to sit alongside your terminal
 
 ![ggterm live viewer in Wave terminal](paper/figures/Screenshot%202026-02-08%20at%209.32.28%E2%80%AFAM.png)
 
+**Wave terminal users**: auto-detects [Wave](https://www.waveterm.dev/) and opens the viewer as a side panel.
+
+## AI-Native Composition
+
+ggterm's declarative `PlotSpec` is designed for programmatic construction — particularly by AI agents. Describe what you want in natural language, and your AI composes the visualization:
+
+| You say... | AI does... |
+|------------|-----------|
+| "Load the iris dataset" | Loads 150 rows with sepal/petal measurements by species |
+| "Show sepal length vs petal length" | Creates scatter plot with proper axis labels |
+| "Color by species" | Adds color encoding with legend |
+| "Add a trend line" | Overlays linear regression |
+| "Style like The Economist" | Applies publication style preset |
+| "Export for my paper" | Generates HTML with PNG/SVG download |
+
+8 Claude Code skills handle the full workflow: data loading, plotting, history, customization, styling, export, markdown reports, and help.
+
+See our [example vignettes](./examples/) for complete AI-driven workflows:
+
+| Example | Dataset | What you'll learn |
+|---------|---------|-------------------|
+| [Exploratory Analysis](./examples/01-exploratory-analysis.md) | mtcars | Explore car performance data through conversation |
+| [Publication Figures](./examples/02-publication-figures.md) | iris | Create publication-ready species comparison |
+| [Streaming Dashboard](./examples/03-streaming-dashboard.md) | sample | Build real-time monitoring displays |
+| [Comparative Analysis](./examples/04-comparative-analysis.md) | iris | Compare distributions across species |
+
+## Getting Started
+
+### Quick Start (New Projects)
+
+```bash
+mkdir my-analysis && cd my-analysis
+npx ggterm-plot setup    # Init skills, generate welcome plot, open browser, start live viewer
+```
+
+### Step-by-Step
+
+```bash
+npm install @ggterm/core
+npx ggterm-plot init     # Install Claude Code skills + project CLAUDE.md
+npx ggterm-plot serve    # Start live viewer (port 4242)
+```
+
+### For Contributors
+
+```bash
+git clone https://github.com/shandley/ggterm.git
+cd ggterm
+bun install
+bun test                 # 2158 tests
+```
+
+## Bundled Datasets
+
+Built-in datasets for immediate exploration — no CSV files needed:
+
+| Dataset | Rows | Columns | Description |
+|---------|------|---------|-------------|
+| **iris** | 150 | sepal_length, sepal_width, petal_length, petal_width, species | Fisher's iris flower measurements |
+| **mtcars** | 16 | mpg, cyl, hp, wt, name | Motor Trend car road tests |
+| **sample** | n | x, y, group, size | Generated random data |
+
 ## For Developers
 
-If you want to use ggterm programmatically:
+Use ggterm programmatically to build a `PlotSpec` and render it:
 
 ```typescript
 import { gg, geom_point, scale_color_viridis } from '@ggterm/core'
@@ -198,24 +186,32 @@ const plot = gg(data)
   .scale(scale_color_viridis())
   .labs({ title: 'Iris Dataset' })
 
+// Terminal backend
 console.log(plot.render({ width: 80, height: 24 }))
+
+// Access the raw PlotSpec
+const spec = plot.spec()
 ```
 
 See the [API Reference](./docs/API.md) for full documentation.
 
 ## Why ggterm?
 
-ggterm implements the [Grammar of Graphics](https://www.amazon.com/Grammar-Graphics-Statistics-Computing/dp/0387245448) - the same foundation as R's ggplot2 and Python's plotnine. This means:
+ggterm implements [Wilkinson's Grammar of Graphics](https://www.amazon.com/Grammar-Graphics-Statistics-Computing/dp/0387245448) — the same foundation as R's ggplot2 and Python's plotnine — but treats the **specification as the primary artifact** and renderers as pluggable consumers.
 
-- **Declarative** - Describe what you want, not how to draw it
-- **Composable** - Build complex plots by layering simple elements
-- **Consistent** - Same patterns work across all plot types
+- **Specification-first** — `PlotSpec` is a backend-agnostic, JSON-serializable intermediate representation. New rendering targets can consume it without touching the grammar layer.
+- **Declarative** — Describe what you want, not how to draw it
+- **Composable** — Build complex plots by layering simple elements
+- **AI-composable** — The declarative API is ideal for programmatic construction by AI agents
+- **Two backends, one spec** — Terminal for speed, Vega-Lite for quality
 
 ## Resources
 
+- [Architecture](./docs/ARCHITECTURE.md)
 - [Quick Start Guide](./docs/QUICKSTART.md)
 - [Geometry Reference](./docs/GEOM-REFERENCE.md)
 - [Migration from ggplot2](./docs/MIGRATION-GGPLOT2.md)
+- [Roadmap](./docs/ROADMAP.md)
 
 ## License
 

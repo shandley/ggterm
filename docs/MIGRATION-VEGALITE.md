@@ -337,16 +337,7 @@ Vega-Lite has built-in selection:
 }
 ```
 
-ggterm interactivity is handled via OpenTUI:
-```typescript
-<GGTerm
-  data={data}
-  aes={{ x: 'x', y: 'y' }}
-  geoms={[geom_point()]}
-  onClick={(point) => handleSelect(point)}
-  onHover={(point) => showTooltip(point)}
-/>
-```
+ggterm interactivity is available through the live viewer (`npx ggterm-plot serve`), which renders plots as interactive Vega-Lite visualizations with tooltips, zoom, pan, and legend filtering. For programmatic interactivity, use the Vega-Lite export and Vega-Embed.
 
 ## Complete Examples
 
@@ -477,10 +468,10 @@ gg(data)
 
 2. **Implicit Type Detection**: ggterm infers scales from data types - you rarely need to specify `"type": "quantitative"`.
 
-3. **Terminal Limitations**:
-   - Resolution is limited by character grid
-   - Tooltips require OpenTUI integration
-   - No SVG export (terminal-only output)
+3. **Terminal Backend Limitations** (use the Vega-Lite backend for these):
+   - Terminal resolution is limited by character grid
+   - Tooltips available in the live viewer (`npx ggterm-plot serve`)
+   - SVG/PNG export via Vega-Lite backend or live viewer
 
 4. **Streaming Data**: ggterm excels at real-time updates:
    ```typescript
@@ -499,14 +490,14 @@ gg(data)
 | Feature | Alternative |
 |---------|-------------|
 | Geographic maps | Not supported |
-| Tooltips (HTML) | OpenTUI integration |
-| SVG/PNG export | Terminal output only |
-| Interactive selections | OpenTUI events |
+| Tooltips (HTML) | Live viewer (`npx ggterm-plot serve`) renders interactive Vega-Lite |
+| SVG/PNG export | Via Vega-Lite backend: `vl2png`, `vl2svg`, or live viewer export |
+| Interactive selections | Live viewer supports pan/zoom/legend filtering |
 | Conditional encoding | Use data transformation |
 | Repeat/concat | Use faceting |
 
 ## See Also
 
-- [Geometry Reference](./GEOM-REFERENCE.md) - All 68 plot types
+- [Geometry Reference](./GEOM-REFERENCE.md) - All 65 plot types
 - [API Reference](./API.md) - Complete API documentation
 - [Migration from ggplot2](./MIGRATION-GGPLOT2.md) - For R/ggplot2 users

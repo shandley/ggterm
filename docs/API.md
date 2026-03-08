@@ -625,88 +625,7 @@ console.log(output)
 
 ---
 
-## OpenTUI Integration (`@ggterm/opentui`)
-
-### GGTerm Component
-
-React component for embedding plots in OpenTUI applications.
-
-```tsx
-import { GGTerm } from '@ggterm/opentui'
-
-function MyApp() {
-  return (
-    <GGTerm
-      data={data}
-      aes={{ x: 'pc1', y: 'pc2', color: 'group' }}
-      geoms={[geom_point()]}
-      scales={[scale_color_viridis()]}
-      theme={theme_dark()}
-      width={80}
-      height={24}
-      onHover={(point) => console.log(point)}
-      onClick={(point) => console.log(point)}
-    />
-  )
-}
-```
-
-#### Props
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `data` | Record[] | Data array |
-| `aes` | AestheticMapping | Aesthetic mappings |
-| `geoms` | Geom[] | Geometry layers |
-| `stats` | Stat[] | Statistical transforms |
-| `scales` | Scale[] | Scale definitions |
-| `coord` | Coord | Coordinate system |
-| `facet` | Facet | Faceting specification |
-| `theme` | Theme | Theme object |
-| `width` | number \| string | Width (chars or percentage) |
-| `height` | number | Height in characters |
-| `onHover` | function | Hover callback |
-| `onClick` | function | Click callback |
-
-### useGGTerm Hook
-
-For more control over the plot lifecycle.
-
-```tsx
-import { useGGTerm } from '@ggterm/opentui'
-
-function MyPlot({ data }) {
-  const { plot, rendered, setData } = useGGTerm({
-    aes: { x: 'x', y: 'y' },
-    geoms: [geom_point()]
-  })
-
-  useEffect(() => {
-    setData(data)
-  }, [data])
-
-  return <text>{rendered}</text>
-}
-```
-
----
-
-## Streaming Data
-
-```typescript
-const plot = gg([]).aes({ x: 'time', y: 'value' }).geom(geom_line())
-
-// Push new data points
-stream.on('data', (point) => {
-  plot.push(point)
-  console.clear()
-  console.log(plot.render())
-})
-```
-
----
-
-## Extended Geometries (Phase 7)
+## Extended Geometries
 
 ### geom_boxplot()
 
@@ -1915,7 +1834,7 @@ annotate_hline(50, { linetype: 'dashed' })
 
 ---
 
-## Advanced Scales (Phase 7)
+## Advanced Scales
 
 ### Size Scales
 
@@ -2015,7 +1934,7 @@ gg(data)
 
 ---
 
-## Streaming & Performance (Phase 6)
+## Streaming & Performance
 
 ### StreamingPlot
 

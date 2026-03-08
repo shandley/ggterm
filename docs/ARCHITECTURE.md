@@ -2,47 +2,46 @@
 
 ## Overview
 
-ggterm implements Leland Wilkinson's Grammar of Graphics as a layered system that transforms data into terminal-rendered visualizations. The architecture separates concerns into distinct layers, each with a single responsibility.
+ggterm implements Leland Wilkinson's Grammar of Graphics as a layered system that transforms data into a backend-agnostic `PlotSpec`. This specification is then consumed by rendering backends — currently terminal ASCII art and Vega-Lite — but the grammar layer has no knowledge of how plots are rendered.
 
 ## The Seven Layers
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                           Theme                                  │
-│                    (non-data styling)                           │
-├─────────────────────────────────────────────────────────────────┤
-│                          Facets                                  │
-│                    (small multiples)                            │
-├─────────────────────────────────────────────────────────────────┤
-│                        Coordinates                               │
-│                   (coordinate system)                           │
-├─────────────────────────────────────────────────────────────────┤
-│                          Scales                                  │
-│               (data domain → visual range)                      │
-├─────────────────────────────────────────────────────────────────┤
-│                        Statistics                                │
-│                  (data transformations)                         │
-├─────────────────────────────────────────────────────────────────┤
-│                        Geometries                                │
-│                     (visual marks)                              │
-├─────────────────────────────────────────────────────────────────┤
-│                        Aesthetics                                │
-│              (variable → visual mapping)                        │
-├─────────────────────────────────────────────────────────────────┤
-│                           Data                                   │
-│                     (input dataset)                             │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                           Theme                                │
+│                    (non-data styling)                          │
+├─────────────────────────────────────────────────────────────┤
+│                          Facets                                │
+│                    (small multiples)                           │
+├─────────────────────────────────────────────────────────────┤
+│                        Coordinates                              │
+│                   (coordinate system)                          │
+├─────────────────────────────────────────────────────────────┤
+│                          Scales                                │
+│               (data domain → visual range)                     │
+├─────────────────────────────────────────────────────────────┤
+│                        Statistics                               │
+│                  (data transformations)                        │
+├─────────────────────────────────────────────────────────────┤
+│                        Geometries                               │
+│                     (visual marks)                             │
+├─────────────────────────────────────────────────────────────┤
+│                        Aesthetics                               │
+│              (variable → visual mapping)                       │
+├─────────────────────────────────────────────────────────────┤
+│                           Data                                  │
+│                     (input dataset)                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Layer Details
 
 #### 1. Data Layer
-The foundation. Accepts arrays of records, typed arrays, or streaming iterators.
+The foundation. Accepts arrays of records.
 
 ```typescript
 interface DataSource {
   records: Record<string, unknown>[]
-  // Future: Arrow tables, streaming iterators
 }
 ```
 
@@ -63,63 +62,41 @@ interface AestheticMapping {
 ```
 
 #### 3. Geometries Layer
-Determines the visual representation of data points.
+65 geometry types determine the visual representation of data. See [GEOM-REFERENCE.md](./GEOM-REFERENCE.md) for the complete catalog.
 
-| Geom | Output | Terminal Chars |
-|------|--------|----------------|
-| `geom_point` | Scatter dots | `⠁⠂⠄⡀⢀` (braille) or `·•●` |
-| `geom_line` | Connected line | `─│╭╮╯╰` or braille path |
-| `geom_bar` | Vertical bars | `█▇▆▅▄▃▂▁` |
-| `geom_area` | Filled region | Block fills `░▒▓█` |
-| `geom_text` | Labels | Actual characters |
-| `geom_hline` | Horizontal line | `───────` |
-| `geom_vline` | Vertical line | `│` |
+| Category | Examples |
+|----------|---------|
+| Basic | point, line, bar, area, histogram, density, smooth, step, text |
+| Distribution | boxplot, violin, ridgeline, beeswarm, ecdf, qq |
+| Specialized | heatmap, treemap, sankey, calendar, flame, waffle, upset, dendrogram |
+| Scientific | volcano, manhattan, kaplan-meier, forest, roc, bland-altman, ma, biplot |
 
 #### 4. Statistics Layer
 Transforms data before rendering.
 
 ```typescript
-// Binning for histograms
-stat_bin({ bins: 30 })
-
-// Smoothing (loess, linear)
-stat_smooth({ method: 'loess', span: 0.75 })
-
-// Density estimation
-stat_density({ kernel: 'gaussian' })
-
-// Summary statistics
-stat_summary({ fun: 'mean' })
+stat_bin({ bins: 30 })              // Histogram binning
+stat_smooth({ method: 'loess' })    // Smoothing
+stat_density({ kernel: 'gaussian' }) // Density estimation
+stat_summary({ fun: 'mean' })       // Group summaries
 ```
 
 #### 5. Scales Layer
-Maps data domain to visual range.
+73 scale functions map data domain to visual range.
 
-**Position Scales:**
-```typescript
-scale_x_continuous({ limits: [0, 100], breaks: [0, 25, 50, 75, 100] })
-scale_x_log10()
-scale_x_discrete()
-```
-
-**Color Scales:**
-```typescript
-scale_color_continuous({ palette: 'viridis' })
-scale_color_discrete({ palette: 'category10' })
-scale_color_manual({ values: ['#e41a1c', '#377eb8', '#4daf4a'] })
-```
+**Position:** `scale_x_continuous()`, `scale_x_log10()`, `scale_x_discrete()`, `scale_x_datetime()`
+**Color:** `scale_color_viridis()`, `scale_color_discrete()`, `scale_color_manual()`
+**Other:** `scale_size_continuous()`, `scale_shape_manual()`, `scale_alpha_continuous()`
 
 #### 6. Coordinates Layer
-Defines the coordinate system.
 
 ```typescript
 coord_cartesian()     // Default: x horizontal, y vertical
 coord_flip()          // Swap x and y
-coord_polar()         // Polar coordinates (limited terminal support)
+coord_polar()         // Polar coordinates
 ```
 
 #### 7. Facets Layer
-Creates small multiples by splitting data.
 
 ```typescript
 facet_wrap('variable', { ncol: 3 })
@@ -127,278 +104,200 @@ facet_grid({ rows: 'var1', cols: 'var2' })
 ```
 
 #### 8. Theme Layer
-Controls non-data visual elements.
+Controls non-data visual elements: panel background, borders, grid, axis text/ticks/titles, legend position, title alignment.
+
+---
+
+## PlotSpec: The Clean Boundary
+
+All seven layers converge into a single specification:
 
 ```typescript
-interface Theme {
-  panel: {
-    background: string
-    border: 'none' | 'single' | 'double' | 'rounded'
-    grid: { major: string | null, minor: string | null }
-  }
-  axis: {
-    text: { color: string, size: number }
-    ticks: { char: string, length: number }
-    title: { color: string, bold: boolean }
-  }
-  legend: {
-    position: 'right' | 'bottom' | 'none'
-    title: { bold: boolean }
-  }
-  title: {
-    align: 'left' | 'center' | 'right'
-    bold: boolean
-  }
+interface PlotSpec {
+  data: DataSource
+  aes: AestheticMapping
+  geoms: Geom[]
+  stats: Stat[]
+  scales: Scale[]
+  coord: Coord
+  facet?: Facet
+  theme: Theme
+  labels: Labels
 }
 ```
 
-## Rendering Pipeline
+**Location:** `packages/core/src/types.ts:195-205`
 
-```
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│   Data   │───▶│  Stats   │───▶│  Scales  │───▶│  Geoms   │
-│  Layer   │    │Transform │    │  Map     │    │ Render   │
-└──────────┘    └──────────┘    └──────────┘    └──────────┘
-                                                      │
-                                                      ▼
-┌──────────────────────────────────────────────────────────────┐
-│                      Canvas Buffer                            │
-│            (abstract grid of cells/pixels)                    │
-└──────────────────────────────────────────────────────────────┘
-                                │
-        ┌───────────────────────┼───────────────────────┐
-        ▼                       ▼                       ▼
-┌───────────────┐       ┌───────────────┐       ┌───────────────┐
-│    Braille    │       │     Block     │       │  Sixel/Kitty  │
-│   Renderer    │       │   Renderer    │       │   Renderer    │
-│  160×96 dots  │       │  80×24 chars  │       │  true pixels  │
-└───────────────┘       └───────────────┘       └───────────────┘
-        │                       │                       │
-        └───────────────────────┼───────────────────────┘
-                                ▼
-                    ┌───────────────────┐
-                    │  Terminal Output  │
-                    │   (ANSI string)   │
-                    └───────────────────┘
+`PlotSpec` is the clean boundary between grammar and rendering. It is:
+
+- **Declarative** — describes *what* to visualize, not *how* to render it
+- **JSON-serializable** — can be stored, transmitted, or converted to any format
+- **Backend-agnostic** — no terminal codes, no Vega-Lite constructs, no rendering logic
+
+The fluent API (`grammar.ts`) builds a PlotSpec. The `.spec()` method extracts it. The `.render()` method passes it to a backend.
+
+```typescript
+const plot = gg(data).aes({ x: 'x', y: 'y' }).geom(geom_point())
+
+plot.spec()    // → PlotSpec (pure data)
+plot.render()  // → PlotSpec → Terminal Backend → ANSI string
 ```
 
-### 1. Data Collection
-Gather records from data source, apply any filtering.
+---
 
-### 2. Statistical Transformation
-Apply stat functions (binning, smoothing, density estimation).
+## Rendering Backends
 
-### 3. Scale Calculation
-Compute scale domains from data, calculate breaks and labels.
+```
+                    PlotSpec
+                   (types.ts)
+                       │
+           ┌───────────┴───────────┐
+           ▼                       ▼
+  ┌─────────────────┐    ┌─────────────────┐
+  │    Terminal      │    │   Vega-Lite     │
+  │    Backend       │    │    Backend      │
+  │  pipeline.ts     │    │  vega-lite.ts   │
+  │                  │    │                 │
+  │  PlotSpec →      │    │  PlotSpec →     │
+  │  Stats →         │    │  Mark mapping → │
+  │  Scales →        │    │  Encoding →     │
+  │  Canvas →        │    │  VegaLiteSpec → │
+  │  ANSI string     │    │  JSON / HTML    │
+  └─────────────────┘    └─────────────────┘
+```
 
-### 4. Geometry Rendering
-Each geom renders to abstract canvas coordinates.
+### Backend: Terminal Renderer
 
-### 5. Canvas to Terminal
-Renderer converts canvas buffer to terminal escape sequences.
+**Location:** `packages/core/src/pipeline/pipeline.ts`
 
-## Renderer Architecture
+Transforms a `PlotSpec` into ANSI-colored terminal output:
 
-### Abstract Canvas
+1. **Stat transforms** — apply binning, density, smoothing to data
+2. **Scale computation** — map data values to canvas positions
+3. **Geometry rendering** — each geom writes to an abstract `Canvas` buffer
+4. **Canvas output** — convert cell buffer to ANSI escape sequences
 
-The canvas is a 2D buffer of cells, where each cell contains:
+The canvas is a 2D grid of cells:
 
 ```typescript
 interface CanvasCell {
   char: string           // Character to display
-  fg: RGBA              // Foreground color
+  fg: RGBA              // Foreground color (24-bit truecolor)
   bg: RGBA              // Background color
   attrs: CellAttributes  // Bold, italic, etc.
 }
+```
 
-interface RGBA {
-  r: number  // 0-255
-  g: number  // 0-255
-  b: number  // 0-255
-  a: number  // 0-1
+Resolution is enhanced using Unicode braille patterns (U+2800-U+28FF), where each character cell is a 2x4 dot matrix — an 80x24 terminal becomes 160x96 effective dots.
+
+### Backend: Vega-Lite Exporter
+
+**Location:** `packages/core/src/export/vega-lite.ts`
+
+Converts a `PlotSpec` to a [Vega-Lite](https://vega.github.io/vega-lite/) JSON specification:
+
+1. **Mark mapping** — geom types → Vega-Lite mark types (point, line, bar, etc.)
+2. **Encoding** — aesthetic mappings → Vega-Lite encoding channels
+3. **Field type inference** — introspect data to determine quantitative/nominal/temporal
+4. **Multi-layer support** — multiple geoms → layered Vega-Lite spec
+5. **Faceting** — facet specs → Vega-Lite facet/repeat
+
+The Vega-Lite spec is used by:
+- **Live viewer** (`serve.ts`) — SSE-powered browser panel that auto-displays new plots
+- **HTML export** — standalone HTML files with embedded Vega-Embed
+- **Publication pipeline** — PNG/SVG/PDF via `vl2png`/`vl2svg`/`vl2pdf`
+- **Style/customize skills** — modify the Vega-Lite config without re-running the grammar
+
+---
+
+## Adding a New Backend
+
+A new backend is a function that consumes `PlotSpec` and produces output in a target format:
+
+```typescript
+import { PlotSpec } from './types'
+
+function renderToSVG(spec: PlotSpec, options: RenderOptions): string {
+  // 1. Apply stat transforms (reusable from pipeline)
+  // 2. Build scale contexts (reusable from pipeline)
+  // 3. Map geoms to SVG primitives (backend-specific)
+  // 4. Assemble SVG document
+  return svgString
 }
 ```
 
-### Braille Renderer
+The stat computation and scale building logic in `pipeline.ts` can be reused. Only the final mark rendering step is backend-specific.
 
-Uses Unicode braille patterns (U+2800–U+28FF) where each character cell is a 2×4 dot matrix:
+Reference implementations:
+- `pipeline/pipeline.ts` — terminal backend (~500 lines)
+- `export/vega-lite.ts` — Vega-Lite backend (~400 lines)
 
-```
-Cell layout:
-┌─┬─┐
-│1│4│
-│2│5│
-│3│6│
-│7│8│
-└─┴─┘
+---
 
-Dot values:
-1 = 0x01    4 = 0x08
-2 = 0x02    5 = 0x10
-3 = 0x04    6 = 0x20
-7 = 0x40    8 = 0x80
-```
+## Color System (Terminal Backend)
 
-Resolution: 80×24 terminal → 160×96 effective dots
+The terminal backend supports multiple color capability levels:
 
-### Block Renderer
+| Level | Colors | Detection |
+|-------|--------|-----------|
+| None | Monochrome | No `TERM` variable |
+| Basic | 16 ANSI | `TERM` set |
+| Extended | 256 | `TERM` includes `256color` |
+| TrueColor | 16.7M | `COLORTERM=truecolor` |
 
-Uses Unicode block characters for wider compatibility:
+Built-in color palettes optimized for terminal rendering:
 
-```
-Full:    █ (U+2588)
-Halves:  ▀▄▌▐ (U+2580, U+2584, U+258C, U+2590)
-Shades:  ░▒▓ (U+2591, U+2592, U+2593)
-Lines:   ─│┌┐└┘├┤┬┴┼ (box drawing)
-```
+- **Sequential**: viridis, plasma, inferno, magma
+- **Diverging**: RdBu, BrBG, PiYG
+- **Categorical**: category10, Set1, Set2, Dark2
 
-Resolution equals character grid (80×24 typical).
-
-### Sixel/Kitty Renderer
-
-True pixel rendering for terminals with graphics support:
-
-- **Sixel**: XTerm, mlterm, foot
-- **Kitty**: Kitty terminal protocol
-- **iTerm2**: Inline images protocol
-
-Falls back to Braille when unsupported.
-
-## Color System
-
-### Terminal Capabilities
-
-```typescript
-enum ColorCapability {
-  None = 0,        // Monochrome
-  Basic = 4,       // 16 colors (ANSI)
-  Extended = 8,    // 256 colors
-  TrueColor = 24   // 16.7M colors
-}
-```
-
-### Capability Detection
-
-```typescript
-function detectColorCapability(): ColorCapability {
-  if (process.env.COLORTERM === 'truecolor') return ColorCapability.TrueColor
-  if (process.env.TERM?.includes('256color')) return ColorCapability.Extended
-  if (process.env.TERM) return ColorCapability.Basic
-  return ColorCapability.None
-}
-```
-
-### Color Palettes
-
-Built-in palettes optimized for terminal rendering:
-
-**Sequential**: viridis, plasma, inferno, magma
-**Diverging**: RdBu, BrBG, PiYG
-**Categorical**: category10, Set1, Set2, Dark2
-
-Each palette provides mappings for all color capability levels.
-
-## OpenTUI Integration
-
-### Component Architecture
-
-```tsx
-// GGTerm wraps the grammar engine in a React component
-<GGTerm
-  data={data}
-  aes={{ x: 'var1', y: 'var2' }}
-  geoms={[geom_point()]}
-  scales={[scale_color_viridis()]}
-  theme={theme_dark()}
-  width={80}
-  height={24}
-/>
-```
-
-### Rendering Flow
-
-1. GGTerm component receives props
-2. Creates ggterm plot specification
-3. Renders to OpenTUI FrameBuffer
-4. FrameBuffer integrates with OpenTUI render tree
-5. Changes trigger re-render (reactive)
-
-### Event Handling
-
-```typescript
-// Mouse hover shows tooltip
-onHover?: (point: DataPoint, position: { x: number, y: number }) => void
-
-// Click selects point
-onClick?: (point: DataPoint) => void
-
-// Keyboard navigation
-onKeyDown?: (key: string) => void  // Arrow keys for zoom/pan
-```
-
-## Performance Considerations
-
-### Large Datasets
-
-For datasets > 10,000 points:
-1. **Binning**: Automatic hexbin or rect binning
-2. **Sampling**: Random or systematic sampling
-3. **LOD**: Level-of-detail based on terminal size
-
-### Streaming Data
-
-```typescript
-const plot = gg().aes({ x: 'time', y: 'value' }).geom(geom_line())
-
-// Push new data points
-stream.on('data', (point) => {
-  plot.push(point)
-  // Only re-renders affected region
-})
-```
-
-### Diff-Based Rendering
-
-Track previous frame, only emit escape sequences for changed cells.
+---
 
 ## File Structure
 
 ```
 packages/
-├── core/
-│   ├── src/
-│   │   ├── index.ts           # Public exports
-│   │   ├── grammar.ts         # gg() builder
-│   │   ├── aesthetics.ts      # Aesthetic mappings
-│   │   ├── geoms/             # Geometry implementations
-│   │   │   ├── point.ts
-│   │   │   ├── line.ts
-│   │   │   ├── bar.ts
-│   │   │   └── ...
-│   │   ├── scales/            # Scale implementations
-│   │   │   ├── continuous.ts
-│   │   │   ├── discrete.ts
-│   │   │   ├── color.ts
-│   │   │   └── ...
-│   │   ├── stats/             # Statistical transforms
-│   │   ├── coords/            # Coordinate systems
-│   │   ├── facets/            # Faceting
-│   │   ├── themes/            # Theme definitions
-│   │   └── canvas/            # Abstract canvas
-│   └── package.json
-├── render-braille/
-│   ├── src/
-│   │   ├── index.ts
-│   │   └── braille.ts         # Braille renderer
-│   └── package.json
-├── render-block/
-│   └── ...
-├── render-sixel/
-│   └── ...
-└── opentui/
-    ├── src/
-    │   ├── index.ts
-    │   ├── GGTerm.tsx         # React component
-    │   └── hooks.ts           # useGGTerm, etc.
-    └── package.json
+└── core/
+    └── src/
+        ├── types.ts           # PlotSpec and all core interfaces
+        ├── grammar.ts         # gg() fluent builder API
+        ├── geoms/             # 65 geometry implementations
+        ├── scales/            # 73 scale implementations
+        ├── stats/             # Statistical transforms
+        ├── coords/            # Coordinate systems
+        ├── facets/            # Faceting (wrap, grid)
+        ├── themes/            # Theme definitions
+        ├── pipeline/          # Terminal rendering backend
+        │   └── pipeline.ts    # PlotSpec → Canvas → ANSI
+        ├── export/            # Vega-Lite backend
+        │   └── vega-lite.ts   # PlotSpec → VegaLiteSpec
+        ├── canvas/            # Abstract canvas buffer
+        ├── history/           # Plot history with provenance
+        ├── cli-plot.ts        # CLI tool (npx ggterm-plot)
+        ├── cli.ts             # Interactive REPL (npx ggterm)
+        ├── serve.ts           # Live viewer server (SSE)
+        └── init.ts            # Skill/project installer
 ```
+
+---
+
+## History and Provenance
+
+Every plot is saved with provenance metadata:
+
+```typescript
+interface HistoricalPlot {
+  _provenance: {
+    id: string            // e.g., "2026-03-07-001"
+    timestamp: string
+    dataFile: string
+    command: string
+    description: string
+    geomTypes: string[]
+    aesthetics: string[]
+  }
+  spec: PlotSpec
+}
+```
+
+Stored as JSON in `.ggterm/plots/` with an append-only index in `.ggterm/history.jsonl`. The raw `PlotSpec` is preserved — plots can be re-rendered with any backend at any time.

@@ -86,13 +86,6 @@ const vegaSpec = plotSpecToVegaLite(plot.spec())
 // Use with Vega-Embed to render PNG/SVG in browsers
 ```
 
-## Framework Integrations
-
-- **React**: `@ggterm/opentui`
-- **Vue**: `@ggterm/vue`
-- **Svelte**: `@ggterm/svelte`
-- **Solid**: `@ggterm/solid`
-
 ## Documentation
 
 Full documentation and examples: [github.com/shandley/ggterm](https://github.com/shandley/ggterm)

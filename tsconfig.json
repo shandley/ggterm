@@ -18,16 +18,10 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "allowSyntheticDefaultImports": true,
-    "jsx": "react-jsx"
+    "allowSyntheticDefaultImports": true
   },
   "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/render-braille" },
-    { "path": "./packages/render-block" },
-    { "path": "./packages/render-sixel" },
-    { "path": "./packages/opentui" },
-    { "path": "./packages/solid" }
+    { "path": "./packages/core" }
   ],
   "exclude": ["node_modules", "**/dist"]
 }
