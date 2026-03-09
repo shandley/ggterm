@@ -70,13 +70,19 @@ Start exploring immediately with bundled datasets — no files needed:
 ```
 You: Plot the iris dataset, sepal length vs petal length, colored by species
 
-You: Show me the mtcars data — MPG vs horsepower, colored by cylinders
+You: Create a volcano plot of the airway DESeq2 results
+
+You: Show Kaplan-Meier survival curves for the lung data, stratified by sex
 ```
 
 | Dataset | Rows | Columns |
 |---------|------|---------|
 | **iris** | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
 | **mtcars** | 16 | mpg, cyl, hp, wt, name |
+| **airway** | 500 | gene, baseMean, log2FoldChange, lfcSE, pvalue, padj |
+| **lung** | 227 | time, status, age, sex, ph_ecog |
+
+**airway**: DESeq2 differential expression results from Himes et al. 2014 (human airway smooth muscle cells). **lung**: NCCTG lung cancer survival data (Loprinzi et al. 1994).
 
 Or bring your own CSV, JSON, or JSONL files.
 

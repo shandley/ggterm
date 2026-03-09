@@ -92,6 +92,7 @@ import {
   getGGTermDir,
 } from './history'
 import { handleInit } from './init'
+import { BUILTIN_DATASETS, DATASET_NAMES } from './datasets'
 
 /**
  * Check if ggterm serve is running by reading the marker file and verifying PID
@@ -693,52 +694,6 @@ function handlePlot(args: string[]): void {
     process.exit(1)
   }
 
-  // Built-in datasets
-  const BUILTIN_DATASETS: Record<string, () => { headers: string[]; data: Record<string, unknown>[] }> = {
-    iris: () => {
-      // Species-specific distributions matching the real Fisher iris dataset ranges
-      const params: Record<string, { sl: [number, number]; sw: [number, number]; pl: [number, number]; pw: [number, number] }> = {
-        setosa:     { sl: [4.3, 5.8], sw: [2.3, 4.4], pl: [1.0, 1.9], pw: [0.1, 0.6] },
-        versicolor: { sl: [4.9, 7.0], sw: [2.0, 3.4], pl: [3.0, 5.1], pw: [1.0, 1.8] },
-        virginica:  { sl: [4.9, 7.9], sw: [2.2, 3.8], pl: [4.5, 6.9], pw: [1.4, 2.5] },
-      }
-      const species = ['setosa', 'versicolor', 'virginica'] as const
-      const rand = (min: number, max: number) => +(min + Math.random() * (max - min)).toFixed(1)
-      const data = species.flatMap(sp => {
-        const p = params[sp]
-        return Array.from({ length: 50 }, () => ({
-          sepal_length: rand(...p.sl),
-          sepal_width: rand(...p.sw),
-          petal_length: rand(...p.pl),
-          petal_width: rand(...p.pw),
-          species: sp,
-        }))
-      })
-      return { headers: ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'species'], data }
-    },
-    mtcars: () => {
-      const data = [
-        { name: 'Mazda RX4', mpg: 21, cyl: 6, hp: 110, wt: 2.62 },
-        { name: 'Mazda RX4 Wag', mpg: 21, cyl: 6, hp: 110, wt: 2.875 },
-        { name: 'Datsun 710', mpg: 22.8, cyl: 4, hp: 93, wt: 2.32 },
-        { name: 'Hornet 4 Drive', mpg: 21.4, cyl: 6, hp: 110, wt: 3.215 },
-        { name: 'Hornet Sportabout', mpg: 18.7, cyl: 8, hp: 175, wt: 3.44 },
-        { name: 'Valiant', mpg: 18.1, cyl: 6, hp: 105, wt: 3.46 },
-        { name: 'Duster 360', mpg: 14.3, cyl: 8, hp: 245, wt: 3.57 },
-        { name: 'Merc 240D', mpg: 24.4, cyl: 4, hp: 62, wt: 3.19 },
-        { name: 'Merc 230', mpg: 22.8, cyl: 4, hp: 95, wt: 3.15 },
-        { name: 'Merc 280', mpg: 19.2, cyl: 6, hp: 123, wt: 3.44 },
-        { name: 'Merc 280C', mpg: 17.8, cyl: 6, hp: 123, wt: 3.44 },
-        { name: 'Merc 450SE', mpg: 16.4, cyl: 8, hp: 180, wt: 4.07 },
-        { name: 'Merc 450SL', mpg: 17.3, cyl: 8, hp: 180, wt: 3.73 },
-        { name: 'Merc 450SLC', mpg: 15.2, cyl: 8, hp: 180, wt: 3.78 },
-        { name: 'Cadillac Fleetwood', mpg: 10.4, cyl: 8, hp: 205, wt: 5.25 },
-        { name: 'Lincoln Continental', mpg: 10.4, cyl: 8, hp: 215, wt: 5.424 },
-      ]
-      return { headers: ['name', 'mpg', 'cyl', 'hp', 'wt'], data }
-    },
-  }
-
   const [dataFile, x, y, color, title, geomSpec = 'point', facetVar] = args
   let headers: string[]
   let data: Record<string, unknown>[]
@@ -749,7 +704,7 @@ function handlePlot(args: string[]): void {
     data = result.data
   } else if (!args[0].includes('.') && !fileExists(args[0])) {
     console.error(`\nError: "${args[0]}" doesn't look like a file path`)
-    console.error(`\nBuilt-in datasets: iris, mtcars`)
+    console.error(`\nBuilt-in datasets: ${DATASET_NAMES.join(', ')}`)
     console.error(`\nDid you mean one of these commands?`)
     console.error(`  inspect <file>  - Show column types`)
     console.error(`  suggest <file>  - Get plot suggestions`)
@@ -1383,7 +1338,7 @@ if (command === 'setup') {
       generateWelcomePlot()
     }
     import('./serve').then(({ handleServe }) => {
-      handleServe(args[1] ? parseInt(args[1]) : undefined, { openBrowser: true })
+      handleServe(args[1] ? parseInt(args[1]) : undefined, { openBrowser: true, fromSetup: true })
     })
   })
 } else if (command === 'init') {

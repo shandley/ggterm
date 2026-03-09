@@ -7,6 +7,7 @@
 
 import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, statSync, appendFileSync } from 'fs'
 import { join, extname } from 'path'
+import { BUILTIN_DATASETS } from './datasets'
 
 // Current version - update when skills change
 const SKILLS_VERSION = '0.3.10'
@@ -33,15 +34,19 @@ ggterm includes built-in datasets that can be used directly by name:
 |---------|------|---------|
 | \`iris\` | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
 | \`mtcars\` | 16 | mpg, cyl, hp, wt, name |
+| \`airway\` | 500 | gene, baseMean, log2FoldChange, lfcSE, pvalue, padj |
+| \`lung\` | 227 | time, status, age, sex, ph_ecog |
 
 Use them directly in plot commands:
 
 \`\`\`bash
 npx ggterm-plot iris sepal_length sepal_width species "Iris Dataset" point
 npx ggterm-plot mtcars mpg hp cyl "Motor Trend Cars" point
+npx ggterm-plot airway log2FoldChange padj gene "DESeq2 Results" volcano
+npx ggterm-plot lung time status sex "Lung Survival" kaplan_meier
 \`\`\`
 
-**IMPORTANT**: When the user asks about iris, mtcars, or bundled/built-in datasets, use these names directly with \`npx ggterm-plot\`. Do NOT try to generate CSV files or install Python packages.
+**IMPORTANT**: When the user asks about iris, mtcars, airway, lung, or bundled/built-in datasets, use these names directly with \`npx ggterm-plot\`. Do NOT try to generate CSV files or install Python packages.
 
 ## External Files
 
@@ -83,13 +88,17 @@ ggterm includes datasets that work by name — no CSV files needed:
 |---------|------|---------|
 | \`iris\` | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
 | \`mtcars\` | 16 | mpg, cyl, hp, wt, name |
+| \`airway\` | 500 | gene, baseMean, log2FoldChange, lfcSE, pvalue, padj |
+| \`lung\` | 227 | time, status, age, sex, ph_ecog |
 
 \`\`\`bash
 npx ggterm-plot iris sepal_length sepal_width species "Iris" point
 npx ggterm-plot mtcars mpg hp cyl "Cars" point
+npx ggterm-plot airway log2FoldChange padj gene "DESeq2 Results" volcano
+npx ggterm-plot lung time status sex "Lung Survival" kaplan_meier
 \`\`\`
 
-**IMPORTANT**: When the user mentions iris, mtcars, or asks for demo/sample data, use these built-in names directly. Do NOT look for CSV files or generate data.
+**IMPORTANT**: When the user mentions iris, mtcars, airway, lung, or asks for demo/sample data, use these built-in names directly. Do NOT look for CSV files or generate data.
 
 ## Live Plot Viewer
 
@@ -529,7 +538,7 @@ Provide a quick reference of ggterm capabilities when users ask for help.
 
 ### Data Loading
 - "Load data.csv" — reads CSV, JSON, or JSONL files
-- "Use the iris dataset" — built-in iris (150 rows) or mtcars (16 rows)
+- "Use the iris dataset" — built-in iris (150 rows), mtcars (16 rows), airway (500 genes), or lung (227 patients)
 - "Inspect my data" — column types and summary statistics
 
 ### Plotting
@@ -1169,14 +1178,18 @@ ggterm has built-in datasets that work by name — NO CSV files or Python packag
 \`\`\`bash
 npx ggterm-plot iris sepal_length sepal_width species "Iris" point
 npx ggterm-plot mtcars mpg hp cyl "Cars" point
+npx ggterm-plot airway log2FoldChange padj gene "DESeq2 Results" volcano
+npx ggterm-plot lung time status sex "Lung Survival" kaplan_meier
 \`\`\`
 
 | Dataset | Rows | Columns |
 |---------|------|---------|
 | \`iris\` | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
 | \`mtcars\` | 16 | mpg, cyl, hp, wt, name |
+| \`airway\` | 500 | gene, baseMean, log2FoldChange, lfcSE, pvalue, padj |
+| \`lung\` | 227 | time, status, age, sex, ph_ecog |
 
-When asked about iris, mtcars, or sample data, use these names directly as the first argument to \`npx ggterm-plot\`. Do NOT search for CSV files or generate data.
+When asked about iris, mtcars, airway, lung, or sample data, use these names directly as the first argument to \`npx ggterm-plot\`. Do NOT search for CSV files or generate data.
 
 ## Plotting Commands
 
@@ -1252,6 +1265,8 @@ See \`.ggterm/data-inventory.md\` for a catalog of data files found in this dire
   console.log('Built-in datasets:')
   console.log('  • iris (150 rows: sepal_length, sepal_width, petal_length, petal_width, species)')
   console.log('  • mtcars (16 rows: mpg, cyl, hp, wt, name)')
+  console.log('  • airway (500 rows: gene, baseMean, log2FoldChange, lfcSE, pvalue, padj)')
+  console.log('  • lung (227 rows: time, status, age, sex, ph_ecog)')
   console.log('')
 
   // Discover data files and generate inventory
@@ -1317,24 +1332,8 @@ export function generateWelcomePlot(): void {
 
   mkdirSync(plotsDir, { recursive: true })
 
-  // Generate iris data inline (same ranges as BUILTIN_DATASETS in cli-plot.ts)
-  const speciesParams: Record<string, { sl: [number, number]; sw: [number, number]; pl: [number, number]; pw: [number, number] }> = {
-    setosa:     { sl: [4.3, 5.8], sw: [2.3, 4.4], pl: [1.0, 1.9], pw: [0.1, 0.6] },
-    versicolor: { sl: [4.9, 7.0], sw: [2.0, 3.4], pl: [3.0, 5.1], pw: [1.0, 1.8] },
-    virginica:  { sl: [4.9, 7.9], sw: [2.2, 3.8], pl: [4.5, 6.9], pw: [1.4, 2.5] },
-  }
-  const species = ['setosa', 'versicolor', 'virginica'] as const
-  const rand = (min: number, max: number) => +(min + Math.random() * (max - min)).toFixed(1)
-  const irisData = species.flatMap(sp => {
-    const p = speciesParams[sp]
-    return Array.from({ length: 50 }, () => ({
-      sepal_length: rand(...p.sl),
-      sepal_width: rand(...p.sw),
-      petal_length: rand(...p.pl),
-      petal_width: rand(...p.pw),
-      species: sp,
-    }))
-  })
+  // Use shared dataset module for iris data
+  const { data: irisData } = BUILTIN_DATASETS.iris()
 
   // Static Vega-Lite spec for iris scatter plot
   const vlSpec = {

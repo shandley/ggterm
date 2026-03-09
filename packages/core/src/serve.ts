@@ -25,7 +25,13 @@ import type { HistoricalPlot } from './history'
 import type { VegaLiteSpec } from './export'
 
 // Composite marks in Vega-Lite that don't support selection parameters
-const COMPOSITE_MARKS = new Set(['boxplot', 'violin', 'errorband', 'errorbar'])
+const COMPOSITE_MARKS = new Set([
+  'boxplot', 'violin', 'errorband', 'errorbar',
+  // Multi-layer scientific/specialized geoms that use per-layer data
+  'volcano', 'kaplan_meier', 'ma', 'manhattan', 'forest', 'roc', 'heatmap',
+  'density', 'ecdf', 'bland_altman', 'corrmat', 'biplot',
+  'ridgeline', 'joy', 'lollipop', 'dumbbell',
+])
 
 function plotToVegaLite(plot: HistoricalPlot): { spec: VegaLiteSpec; provenance: HistoricalPlot['_provenance'] } {
   const geomTypes = plot._provenance.geomTypes
@@ -717,7 +723,7 @@ var HELP_TABS = {
     + '<h4>With the CLI</h4>'
     + '<pre>npx ggterm-plot iris sepal_length sepal_width species "Iris" point\\nnpx ggterm-plot data.csv x y color "Title" histogram</pre>'
     + '<h4>Built-in Datasets</h4>'
-    + '<p><code>iris</code> (150 rows) and <code>mtcars</code> (16 rows) work by name &mdash; no CSV files needed.</p>'
+    + '<p><code>iris</code> (150 rows), <code>mtcars</code> (16 rows), <code>airway</code> (500 genes), and <code>lung</code> (227 patients) work by name &mdash; no CSV files needed.</p>'
     + '<h4>Quick Tips</h4>'
     + '<p>Press <code>\\u2318K</code> or <code>Ctrl+K</code> to open the command palette. Use <code>\\u2190</code>/<code>\\u2192</code> to navigate plots. Press <code>h</code> for history.</p>',
 
@@ -909,7 +915,7 @@ fetch('/api/history')
 </body>
 </html>`
 
-export function handleServe(port?: number, options?: { openBrowser?: boolean }): void {
+export function handleServe(port?: number, options?: { openBrowser?: boolean; fromSetup?: boolean }): void {
   const p = port || 4242
   ensureInit()
   ensureHistoryDirs()
@@ -1066,6 +1072,19 @@ export function handleServe(port?: number, options?: { openBrowser?: boolean }):
     }
 
     console.log(`Watching ${plotsDir} for new plots...`)
+
+    if (options?.fromSetup) {
+      console.log('')
+      console.log(`Next steps:`)
+      console.log(`  1. Open a new terminal in this directory`)
+      console.log(`  2. Run: claude`)
+      console.log(`  3. Try: "Plot the iris dataset as a scatter plot"`)
+      console.log('')
+      console.log(`Or plot directly:`)
+      console.log(`  npx ggterm-plot iris sepal_length sepal_width species "Iris" point`)
+      console.log('')
+    }
+
     console.log(`Press Ctrl+C to stop`)
   })
 }

@@ -505,3 +505,7 @@ export type { REPLOptions, REPLState } from './repl'
 // Export (Publication-quality output)
 export { plotSpecToVegaLite, exportToVegaLiteJSON } from './export'
 export type { VegaLiteSpec, ExportOptions } from './export'
+
+// Bundled Datasets
+export { BUILTIN_DATASETS, DATASET_INFO, DATASET_NAMES } from './datasets'
+export type { DatasetResult, DatasetInfo } from './datasets'

@@ -109,7 +109,7 @@ describe('GGTermREPL', () => {
       await repl.processLine('.data iris')
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Loaded Iris dataset')
+        expect.stringContaining('Loaded iris dataset')
       )
       consoleSpy.mockRestore()
     })

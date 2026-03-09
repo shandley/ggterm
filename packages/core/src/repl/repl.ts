@@ -5,6 +5,7 @@
  */
 
 import * as readline from 'readline'
+import { BUILTIN_DATASETS, DATASET_INFO } from '../datasets'
 import { gg, GGPlot } from '../grammar'
 import type { DataSource } from '../types'
 import { defaultTheme, themeMinimal, themeDark } from '../themes/default'
@@ -409,22 +410,22 @@ export class GGTermREPL {
         this.generateSampleData(n)
         break
 
-      case 'iris':
-        this.loadIrisData()
-        break
-
-      case 'mtcars':
-        this.loadMtcarsData()
-        break
-
       default:
-        // Try to parse as JSON
-        try {
-          const json = args.join(' ')
-          this.state.data = JSON.parse(json)
-          this.print(`Loaded ${this.state.data.length} rows`)
-        } catch {
-          this.printError('Invalid JSON. Use .data sample <n> for sample data.')
+        // Try built-in dataset by name
+        if (BUILTIN_DATASETS[subCmd]) {
+          const result = BUILTIN_DATASETS[subCmd]()
+          this.state.data = result.data
+          const info = DATASET_INFO[subCmd]
+          this.print(`Loaded ${info.name} dataset: ${result.data.length} rows, ${result.headers.length} columns (${result.headers.join(', ')})`)
+        } else {
+          // Try to parse as JSON
+          try {
+            const json = args.join(' ')
+            this.state.data = JSON.parse(json)
+            this.print(`Loaded ${this.state.data.length} rows`)
+          } catch {
+            this.printError('Invalid JSON. Use .data sample <n> for sample data, or .data iris, .data mtcars, .data airway, .data lung')
+          }
         }
     }
   }
@@ -440,51 +441,6 @@ export class GGTermREPL {
       size: Math.random() * 10 + 5,
     }))
     this.print(`Generated ${n} sample rows with columns: x, y, group, size`)
-  }
-
-  /**
-   * Load Iris dataset
-   */
-  private loadIrisData(): void {
-    // Simplified Iris data
-    const species = ['setosa', 'versicolor', 'virginica']
-    this.state.data = Array.from({ length: 150 }, (_, i) => {
-      const sp = species[Math.floor(i / 50)]
-      const base = sp === 'setosa' ? 0 : sp === 'versicolor' ? 1 : 2
-      return {
-        sepal_length: 5 + base * 0.5 + Math.random(),
-        sepal_width: 3 + Math.random() * 0.5,
-        petal_length: 1.5 + base * 2 + Math.random(),
-        petal_width: 0.2 + base * 0.8 + Math.random() * 0.3,
-        species: sp,
-      }
-    })
-    this.print('Loaded Iris dataset: 150 rows, 5 columns')
-  }
-
-  /**
-   * Load mtcars dataset
-   */
-  private loadMtcarsData(): void {
-    this.state.data = [
-      { name: 'Mazda RX4', mpg: 21, cyl: 6, hp: 110, wt: 2.62 },
-      { name: 'Mazda RX4 Wag', mpg: 21, cyl: 6, hp: 110, wt: 2.875 },
-      { name: 'Datsun 710', mpg: 22.8, cyl: 4, hp: 93, wt: 2.32 },
-      { name: 'Hornet 4 Drive', mpg: 21.4, cyl: 6, hp: 110, wt: 3.215 },
-      { name: 'Hornet Sportabout', mpg: 18.7, cyl: 8, hp: 175, wt: 3.44 },
-      { name: 'Valiant', mpg: 18.1, cyl: 6, hp: 105, wt: 3.46 },
-      { name: 'Duster 360', mpg: 14.3, cyl: 8, hp: 245, wt: 3.57 },
-      { name: 'Merc 240D', mpg: 24.4, cyl: 4, hp: 62, wt: 3.19 },
-      { name: 'Merc 230', mpg: 22.8, cyl: 4, hp: 95, wt: 3.15 },
-      { name: 'Merc 280', mpg: 19.2, cyl: 6, hp: 123, wt: 3.44 },
-      { name: 'Merc 280C', mpg: 17.8, cyl: 6, hp: 123, wt: 3.44 },
-      { name: 'Merc 450SE', mpg: 16.4, cyl: 8, hp: 180, wt: 4.07 },
-      { name: 'Merc 450SL', mpg: 17.3, cyl: 8, hp: 180, wt: 3.73 },
-      { name: 'Merc 450SLC', mpg: 15.2, cyl: 8, hp: 180, wt: 3.78 },
-      { name: 'Cadillac Fleetwood', mpg: 10.4, cyl: 8, hp: 205, wt: 5.25 },
-      { name: 'Lincoln Continental', mpg: 10.4, cyl: 8, hp: 215, wt: 5.424 },
-    ]
-    this.print('Loaded mtcars dataset: 16 rows, 5 columns (mpg, cyl, hp, wt, name)')
   }
 
   /**

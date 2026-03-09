@@ -1091,6 +1091,1242 @@ export function plotSpecToVegaLite(
 
   // Track whether boxplot swapped x/y axes (so we can swap labels too)
   let boxplotSwapped = false
+  // Track whether special geoms set their own axis titles (volcano, KM)
+  let suppressAxisLabels = false
+
+  /**
+   * Build volcano plot spec: -log10(p) transform, significance classification, threshold lines
+   */
+  function buildVolcanoSpec(
+    data: Record<string, unknown>[],
+    aes: AestheticMapping,
+    geom: Geom
+  ): VegaLiteLayer[] {
+    const opts = (geom.params ?? {}) as Record<string, unknown>
+    const fcThreshold = (opts.fc_threshold as number) ?? 1
+    const pThreshold = (opts.p_threshold as number) ?? 0.05
+    const yIsNegLog10 = (opts.y_is_neglog10 as boolean) ?? false
+    const upColor = (opts.up_color as string) ?? '#e41a1c'
+    const downColor = (opts.down_color as string) ?? '#377eb8'
+    const nsColor = (opts.ns_color as string) ?? '#999999'
+    const showThresholds = (opts.show_thresholds as boolean) ?? true
+    const nLabels = (opts.n_labels as number) ?? 0
+
+    const xField = aes.x ?? 'log2FoldChange'
+    const yField = aes.y ?? 'padj'
+    const labelField = typeof aes.color === 'string' ? aes.color : undefined
+    const negLog10PThreshold = -Math.log10(pThreshold)
+
+    // Pre-compute transformed data
+    const transformed = data.map((row) => {
+      const xVal = Number(row[xField]) || 0
+      let yVal = Number(row[yField]) || 0
+      if (!yIsNegLog10) {
+        yVal = yVal > 0 ? -Math.log10(yVal) : 0
+      }
+      let status: 'Up' | 'Down' | 'NS' = 'NS'
+      if (yVal >= negLog10PThreshold) {
+        if (xVal >= fcThreshold) status = 'Up'
+        else if (xVal <= -fcThreshold) status = 'Down'
+      }
+      const result: Record<string, unknown> = {
+        ...row,
+        _x: xVal,
+        _neglog10p: yVal,
+        _status: status,
+      }
+      return result
+    })
+
+    const layers: VegaLiteLayer[] = []
+
+    // Main scatter layer with color by significance status
+    layers.push({
+      mark: { type: 'point', filled: true, size: 30, opacity: 0.7 },
+      data: { values: transformed },
+      encoding: {
+        x: {
+          field: '_x',
+          type: 'quantitative' as const,
+          title: aes.x ?? 'log2 Fold Change',
+        },
+        y: {
+          field: '_neglog10p',
+          type: 'quantitative' as const,
+          title: '-log₁₀(p-value)',
+        },
+        color: {
+          field: '_status',
+          type: 'nominal' as const,
+          scale: {
+            domain: ['Down', 'NS', 'Up'],
+            range: [downColor, nsColor, upColor],
+          },
+          title: 'Significance',
+        },
+        tooltip: [
+          ...(labelField ? [{ field: labelField, type: 'nominal' as const }] : []),
+          { field: '_x', type: 'quantitative' as const, title: 'log2FC', format: '.2f' },
+          { field: '_neglog10p', type: 'quantitative' as const, title: '-log10(p)', format: '.2f' },
+          { field: '_status', type: 'nominal' as const, title: 'Status' },
+        ],
+      },
+    })
+
+    // Threshold lines
+    if (showThresholds) {
+      // Horizontal p-value threshold
+      layers.push({
+        mark: { type: 'rule', strokeDash: [4, 4], color: '#666666', opacity: 0.5 },
+        data: { values: [{ _thresh: negLog10PThreshold }] },
+        encoding: {
+          y: { field: '_thresh', type: 'quantitative' as const },
+        },
+      })
+      // Vertical FC thresholds
+      layers.push({
+        mark: { type: 'rule', strokeDash: [4, 4], color: '#666666', opacity: 0.5 },
+        data: { values: [{ _thresh: -fcThreshold }, { _thresh: fcThreshold }] },
+        encoding: {
+          x: { field: '_thresh', type: 'quantitative' as const },
+        },
+      })
+    }
+
+    // Top N labels
+    if (nLabels > 0 && labelField) {
+      const significant = transformed
+        .filter((r) => r._status !== 'NS')
+        .sort((a, b) => (b._neglog10p as number) - (a._neglog10p as number))
+        .slice(0, nLabels)
+      if (significant.length > 0) {
+        layers.push({
+          mark: { type: 'text', align: 'left', dx: 5, dy: -5, fontSize: 10 },
+          data: { values: significant },
+          encoding: {
+            x: { field: '_x', type: 'quantitative' as const },
+            y: { field: '_neglog10p', type: 'quantitative' as const },
+            text: { field: labelField, type: 'nominal' as const },
+          },
+        })
+      }
+    }
+
+    return layers
+  }
+
+  /**
+   * Build Kaplan-Meier survival curve spec: compute survival probabilities, step-after interpolation
+   */
+  function buildKaplanMeierSpec(
+    data: Record<string, unknown>[],
+    aes: AestheticMapping,
+    _geom: Geom
+  ): VegaLiteLayer[] {
+    const timeField = aes.x ?? 'time'
+    const statusField = aes.y ?? 'status'
+    const colorField = typeof aes.color === 'string' ? aes.color : undefined
+
+    // Group data by color field
+    const groups = new Map<string, Array<{ time: number; status: number }>>()
+    for (const row of data) {
+      const group = colorField ? String(row[colorField]) : 'All'
+      if (!groups.has(group)) groups.set(group, [])
+      groups.get(group)!.push({
+        time: Number(row[timeField]) || 0,
+        status: Number(row[statusField]) || 0,
+      })
+    }
+
+    // Compute survival curve for each group
+    const curveData: Record<string, unknown>[] = []
+    const censorData: Record<string, unknown>[] = []
+
+    for (const [groupName, events] of groups) {
+      // Sort by time
+      events.sort((a, b) => a.time - b.time)
+      const n = events.length
+      let atRisk = n
+      let survival = 1.0
+
+      // Start at time 0, survival 1.0
+      curveData.push({ _time: 0, _survival: 1.0, _group: groupName })
+
+      for (const event of events) {
+        if (event.status === 1) {
+          // Event: survival decreases
+          survival *= (atRisk - 1) / atRisk
+          curveData.push({ _time: event.time, _survival: survival, _group: groupName })
+        } else {
+          // Censored observation
+          censorData.push({ _time: event.time, _survival: survival, _group: groupName })
+        }
+        atRisk--
+      }
+    }
+
+    const layers: VegaLiteLayer[] = []
+
+    // Survival curves with step-after interpolation
+    const colorEncoding = colorField
+      ? { color: { field: '_group', type: 'nominal' as const, title: colorField } }
+      : {}
+
+    layers.push({
+      mark: { type: 'line', interpolate: 'step-after', strokeWidth: 2 },
+      data: { values: curveData },
+      encoding: {
+        x: { field: '_time', type: 'quantitative' as const, title: 'Time' },
+        y: {
+          field: '_survival',
+          type: 'quantitative' as const,
+          title: 'Survival Probability',
+          scale: { domain: [0, 1] },
+        },
+        ...colorEncoding,
+      },
+    })
+
+    // Censored marks
+    if (censorData.length > 0) {
+      layers.push({
+        mark: { type: 'point', shape: 'cross', size: 40, strokeWidth: 1.5, filled: false },
+        data: { values: censorData },
+        encoding: {
+          x: { field: '_time', type: 'quantitative' as const },
+          y: { field: '_survival', type: 'quantitative' as const },
+          ...colorEncoding,
+        },
+      })
+    }
+
+    return layers
+  }
+
+  /**
+   * Build MA plot spec: log2(mean expression) vs log2FC, significance classification
+   */
+  function buildMASpec(
+    data: Record<string, unknown>[],
+    aes: AestheticMapping,
+    geom: Geom
+  ): VegaLiteLayer[] {
+    const opts = (geom.params ?? {}) as Record<string, unknown>
+    const fcThreshold = (opts.fc_threshold as number) ?? 1
+    const pThreshold = (opts.p_threshold as number) ?? 0.05
+    const pCol = opts.p_col as string | undefined
+    const xIsLog2 = (opts.x_is_log2 as boolean) ?? false
+    const upColor = (opts.up_color as string) ?? '#e41a1c'
+    const downColor = (opts.down_color as string) ?? '#377eb8'
+    const nsColor = (opts.ns_color as string) ?? '#999999'
+    const showBaseline = (opts.show_baseline as boolean) ?? true
+    const showThresholds = (opts.show_thresholds as boolean) ?? true
+    const nLabels = (opts.n_labels as number) ?? 0
+
+    const xField = aes.x ?? 'baseMean'
+    const yField = aes.y ?? 'log2FoldChange'
+    const labelField = typeof aes.color === 'string' ? aes.color : undefined
+
+    // Pre-compute: log2 transform A values, classify significance
+    const transformed = data.map((row) => {
+      let aVal = Number(row[xField]) || 0
+      if (!xIsLog2) {
+        aVal = aVal > 0 ? Math.log2(aVal) : 0
+      }
+      const mVal = Number(row[yField]) || 0
+      const pVal = pCol ? Number(row[pCol]) || 1 : 1
+
+      let status: 'Up' | 'Down' | 'NS' = 'NS'
+      const passesP = pCol ? pVal < pThreshold : true
+      if (passesP) {
+        if (mVal >= fcThreshold) status = 'Up'
+        else if (mVal <= -fcThreshold) status = 'Down'
+      }
+
+      return { ...row, _a: aVal, _m: mVal, _status: status }
+    })
+
+    const layers: VegaLiteLayer[] = []
+
+    // Scatter layer
+    layers.push({
+      mark: { type: 'point', filled: true, size: 30, opacity: 0.7 },
+      data: { values: transformed },
+      encoding: {
+        x: { field: '_a', type: 'quantitative' as const, title: 'log₂(Mean Expression)' },
+        y: { field: '_m', type: 'quantitative' as const, title: 'log₂(Fold Change)' },
+        color: {
+          field: '_status',
+          type: 'nominal' as const,
+          scale: { domain: ['Down', 'NS', 'Up'], range: [downColor, nsColor, upColor] },
+          title: 'Significance',
+        },
+        tooltip: [
+          ...(labelField ? [{ field: labelField, type: 'nominal' as const }] : []),
+          { field: '_a', type: 'quantitative' as const, title: 'log2(Mean)', format: '.2f' },
+          { field: '_m', type: 'quantitative' as const, title: 'log2FC', format: '.2f' },
+          { field: '_status', type: 'nominal' as const, title: 'Status' },
+        ],
+      },
+    })
+
+    // Baseline at M=0
+    if (showBaseline) {
+      layers.push({
+        mark: { type: 'rule', strokeDash: [4, 4], color: '#666666', opacity: 0.5 },
+        data: { values: [{ _y: 0 }] },
+        encoding: { y: { field: '_y', type: 'quantitative' as const } },
+      })
+    }
+
+    // FC threshold lines
+    if (showThresholds) {
+      layers.push({
+        mark: { type: 'rule', strokeDash: [4, 4], color: '#666666', opacity: 0.5 },
+        data: { values: [{ _y: -fcThreshold }, { _y: fcThreshold }] },
+        encoding: { y: { field: '_y', type: 'quantitative' as const } },
+      })
+    }
+
+    // Top N labels
+    if (nLabels > 0 && labelField) {
+      const significant = transformed
+        .filter((r) => r._status !== 'NS')
+        .sort((a, b) => Math.abs(b._m) - Math.abs(a._m))
+        .slice(0, nLabels)
+      if (significant.length > 0) {
+        layers.push({
+          mark: { type: 'text', align: 'left', dx: 5, dy: -5, fontSize: 10 },
+          data: { values: significant },
+          encoding: {
+            x: { field: '_a', type: 'quantitative' as const },
+            y: { field: '_m', type: 'quantitative' as const },
+            text: { field: labelField, type: 'nominal' as const },
+          },
+        })
+      }
+    }
+
+    return layers
+  }
+
+  /**
+   * Build Manhattan plot spec: cumulative chromosome positions, -log10(p), significance thresholds
+   */
+  function buildManhattanSpec(
+    data: Record<string, unknown>[],
+    aes: AestheticMapping,
+    geom: Geom
+  ): VegaLiteLayer[] {
+    const opts = (geom.params ?? {}) as Record<string, unknown>
+    const suggestiveThreshold = (opts.suggestive_threshold as number) ?? 1e-5
+    const genomeWideThreshold = (opts.genome_wide_threshold as number) ?? 5e-8
+    const yIsNegLog10 = (opts.y_is_neglog10 as boolean) ?? false
+    const chrColors = (opts.chr_colors as string[]) ?? ['#1f78b4', '#a6cee3']
+    const highlightColor = (opts.highlight_color as string) ?? '#e41a1c'
+    const suggestiveColor = (opts.suggestive_color as string) ?? '#ff7f00'
+    const showThresholds = (opts.show_thresholds as boolean) ?? true
+    const nLabels = (opts.n_labels as number) ?? 0
+
+    const xField = aes.x ?? 'pos'
+    const yField = aes.y ?? 'pvalue'
+    const chrField = typeof aes.color === 'string' ? aes.color : 'chr'
+    const labelField = opts.label_col as string | undefined
+
+    // Natural chromosome sort order
+    const chrOrder = (c: string) => {
+      const n = parseInt(c.replace(/^chr/i, ''), 10)
+      if (!isNaN(n)) return n
+      const s = c.replace(/^chr/i, '').toUpperCase()
+      if (s === 'X') return 23
+      if (s === 'Y') return 24
+      if (s === 'M' || s === 'MT') return 25
+      return 26
+    }
+
+    // Group by chromosome and compute cumulative positions
+    const chrGroups = new Map<string, Array<{ pos: number; pval: number; row: Record<string, unknown> }>>()
+    for (const row of data) {
+      const chr = String(row[chrField] ?? '')
+      if (!chrGroups.has(chr)) chrGroups.set(chr, [])
+      chrGroups.get(chr)!.push({
+        pos: Number(row[xField]) || 0,
+        pval: Number(row[yField]) || 0,
+        row,
+      })
+    }
+
+    const sortedChrs = [...chrGroups.keys()].sort((a, b) => chrOrder(a) - chrOrder(b))
+    let cumOffset = 0
+    const chrMidpoints: Array<{ chr: string; mid: number }> = []
+
+    const negLog10Suggestive = -Math.log10(suggestiveThreshold)
+    const negLog10GenomeWide = -Math.log10(genomeWideThreshold)
+
+    const transformed: Record<string, unknown>[] = []
+    for (let i = 0; i < sortedChrs.length; i++) {
+      const chr = sortedChrs[i]
+      const points = chrGroups.get(chr)!
+      points.sort((a, b) => a.pos - b.pos)
+      const minPos = points[0]?.pos ?? 0
+      const maxPos = points[points.length - 1]?.pos ?? 0
+
+      for (const pt of points) {
+        let negLog10P = pt.pval
+        if (!yIsNegLog10) {
+          negLog10P = pt.pval > 0 ? -Math.log10(pt.pval) : 0
+        }
+        transformed.push({
+          ...pt.row,
+          _cumPos: pt.pos - minPos + cumOffset,
+          _neglog10p: negLog10P,
+          _chr: chr,
+          _chrIdx: i,
+        })
+      }
+
+      const chrSpan = maxPos - minPos
+      chrMidpoints.push({ chr, mid: cumOffset + chrSpan / 2 })
+      cumOffset += chrSpan + chrSpan * 0.02 // 2% gap
+    }
+
+    // Assign alternating colors
+    const colorDomain: string[] = []
+    const colorRange: string[] = []
+    for (let i = 0; i < sortedChrs.length; i++) {
+      colorDomain.push(sortedChrs[i])
+      colorRange.push(chrColors[i % chrColors.length])
+    }
+
+    const layers: VegaLiteLayer[] = []
+
+    // Main scatter layer
+    layers.push({
+      mark: { type: 'point', filled: true, size: 20, opacity: 0.6 },
+      data: { values: transformed },
+      encoding: {
+        x: {
+          field: '_cumPos',
+          type: 'quantitative' as const,
+          title: 'Genomic Position',
+          axis: { labels: false, ticks: false },
+        },
+        y: { field: '_neglog10p', type: 'quantitative' as const, title: '-log₁₀(p-value)' },
+        color: {
+          field: '_chr',
+          type: 'nominal' as const,
+          scale: { domain: colorDomain, range: colorRange },
+          legend: null,
+        },
+        tooltip: [
+          { field: '_chr', type: 'nominal' as const, title: 'Chr' },
+          { field: xField, type: 'quantitative' as const, title: 'Position' },
+          { field: '_neglog10p', type: 'quantitative' as const, title: '-log10(p)', format: '.2f' },
+          ...(labelField ? [{ field: labelField, type: 'nominal' as const }] : []),
+        ],
+      },
+    })
+
+    // Threshold lines
+    if (showThresholds) {
+      layers.push({
+        mark: { type: 'rule', strokeDash: [4, 4], color: suggestiveColor, opacity: 0.6 },
+        data: { values: [{ _thresh: negLog10Suggestive }] },
+        encoding: { y: { field: '_thresh', type: 'quantitative' as const } },
+      })
+      layers.push({
+        mark: { type: 'rule', strokeDash: [4, 4], color: highlightColor, opacity: 0.6 },
+        data: { values: [{ _thresh: negLog10GenomeWide }] },
+        encoding: { y: { field: '_thresh', type: 'quantitative' as const } },
+      })
+    }
+
+    // Top N labels
+    if (nLabels > 0 && labelField) {
+      const topHits = [...transformed]
+        .sort((a, b) => (b._neglog10p as number) - (a._neglog10p as number))
+        .slice(0, nLabels)
+      if (topHits.length > 0) {
+        layers.push({
+          mark: { type: 'text', align: 'left', dx: 5, dy: -5, fontSize: 10 },
+          data: { values: topHits },
+          encoding: {
+            x: { field: '_cumPos', type: 'quantitative' as const },
+            y: { field: '_neglog10p', type: 'quantitative' as const },
+            text: { field: labelField, type: 'nominal' as const },
+          },
+        })
+      }
+    }
+
+    return layers
+  }
+
+  /**
+   * Build forest plot spec: effect sizes with confidence intervals, null effect line
+   */
+  function buildForestSpec(
+    data: Record<string, unknown>[],
+    aes: AestheticMapping,
+    geom: Geom
+  ): VegaLiteLayer[] {
+    const opts = (geom.params ?? {}) as Record<string, unknown>
+    const nullLine = (opts.null_line as number) ?? 1
+    const logScale = (opts.log_scale as boolean) ?? false
+    const nullLineColor = (opts.null_line_color as string) ?? '#888888'
+
+    const xField = aes.x ?? 'estimate'
+    const yField = aes.y ?? 'study'
+
+    // Try to find CI fields from the data
+    const sampleRow = data[0] ?? {}
+    const xminField = 'xmin' in sampleRow ? 'xmin' : 'ci_lower' in sampleRow ? 'ci_lower' : 'lower'
+    const xmaxField = 'xmax' in sampleRow ? 'xmax' : 'ci_upper' in sampleRow ? 'ci_upper' : 'upper'
+
+    // Transform data: optionally log-scale, ensure all fields present
+    const transformed = data.map((row) => {
+      let est = Number(row[xField]) || 0
+      let lo = Number(row[xminField]) || 0
+      let hi = Number(row[xmaxField]) || 0
+      if (logScale) {
+        est = est > 0 ? Math.log10(est) : 0
+        lo = lo > 0 ? Math.log10(lo) : 0
+        hi = hi > 0 ? Math.log10(hi) : 0
+      }
+      return { ...row, _est: est, _lo: lo, _hi: hi, _study: String(row[yField] ?? '') }
+    })
+
+    const layers: VegaLiteLayer[] = []
+
+    // Null effect vertical line
+    const nullVal = logScale && nullLine > 0 ? Math.log10(nullLine) : nullLine
+    layers.push({
+      mark: { type: 'rule', strokeDash: [4, 4], color: nullLineColor, opacity: 0.6 },
+      data: { values: [{ _null: nullVal }] },
+      encoding: { x: { field: '_null', type: 'quantitative' as const } },
+    })
+
+    // CI horizontal rules
+    layers.push({
+      mark: { type: 'rule', strokeWidth: 1.5 },
+      data: { values: transformed },
+      encoding: {
+        y: { field: '_study', type: 'nominal' as const, title: '' },
+        x: { field: '_lo', type: 'quantitative' as const, title: logScale ? 'log₁₀(Effect Size)' : 'Effect Size' },
+        x2: { field: '_hi' },
+      },
+    })
+
+    // Point estimates
+    layers.push({
+      mark: { type: 'point', filled: true, size: 80 },
+      data: { values: transformed },
+      encoding: {
+        y: { field: '_study', type: 'nominal' as const },
+        x: { field: '_est', type: 'quantitative' as const },
+        tooltip: [
+          { field: '_study', type: 'nominal' as const, title: 'Study' },
+          { field: '_est', type: 'quantitative' as const, title: 'Estimate', format: '.3f' },
+          { field: '_lo', type: 'quantitative' as const, title: 'CI Lower', format: '.3f' },
+          { field: '_hi', type: 'quantitative' as const, title: 'CI Upper', format: '.3f' },
+        ],
+      },
+    })
+
+    return layers
+  }
+
+  /**
+   * Build ROC curve spec: TPR vs FPR line, diagonal reference, AUC annotation
+   */
+  function buildRocSpec(
+    data: Record<string, unknown>[],
+    aes: AestheticMapping,
+    geom: Geom
+  ): VegaLiteLayer[] {
+    const opts = (geom.params ?? {}) as Record<string, unknown>
+    const showDiagonal = (opts.show_diagonal as boolean) ?? true
+    const diagonalColor = (opts.diagonal_color as string) ?? '#888888'
+    const showAuc = (opts.show_auc as boolean) ?? true
+
+    const xField = aes.x ?? 'fpr'
+    const yField = aes.y ?? 'tpr'
+    const colorField = typeof aes.color === 'string' ? aes.color : undefined
+
+    // Group by color field for AUC computation
+    const groups = new Map<string, Array<{ fpr: number; tpr: number }>>()
+    for (const row of data) {
+      const group = colorField ? String(row[colorField]) : 'ROC'
+      if (!groups.has(group)) groups.set(group, [])
+      groups.get(group)!.push({
+        fpr: Number(row[xField]) || 0,
+        tpr: Number(row[yField]) || 0,
+      })
+    }
+
+    // Sort each group by FPR and compute AUC (trapezoidal rule)
+    const aucValues: Array<{ group: string; auc: number }> = []
+    for (const [groupName, points] of groups) {
+      points.sort((a, b) => a.fpr - b.fpr)
+      let auc = 0
+      for (let i = 1; i < points.length; i++) {
+        const dx = points[i].fpr - points[i - 1].fpr
+        const avgY = (points[i].tpr + points[i - 1].tpr) / 2
+        auc += dx * avgY
+      }
+      aucValues.push({ group: groupName, auc })
+    }
+
+    const layers: VegaLiteLayer[] = []
+
+    // Diagonal reference line
+    if (showDiagonal) {
+      layers.push({
+        mark: { type: 'line', strokeDash: [4, 4], color: diagonalColor, opacity: 0.5 },
+        data: { values: [{ _x: 0, _y: 0 }, { _x: 1, _y: 1 }] },
+        encoding: {
+          x: { field: '_x', type: 'quantitative' as const },
+          y: { field: '_y', type: 'quantitative' as const },
+        },
+      })
+    }
+
+    // ROC curve(s)
+    const colorEncoding = colorField
+      ? { color: { field: colorField, type: 'nominal' as const } }
+      : {}
+
+    layers.push({
+      mark: { type: 'line', strokeWidth: 2 },
+      data: { values: data as Record<string, unknown>[] },
+      encoding: {
+        x: {
+          field: xField,
+          type: 'quantitative' as const,
+          title: 'False Positive Rate',
+          scale: { domain: [0, 1] },
+        },
+        y: {
+          field: yField,
+          type: 'quantitative' as const,
+          title: 'True Positive Rate',
+          scale: { domain: [0, 1] },
+        },
+        ...colorEncoding,
+      },
+    })
+
+    // AUC annotation
+    if (showAuc && aucValues.length > 0) {
+      const aucText = aucValues.map((a) => `${a.group}: AUC = ${a.auc.toFixed(3)}`).join('; ')
+      layers.push({
+        mark: { type: 'text', align: 'right', baseline: 'top', fontSize: 12, dx: -10, dy: 10 },
+        data: { values: [{ _x: 1, _y: 0, _text: aucText }] },
+        encoding: {
+          x: { field: '_x', type: 'quantitative' as const },
+          y: { field: '_y', type: 'quantitative' as const },
+          text: { field: '_text', type: 'nominal' as const },
+        },
+      })
+    }
+
+    return layers
+  }
+
+  /**
+   * Build heatmap spec: rect grid with diverging color scale
+   */
+  function buildHeatmapSpec(
+    data: Record<string, unknown>[],
+    aes: AestheticMapping,
+    geom: Geom
+  ): VegaLiteLayer[] {
+    const opts = (geom.params ?? {}) as Record<string, unknown>
+    const lowColor = (opts.low_color as string) ?? '#313695'
+    const midColor = (opts.mid_color as string) ?? '#ffffbf'
+    const highColor = (opts.high_color as string) ?? '#a50026'
+    const naColor = (opts.na_color as string) ?? '#808080'
+
+    const xField = aes.x ?? 'x'
+    // Heatmap: x=row, y=column, color=value. CLI maps: x, y, color
+    // If color is set, it's the value column; y is the second categorical axis
+    const colorIsValue = typeof aes.color === 'string'
+    const yField = colorIsValue ? (aes.y ?? 'y') : (opts.y_col as string ?? 'y')
+    const valueCol = (opts.value_col as string) ?? (colorIsValue ? (aes.color as string) : (aes.y ?? 'value'))
+
+    // Determine value range for color midpoint
+    const values = data.map((r) => Number(r[valueCol])).filter((v) => !isNaN(v))
+    const minVal = Math.min(...values)
+    const maxVal = Math.max(...values)
+    const midpoint = (opts.midpoint as number) ?? (minVal + maxVal) / 2
+
+    return [{
+      mark: { type: 'rect' },
+      data: { values: data as Record<string, unknown>[] },
+      encoding: {
+        x: { field: xField, type: 'ordinal' as const },
+        y: { field: yField, type: 'ordinal' as const },
+        color: {
+          field: valueCol,
+          type: 'quantitative' as const,
+          scale: {
+            domainMid: midpoint,
+            range: [lowColor, midColor, highColor],
+          },
+          title: valueCol,
+        },
+        tooltip: [
+          { field: xField, type: 'nominal' as const },
+          { field: yField, type: 'nominal' as const },
+          { field: valueCol, type: 'quantitative' as const, format: '.2f' },
+        ],
+      },
+    }]
+  }
+
+  /**
+   * Build density plot spec: use Vega-Lite's native density transform
+   */
+  function buildDensitySpec(data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
+    const xField = aes.x as string ?? 'x'
+    const opts = geom.params ?? {}
+    const bandwidth = opts.bw as number | undefined
+    const groupField = aes.color as string ?? aes.fill as string ?? aes.group as string
+
+    const layers: VegaLiteLayer[] = []
+
+    // Area layer with density transform
+    const areaLayer: VegaLiteLayer = {
+      transform: [{
+        density: xField,
+        ...(bandwidth ? { bandwidth } : {}),
+        ...(groupField ? { groupby: [groupField] } : {}),
+      }],
+      mark: { type: 'area', opacity: (opts.alpha as number) ?? 0.3, line: true },
+      encoding: {
+        x: { field: 'value', type: 'quantitative' as const, title: xField },
+        y: { field: 'density', type: 'quantitative' as const, title: 'Density' },
+        ...(groupField ? {
+          color: { field: groupField, type: 'nominal' as const },
+        } : {}),
+        tooltip: [
+          { field: 'value', type: 'quantitative' as const, format: '.2f' },
+          { field: 'density', type: 'quantitative' as const, format: '.4f' },
+        ],
+      },
+    }
+    layers.push(areaLayer)
+
+    return layers
+  }
+
+  /**
+   * Build ECDF spec: sort values and compute cumulative proportions
+   */
+  function buildECDFSpec(data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
+    const xField = aes.x as string ?? 'x'
+    const opts = geom.params ?? {}
+    const complement = opts.complement as boolean ?? false
+    const groupField = aes.color as string
+
+    // Group data
+    const groups = new Map<string, number[]>()
+    for (const row of data) {
+      const val = Number(row[xField])
+      if (isNaN(val)) continue
+      const grp = groupField ? String(row[groupField] ?? 'all') : 'all'
+      if (!groups.has(grp)) groups.set(grp, [])
+      groups.get(grp)!.push(val)
+    }
+
+    // Compute ECDF for each group
+    const ecdfData: Record<string, unknown>[] = []
+    for (const [grp, values] of groups) {
+      values.sort((a, b) => a - b)
+      const n = values.length
+      // Add starting point at (min, 0)
+      ecdfData.push({ _x: values[0], _ecdf: complement ? 1 : 0, _group: grp })
+      for (let i = 0; i < n; i++) {
+        const ecdf = complement ? 1 - (i + 1) / n : (i + 1) / n
+        ecdfData.push({ _x: values[i], _ecdf: ecdf, _group: grp })
+      }
+    }
+
+    return [{
+      data: { values: ecdfData },
+      mark: { type: 'line', interpolate: 'step-after', strokeWidth: 2 },
+      encoding: {
+        x: { field: '_x', type: 'quantitative' as const, title: xField },
+        y: {
+          field: '_ecdf', type: 'quantitative' as const,
+          title: complement ? '1 - F(x)' : 'F(x)',
+          scale: { domain: [0, 1] },
+        },
+        ...(groupField ? { color: { field: '_group', type: 'nominal' as const, title: groupField } } : {}),
+        tooltip: [
+          { field: '_x', type: 'quantitative' as const, format: '.2f', title: xField },
+          { field: '_ecdf', type: 'quantitative' as const, format: '.3f', title: 'ECDF' },
+        ],
+      },
+    }]
+  }
+
+  /**
+   * Build Bland-Altman spec: scatter of mean vs difference with limits of agreement
+   */
+  function buildBlandAltmanSpec(data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
+    const opts = geom.params ?? {}
+    const precomputed = opts.precomputed as boolean ?? false
+    const limitMultiplier = opts.limit_multiplier as number ?? 1.96
+    const showBias = opts.show_bias as boolean ?? true
+    const showLimits = opts.show_limits as boolean ?? true
+    const biasColor = opts.bias_color as string ?? '#0000ff'
+    const limitColor = opts.limit_color as string ?? '#ff0000'
+
+    // Compute mean and difference
+    const baData: Record<string, unknown>[] = []
+    if (precomputed) {
+      const meanField = aes.x as string ?? 'mean'
+      const diffField = aes.y as string ?? 'diff'
+      for (const row of data) {
+        baData.push({ _mean: Number(row[meanField]), _diff: Number(row[diffField]) })
+      }
+    } else {
+      const m1Field = aes.x as string ?? 'method1'
+      const m2Field = aes.y as string ?? 'method2'
+      for (const row of data) {
+        const v1 = Number(row[m1Field])
+        const v2 = Number(row[m2Field])
+        baData.push({ _mean: (v1 + v2) / 2, _diff: v1 - v2 })
+      }
+    }
+
+    // Compute bias and limits
+    const diffs = baData.map(d => d._diff as number)
+    const bias = diffs.reduce((s, v) => s + v, 0) / diffs.length
+    const variance = diffs.reduce((s, v) => s + (v - bias) ** 2, 0) / (diffs.length - 1)
+    const sd = Math.sqrt(variance)
+    const upperLimit = bias + limitMultiplier * sd
+    const lowerLimit = bias - limitMultiplier * sd
+
+    const layers: VegaLiteLayer[] = []
+
+    // Scatter layer
+    layers.push({
+      data: { values: baData },
+      mark: { type: 'point', filled: true, size: 60 },
+      encoding: {
+        x: { field: '_mean', type: 'quantitative' as const, title: 'Mean of Methods' },
+        y: { field: '_diff', type: 'quantitative' as const, title: 'Difference' },
+        tooltip: [
+          { field: '_mean', type: 'quantitative' as const, format: '.2f', title: 'Mean' },
+          { field: '_diff', type: 'quantitative' as const, format: '.2f', title: 'Difference' },
+        ],
+      },
+    })
+
+    // Bias line
+    if (showBias) {
+      layers.push({
+        mark: { type: 'rule', color: biasColor, strokeWidth: 2 },
+        encoding: { y: { datum: bias } },
+      })
+    }
+
+    // Upper limit of agreement
+    if (showLimits) {
+      layers.push({
+        mark: { type: 'rule', color: limitColor, strokeWidth: 1.5, strokeDash: [6, 4] },
+        encoding: { y: { datum: upperLimit } },
+      })
+      // Lower limit of agreement
+      layers.push({
+        mark: { type: 'rule', color: limitColor, strokeWidth: 1.5, strokeDash: [6, 4] },
+        encoding: { y: { datum: lowerLimit } },
+      })
+    }
+
+    return layers
+  }
+
+  /**
+   * Build correlation matrix spec: compute pairwise correlations, render as colored grid
+   */
+  function buildCorrmatSpec(data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
+    const opts = geom.params ?? {}
+    const xField = aes.x as string ?? 'var1'
+    const yField = aes.y as string ?? 'var2'
+    const valueField = aes.fill as string ?? aes.color as string ?? 'correlation'
+    const showValues = opts.show_values as boolean ?? true
+    const decimals = opts.decimals as number ?? 2
+    const positiveColor = opts.positive_color as string ?? '#2166ac'
+    const negativeColor = opts.negative_color as string ?? '#b2182b'
+    const neutralColor = opts.neutral_color as string ?? '#f7f7f7'
+
+    // Detect pre-computed correlation matrix: data must have a dedicated value column
+    // (like 'correlation', 'corr', 'r') that's distinct from x and y fields.
+    // If x/y fields just happen to be in the data (e.g., raw numeric table), compute correlations.
+    const hasExplicitValueCol = data.length > 0
+      && valueField in (data[0] as Record<string, unknown>)
+      && valueField !== xField && valueField !== yField
+      && typeof data[0][valueField] === 'number'
+
+    let corrData: Record<string, unknown>[]
+    if (hasExplicitValueCol) {
+      corrData = data.map(row => ({
+        _var1: String(row[xField]),
+        _var2: String(row[yField]),
+        _corr: Number(row[valueField] ?? 0),
+      }))
+    } else {
+      // Compute pairwise correlations from all numeric columns
+      const numCols = Object.keys(data[0] as Record<string, unknown>).filter(k => {
+        return data.every(row => typeof row[k] === 'number' || !isNaN(Number(row[k])))
+      })
+      corrData = []
+      for (const c1 of numCols) {
+        for (const c2 of numCols) {
+          const v1 = data.map(r => Number(r[c1]))
+          const v2 = data.map(r => Number(r[c2]))
+          const n = v1.length
+          const m1 = v1.reduce((s, v) => s + v, 0) / n
+          const m2 = v2.reduce((s, v) => s + v, 0) / n
+          const cov = v1.reduce((s, v, i) => s + (v - m1) * (v2[i] - m2), 0) / (n - 1)
+          const s1 = Math.sqrt(v1.reduce((s, v) => s + (v - m1) ** 2, 0) / (n - 1))
+          const s2 = Math.sqrt(v2.reduce((s, v) => s + (v - m2) ** 2, 0) / (n - 1))
+          const r = s1 > 0 && s2 > 0 ? cov / (s1 * s2) : 0
+          corrData.push({ _var1: c1, _var2: c2, _corr: r })
+        }
+      }
+    }
+
+    const layers: VegaLiteLayer[] = []
+
+    // Rect grid
+    layers.push({
+      data: { values: corrData },
+      mark: { type: 'rect' },
+      encoding: {
+        x: { field: '_var1', type: 'nominal' as const, title: null },
+        y: { field: '_var2', type: 'nominal' as const, title: null },
+        color: {
+          field: '_corr',
+          type: 'quantitative' as const,
+          scale: {
+            domainMid: 0,
+            range: [negativeColor, neutralColor, positiveColor],
+          },
+          title: 'Correlation',
+        },
+        tooltip: [
+          { field: '_var1', type: 'nominal' as const },
+          { field: '_var2', type: 'nominal' as const },
+          { field: '_corr', type: 'quantitative' as const, format: `.${decimals}f` },
+        ],
+      },
+    })
+
+    // Text labels
+    if (showValues) {
+      layers.push({
+        data: { values: corrData },
+        mark: { type: 'text', fontSize: 10 },
+        encoding: {
+          x: { field: '_var1', type: 'nominal' as const },
+          y: { field: '_var2', type: 'nominal' as const },
+          text: { field: '_corr', type: 'quantitative' as const, format: `.${decimals}f` },
+          color: {
+            condition: {
+              test: 'abs(datum._corr) > 0.5',
+              value: 'white',
+            },
+            value: 'black',
+          },
+        },
+      })
+    }
+
+    return layers
+  }
+
+  /**
+   * Build PCA biplot spec: scores scatter + loading arrows
+   */
+  function buildBiplotSpec(data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
+    const opts = geom.params ?? {}
+    const pc1Col = opts.pc1_col as string ?? aes.x as string ?? 'PC1'
+    const pc2Col = opts.pc2_col as string ?? aes.y as string ?? 'PC2'
+    const loadings = opts.loadings as Array<{ variable: string; pc1: number; pc2: number }> | undefined
+    const varExplained = opts.var_explained as [number, number] | undefined
+    const showScores = opts.show_scores as boolean ?? true
+    const showLoadings = opts.show_loadings as boolean ?? true
+    const loadingColor = opts.loading_color as string ?? '#e41a1c'
+    const showOrigin = opts.show_origin as boolean ?? true
+    const colorField = aes.color as string
+
+    const xTitle = varExplained ? `${pc1Col} (${varExplained[0].toFixed(1)}%)` : pc1Col
+    const yTitle = varExplained ? `${pc2Col} (${varExplained[1].toFixed(1)}%)` : pc2Col
+
+    const layers: VegaLiteLayer[] = []
+
+    // Origin crosshairs
+    if (showOrigin) {
+      layers.push({
+        mark: { type: 'rule', color: '#999999', strokeDash: [3, 3], strokeWidth: 0.5 },
+        encoding: { y: { datum: 0 } },
+      })
+      layers.push({
+        mark: { type: 'rule', color: '#999999', strokeDash: [3, 3], strokeWidth: 0.5 },
+        encoding: { x: { datum: 0 } },
+      })
+    }
+
+    // Score points
+    if (showScores) {
+      layers.push({
+        mark: { type: 'point', filled: true, size: 60 },
+        encoding: {
+          x: { field: pc1Col, type: 'quantitative' as const, title: xTitle },
+          y: { field: pc2Col, type: 'quantitative' as const, title: yTitle },
+          ...(colorField ? { color: { field: colorField, type: 'nominal' as const } } : {}),
+          tooltip: [
+            { field: pc1Col, type: 'quantitative' as const, format: '.2f' },
+            { field: pc2Col, type: 'quantitative' as const, format: '.2f' },
+            ...(colorField ? [{ field: colorField, type: 'nominal' as const }] : []),
+          ],
+        },
+      })
+    }
+
+    // Loading arrows
+    if (showLoadings && loadings && loadings.length > 0) {
+      // Auto-scale loadings to fit data range
+      const pc1Values = data.map(r => Number(r[pc1Col])).filter(v => !isNaN(v))
+      const pc2Values = data.map(r => Number(r[pc2Col])).filter(v => !isNaN(v))
+      const maxScore = Math.max(
+        Math.abs(Math.min(...pc1Values)), Math.abs(Math.max(...pc1Values)),
+        Math.abs(Math.min(...pc2Values)), Math.abs(Math.max(...pc2Values)),
+      )
+      const maxLoading = Math.max(...loadings.map(l => Math.sqrt(l.pc1 ** 2 + l.pc2 ** 2)))
+      const loadingScale = (opts.loading_scale as number) ?? (maxScore * 0.8) / (maxLoading || 1)
+
+      const arrowData = loadings.map(l => ({
+        _x: 0, _y: 0,
+        _x2: l.pc1 * loadingScale, _y2: l.pc2 * loadingScale,
+        _variable: l.variable,
+      }))
+
+      // Arrow lines (rule from origin to tip)
+      layers.push({
+        data: { values: arrowData },
+        mark: { type: 'rule', color: loadingColor, strokeWidth: 1.5 },
+        encoding: {
+          x: { field: '_x', type: 'quantitative' as const },
+          y: { field: '_y', type: 'quantitative' as const },
+          x2: { field: '_x2' },
+          y2: { field: '_y2' },
+        },
+      })
+
+      // Arrow endpoint markers (triangles)
+      layers.push({
+        data: { values: arrowData },
+        mark: { type: 'point', shape: 'triangle', color: loadingColor, size: 40, filled: true },
+        encoding: {
+          x: { field: '_x2', type: 'quantitative' as const },
+          y: { field: '_y2', type: 'quantitative' as const },
+        },
+      })
+
+      // Loading labels
+      layers.push({
+        data: { values: arrowData },
+        mark: { type: 'text', color: loadingColor, fontSize: 11, dx: 5, dy: -5, fontWeight: 'bold' },
+        encoding: {
+          x: { field: '_x2', type: 'quantitative' as const },
+          y: { field: '_y2', type: 'quantitative' as const },
+          text: { field: '_variable', type: 'nominal' as const },
+        },
+      })
+    }
+
+    return layers
+  }
+
+  /**
+   * Build ridgeline spec: faceted density distributions stacked vertically
+   */
+  function buildRidgelineSpec(data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
+    const xField = aes.x as string ?? 'x'
+    const groupField = aes.y as string ?? aes.color as string ?? 'group'
+    const opts = geom.params ?? {}
+    const bandwidth = (opts.bw ?? opts.bandwidth) as number | undefined
+    const alpha = opts.alpha as number ?? 0.7
+
+    // Get unique groups in order
+    const groups: string[] = []
+    const seen = new Set<string>()
+    for (const row of data) {
+      const g = String(row[groupField] ?? '')
+      if (g && !seen.has(g)) { groups.push(g); seen.add(g) }
+    }
+
+    return [{
+      transform: [
+        {
+          density: xField,
+          ...(bandwidth ? { bandwidth } : {}),
+          groupby: [groupField],
+        },
+      ],
+      mark: { type: 'area', opacity: alpha, line: true },
+      encoding: {
+        x: { field: 'value', type: 'quantitative' as const, title: xField },
+        y: {
+          field: 'density', type: 'quantitative' as const,
+          title: 'Density',
+          axis: null,
+          stack: null,
+        },
+        color: { field: groupField, type: 'nominal' as const },
+        row: {
+          field: groupField, type: 'nominal' as const,
+          title: null,
+          header: { labelAngle: 0, labelAlign: 'left' },
+          sort: groups,
+        },
+      },
+    }]
+  }
+
+  /**
+   * Build lollipop spec: vertical/horizontal stems with point caps
+   */
+  function buildLollipopSpec(data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
+    const xField = aes.x as string ?? 'x'
+    const yField = aes.y as string ?? 'y'
+    const opts = geom.params ?? {}
+    const direction = opts.direction as string ?? 'vertical'
+    const baseline = opts.baseline as number ?? 0
+    const colorField = aes.color as string
+
+    const layers: VegaLiteLayer[] = []
+
+    if (direction === 'horizontal') {
+      // Horizontal: stems from baseline along x-axis
+      // Use field for x (has type) and datum for x2 (constant baseline)
+      layers.push({
+        mark: { type: 'rule', strokeWidth: 1.5 },
+        encoding: {
+          y: { field: yField, type: 'nominal' as const },
+          x: { field: xField, type: 'quantitative' as const },
+          x2: { datum: baseline },
+          ...(colorField ? { color: { field: colorField, type: 'nominal' as const } } : {}),
+        },
+      })
+      layers.push({
+        mark: { type: 'point', filled: true, size: 80 },
+        encoding: {
+          y: { field: yField, type: 'nominal' as const },
+          x: { field: xField, type: 'quantitative' as const, title: xField },
+          ...(colorField ? { color: { field: colorField, type: 'nominal' as const } } : {}),
+          tooltip: [
+            { field: yField, type: 'nominal' as const },
+            { field: xField, type: 'quantitative' as const },
+          ],
+        },
+      })
+    } else {
+      // Vertical: stems from baseline along y-axis
+      // Use field for y (has type) and datum for y2 (constant baseline)
+      layers.push({
+        mark: { type: 'rule', strokeWidth: 1.5 },
+        encoding: {
+          x: { field: xField, type: 'nominal' as const },
+          y: { field: yField, type: 'quantitative' as const },
+          y2: { datum: baseline },
+          ...(colorField ? { color: { field: colorField, type: 'nominal' as const } } : {}),
+        },
+      })
+      layers.push({
+        mark: { type: 'point', filled: true, size: 80 },
+        encoding: {
+          x: { field: xField, type: 'nominal' as const },
+          y: { field: yField, type: 'quantitative' as const, title: yField },
+          ...(colorField ? { color: { field: colorField, type: 'nominal' as const } } : {}),
+          tooltip: [
+            { field: xField, type: 'nominal' as const },
+            { field: yField, type: 'quantitative' as const },
+          ],
+        },
+      })
+    }
+
+    return layers
+  }
+
+  /**
+   * Build dumbbell spec: horizontal rules connecting two points per category
+   */
+  function buildDumbbellSpec(data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
+    const xField = aes.x as string ?? 'x'
+    const yField = aes.y as string ?? 'y'
+    const opts = geom.params ?? {}
+    const lineColor = opts.lineColor as string ?? opts.line_color as string ?? '#666666'
+    const startColor = opts.color as string ?? '#4fa9ee'
+    const endColor = opts.colorEnd as string ?? opts.color_end as string ?? '#ee8866'
+
+    // Pre-compute dumbbell data
+    const dbData = data.map(row => ({
+      ...row,
+      _x1: Number(row[xField]),
+      _x2: Number(row['xend'] ?? row[xField]),
+      _y: row[yField],
+    }))
+
+    const layers: VegaLiteLayer[] = []
+
+    // Connecting rules
+    layers.push({
+      data: { values: dbData },
+      mark: { type: 'rule', color: lineColor, strokeWidth: 1.5 },
+      encoding: {
+        y: { field: '_y', type: 'nominal' as const, title: yField },
+        x: { field: '_x1', type: 'quantitative' as const },
+        x2: { field: '_x2' },
+      },
+    })
+
+    // Start points
+    layers.push({
+      data: { values: dbData },
+      mark: { type: 'point', filled: true, size: 80, color: startColor },
+      encoding: {
+        y: { field: '_y', type: 'nominal' as const },
+        x: { field: '_x1', type: 'quantitative' as const, title: xField },
+        tooltip: [
+          { field: '_y', type: 'nominal' as const, title: yField },
+          { field: '_x1', type: 'quantitative' as const, title: 'Start' },
+        ],
+      },
+    })
+
+    // End points
+    layers.push({
+      data: { values: dbData },
+      mark: { type: 'point', filled: true, size: 80, color: endColor },
+      encoding: {
+        y: { field: '_y', type: 'nominal' as const },
+        x: { field: '_x2', type: 'quantitative' as const },
+        tooltip: [
+          { field: '_y', type: 'nominal' as const, title: yField },
+          { field: '_x2', type: 'quantitative' as const, title: 'End' },
+        ],
+      },
+    })
+
+    return layers
+  }
 
   /**
    * Build layer spec for a single geom, handling special cases
@@ -1194,6 +2430,81 @@ export function plotSpecToVegaLite(
       }
     }
 
+    if (geom.type === 'volcano') {
+      suppressAxisLabels = true
+      return buildVolcanoSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'kaplan_meier') {
+      suppressAxisLabels = true
+      return buildKaplanMeierSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'ma') {
+      suppressAxisLabels = true
+      return buildMASpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'manhattan') {
+      suppressAxisLabels = true
+      return buildManhattanSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'forest') {
+      suppressAxisLabels = true
+      return buildForestSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'roc') {
+      suppressAxisLabels = true
+      return buildRocSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'heatmap') {
+      suppressAxisLabels = true
+      return buildHeatmapSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'density') {
+      suppressAxisLabels = true
+      return buildDensitySpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'ecdf') {
+      suppressAxisLabels = true
+      return buildECDFSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'bland_altman') {
+      suppressAxisLabels = true
+      return buildBlandAltmanSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'corrmat') {
+      suppressAxisLabels = true
+      return buildCorrmatSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'biplot') {
+      suppressAxisLabels = true
+      return buildBiplotSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'ridgeline' || geom.type === 'joy') {
+      suppressAxisLabels = true
+      return buildRidgelineSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'lollipop') {
+      suppressAxisLabels = true
+      return buildLollipopSpec(data, spec.aes, geom)
+    }
+
+    if (geom.type === 'dumbbell') {
+      suppressAxisLabels = true
+      return buildDumbbellSpec(data, spec.aes, geom)
+    }
+
     // Default: use mark type and encoding builder
     return {
       mark: buildMark(geom),
@@ -1251,9 +2562,10 @@ export function plotSpecToVegaLite(
   }
 
   // Apply axis labels (swap x/y labels if boxplot swapped axes or coord_flip)
+  // Skip for geoms that set their own titles (volcano, KM)
   const axesSwapped = boxplotSwapped || isFlipped
-  const xLabel = axesSwapped ? spec.labels.y : spec.labels.x
-  const yLabel = axesSwapped ? spec.labels.x : spec.labels.y
+  const xLabel = suppressAxisLabels ? undefined : (axesSwapped ? spec.labels.y : spec.labels.x)
+  const yLabel = suppressAxisLabels ? undefined : (axesSwapped ? spec.labels.x : spec.labels.y)
   if (vlSpec.encoding) {
     if (xLabel && vlSpec.encoding.x) {
       (vlSpec.encoding.x as Record<string, unknown>).title = xLabel

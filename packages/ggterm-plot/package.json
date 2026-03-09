@@ -1,0 +1,34 @@
+{
+  "name": "ggterm-plot",
+  "version": "0.3.11",
+  "description": "Terminal plotting with Grammar of Graphics — CLI for @ggterm/core",
+  "type": "module",
+  "bin": {
+    "ggterm-plot": "bin/ggterm-plot.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "dependencies": {
+    "@ggterm/core": "^0.3.11"
+  },
+  "license": "MIT",
+  "author": "Scott Handley",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shandley/ggterm.git",
+    "directory": "packages/ggterm-plot"
+  },
+  "homepage": "https://github.com/shandley/ggterm#readme",
+  "bugs": {
+    "url": "https://github.com/shandley/ggterm/issues"
+  },
+  "keywords": [
+    "grammar-of-graphics",
+    "data-visualization",
+    "terminal",
+    "plotting",
+    "bioinformatics",
+    "vega-lite"
+  ]
+}

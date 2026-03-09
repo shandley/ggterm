@@ -12,7 +12,7 @@ Provide a quick reference of ggterm capabilities when users ask for help.
 
 ### Data Loading
 - "Load data.csv" — reads CSV, JSON, or JSONL files
-- "Use the iris dataset" — built-in iris (150 rows) or mtcars (16 rows)
+- "Use the iris dataset" — built-in iris (150 rows), mtcars (16 rows), airway (500 genes), or lung (227 patients)
 - "Inspect my data" — column types and summary statistics
 
 ### Plotting
@@ -50,16 +50,6 @@ Provide a quick reference of ggterm capabilities when users ask for help.
 | Text | text, label |
 | 2D/Tile | tile, raster, bin2d, rect, contour, contour_filled |
 
-## 75 Scale Functions
-
-| Category | Examples |
-|----------|----------|
-| Position | scale_x_continuous, scale_x_log10, scale_x_discrete, scale_x_datetime |
-| Color | scale_color_viridis, scale_color_brewer, scale_color_manual, scale_fill_* |
-| Size | scale_size_continuous, scale_size_area, scale_size_radius |
-| Shape | scale_shape_discrete, scale_shape_manual |
-| Alpha | scale_alpha_continuous, scale_alpha_discrete |
-
 ## Style Presets
 
 | Style | Description |
@@ -73,16 +63,16 @@ Provide a quick reference of ggterm capabilities when users ask for help.
 
 ## Live Viewer
 
-When `npx ggterm-plot serve` is running:
-- Press `Cmd+K` for command palette (search geoms, actions, styles)
-- Press `?` for full help panel (tabbed reference)
-- Press `h` for history sidebar
-- Press `s`/`p` for SVG/PNG export
-- Press `f` for fullscreen
+When \`npx ggterm-plot serve\` is running:
+- Press \`Cmd+K\` for command palette (search geoms, actions, styles)
+- Press \`?\` for full help panel (tabbed reference)
+- Press \`h\` for history sidebar
+- Press \`s\`/\`p\` for SVG/PNG export
+- Press \`f\` for fullscreen
 
 ## Workflow
 
-1. Start the viewer: `npx ggterm-plot serve`
+1. Start the viewer: \`npx ggterm-plot serve\`
 2. Ask Claude to plot data naturally
 3. Iterate with style/customize commands
 4. Export when satisfied

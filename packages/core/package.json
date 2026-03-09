@@ -1,6 +1,6 @@
 {
   "name": "@ggterm/core",
-  "version": "0.3.11",
+  "version": "0.3.13",
   "description": "Grammar of Graphics primitive catalog — 66 geoms, 75 scales, terminal and Vega-Lite backends, AI-composable PlotSpec",
   "type": "module",
   "main": "./dist/index.js",
@@ -16,6 +16,9 @@
     },
     "./cli": {
       "import": "./dist/cli.js"
+    },
+    "./cli-plot": {
+      "import": "./dist/cli-plot.js"
     }
   },
   "scripts": {
