@@ -1065,7 +1065,12 @@ export function handleServe(port?: number, options?: { openBrowser?: boolean; fr
       console.log(`Opened Wave panel`)
     } else if (options?.openBrowser) {
       const openCmd = process.platform === 'darwin' ? 'open' : 'xdg-open'
-      spawn(openCmd, [url], { stdio: 'ignore', detached: true }).unref()
+      const child = spawn(openCmd, [url], { stdio: 'ignore', detached: true })
+      child.on('error', () => {
+        console.log(`Open in browser: ${url}`)
+        console.log(`For remote servers, use SSH port forwarding: ssh -L ${p}:localhost:${p} <user>@<host>`)
+      })
+      child.unref()
       console.log(`Opened browser at ${url}`)
     } else {
       console.log(`Open in browser or Wave panel: wsh web open ${url}`)
