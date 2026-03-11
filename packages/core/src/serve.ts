@@ -11,6 +11,7 @@ import { watch, readFileSync, writeFileSync, unlinkSync, existsSync } from 'fs'
 import { join } from 'path'
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { spawn } from 'child_process'
+import { hostname } from 'os'
 import {
   getHistory,
   getLatestPlotId,
@@ -1047,7 +1048,36 @@ export function handleServe(port?: number, options?: { openBrowser?: boolean; fr
 
   server.listen(p, () => {
     const url = `http://localhost:${p}`
-    console.log(`ggterm live viewer running at ${url}`)
+    const host = hostname()
+
+    // Detect HPC compute node environment
+    const isComputeNode = !!(
+      process.env.SLURM_NODELIST ||
+      process.env.SLURM_JOB_ID ||
+      process.env.PBS_JOBID ||
+      process.env.LSB_JOBID ||
+      process.env.SGE_TASK_ID
+    )
+
+    if (isComputeNode) {
+      // Try to detect the login node hostname for a complete tunnel command
+      const loginNode = process.env.SLURM_SUBMIT_HOST
+        || process.env.PBS_O_HOST
+        || ''
+
+      // Try to detect username
+      const user = process.env.USER || process.env.LOGNAME || '<user>'
+
+      const loginDest = loginNode ? `${user}@${loginNode}` : `${user}@<login-node>`
+
+      console.log(`ggterm live viewer running on ${host}:${p}`)
+      console.log(`\nYou appear to be on a compute node.`)
+      console.log(`To view in your browser, run on your LOCAL machine:\n`)
+      console.log(`  ssh -L ${p}:${host}:${p} ${loginDest}\n`)
+      console.log(`Then open ${url}`)
+    } else {
+      console.log(`ggterm live viewer running at ${url}`)
+    }
 
     // Write marker file so CLI can detect serve is running
     const markerPath = join(getGGTermDir(), 'serve.json')
@@ -1063,11 +1093,16 @@ export function handleServe(port?: number, options?: { openBrowser?: boolean; fr
     if (process.env.TERM_PROGRAM === 'waveterm') {
       spawn('wsh', ['web', 'open', url], { stdio: 'ignore', detached: true }).unref()
       console.log(`Opened Wave panel`)
-    } else if (options?.openBrowser) {
+    } else if (options?.openBrowser && !isComputeNode) {
       const openCmd = process.platform === 'darwin' ? 'open' : 'xdg-open'
-      spawn(openCmd, [url], { stdio: 'ignore', detached: true }).unref()
+      const child = spawn(openCmd, [url], { stdio: 'ignore', detached: true })
+      child.on('error', () => {
+        console.log(`Open in browser: ${url}`)
+        console.log(`For remote servers, use SSH port forwarding: ssh -L ${p}:localhost:${p} <user>@<host>`)
+      })
+      child.unref()
       console.log(`Opened browser at ${url}`)
-    } else {
+    } else if (!isComputeNode) {
       console.log(`Open in browser or Wave panel: wsh web open ${url}`)
     }
 
