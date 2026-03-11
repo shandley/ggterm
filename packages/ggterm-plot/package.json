@@ -1,6 +1,6 @@
 {
   "name": "ggterm-plot",
-  "version": "0.3.11",
+  "version": "0.3.14",
   "description": "Terminal plotting with Grammar of Graphics — CLI for @ggterm/core",
   "type": "module",
   "bin": {
@@ -10,7 +10,7 @@
     "bin"
   ],
   "dependencies": {
-    "@ggterm/core": "^0.3.11"
+    "@ggterm/core": "^0.3.14"
   },
   "license": "MIT",
   "author": "Scott Handley",

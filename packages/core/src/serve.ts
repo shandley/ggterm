@@ -44,6 +44,23 @@ function plotToVegaLite(plot: HistoricalPlot): { spec: VegaLiteSpec; provenance:
 function getLatestPayload(): string | null {
   const id = getLatestPlotId()
   if (!id) return null
+
+  // Prefer the Vega-Lite spec on disk — it may have been styled/customized
+  const vlPath = join(getGGTermDir(), 'last-plot-vegalite.json')
+  if (existsSync(vlPath)) {
+    try {
+      const spec = JSON.parse(readFileSync(vlPath, 'utf-8'))
+      const plot = loadPlotFromHistory(id)
+      const provenance = plot?._provenance ?? {
+        id,
+        description: '',
+        timestamp: new Date().toISOString(),
+        geomTypes: [] as string[],
+      }
+      return JSON.stringify({ type: 'plot', spec, provenance })
+    } catch { /* fall through to regeneration */ }
+  }
+
   const plot = loadPlotFromHistory(id)
   if (!plot) return null
   const { spec, provenance } = plotToVegaLite(plot)
@@ -149,12 +166,14 @@ const CLIENT_HTML = `<!DOCTYPE html>
     align-items: center;
     justify-content: center;
     padding: 16px;
+    overflow: hidden;
+    min-height: 0;
   }
-  #vis .vega-embed { width: 100%; }
+  #vis .vega-embed { width: 100%; height: 100%; }
   #vis .vega-embed canvas,
   #vis .vega-embed svg {
     max-width: 100%;
-    max-height: calc(100vh - 80px);
+    max-height: 100%;
   }
   #bar {
     display: flex;
@@ -166,6 +185,7 @@ const CLIENT_HTML = `<!DOCTYPE html>
     font-size: 12px;
     gap: 12px;
     min-height: 40px;
+    flex-shrink: 0;
   }
   #meta { display: flex; gap: 16px; align-items: center; flex: 1; min-width: 0; }
   #plot-id { color: #58a6ff; font-weight: 600; }
@@ -917,7 +937,12 @@ fetch('/api/history')
 </html>`
 
 export function handleServe(port?: number, options?: { openBrowser?: boolean; fromSetup?: boolean }): void {
-  const p = port || 4242
+  const requestedPort = port || 4242
+  const maxRetries = 10
+  startServer(requestedPort, 0, maxRetries, options)
+}
+
+function startServer(p: number, attempt: number, maxRetries: number, options?: { openBrowser?: boolean; fromSetup?: boolean }): void {
   ensureInit()
   ensureHistoryDirs()
 
@@ -1038,10 +1063,16 @@ export function handleServe(port?: number, options?: { openBrowser?: boolean; fr
 
   server.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {
-      console.error(`Port ${p} is already in use.`)
-      console.error(`Kill the existing server: lsof -ti:${p} | xargs kill`)
-      console.error(`Or use a different port: npx ggterm-plot serve ${p + 1}`)
-      process.exit(1)
+      if (attempt < maxRetries) {
+        const nextPort = p + 1
+        console.log(`Port ${p} in use, trying ${nextPort}...`)
+        startServer(nextPort, attempt + 1, maxRetries, options)
+      } else {
+        console.error(`Ports ${p - attempt}–${p} all in use.`)
+        console.error(`Kill an existing server: lsof -ti:4242 | xargs kill`)
+        process.exit(1)
+      }
+      return
     }
     throw err
   })
