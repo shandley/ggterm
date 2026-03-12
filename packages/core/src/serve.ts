@@ -936,8 +936,50 @@ fetch('/api/history')
 </body>
 </html>`
 
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function handleServe(port?: number, options?: { openBrowser?: boolean; fromSetup?: boolean }): void {
   const requestedPort = port || 4242
+
+  // Check if a server is already running
+  const markerPath = join(getGGTermDir(), 'serve.json')
+  if (existsSync(markerPath)) {
+    try {
+      const marker = JSON.parse(readFileSync(markerPath, 'utf-8'))
+      if (marker.pid && isProcessAlive(marker.pid)) {
+        const url = `http://localhost:${marker.port}`
+        console.log(`ggterm viewer already running at ${url} (pid ${marker.pid})`)
+        if (options?.openBrowser) {
+          const openCmd = process.platform === 'darwin' ? 'open' : 'xdg-open'
+          const child = spawn(openCmd, [url], { stdio: 'ignore', detached: true })
+          child.on('error', () => {})
+          child.unref()
+        }
+        if (options?.fromSetup) {
+          console.log('')
+          console.log(`Next steps:`)
+          console.log(`  1. Open a new terminal in this directory`)
+          console.log(`  2. Run: claude`)
+          console.log(`  3. Try: "Plot the iris dataset as a scatter plot"`)
+          console.log('')
+        }
+        return
+      }
+      // Stale marker — process is dead, clean up
+      try { unlinkSync(markerPath) } catch {}
+    } catch {
+      // Corrupted marker, remove it
+      try { unlinkSync(markerPath) } catch {}
+    }
+  }
+
   const maxRetries = 10
   startServer(requestedPort, 0, maxRetries, options)
 }
