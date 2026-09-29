@@ -7,163 +7,124 @@
 [![npm version](https://img.shields.io/npm/v/@ggterm/core.svg)](https://www.npmjs.com/package/@ggterm/core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Create data visualizations by describing what you want. No syntax to memorize.**
+**A Grammar of Graphics engine for the terminal, designed for AI coding assistants.**
 
-ggterm is a Grammar of Graphics toolkit for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Describe your data and what you want to see in natural language — ggterm handles scales, legends, colors, and layout automatically. Plots appear instantly in a live browser panel alongside your terminal.
+ggterm brings compositional data visualization into terminal workflows where AI assistants like [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [Codex](https://openai.com/codex) operate. Describe what you want to see — ggterm handles scales, legends, colors, and layout. Plots render as terminal ASCII art for instant feedback, and as interactive Vega-Lite in a companion browser viewer for publication-quality output.
 
-![ggterm live viewer in Wave terminal](paper/figures/Screenshot%202026-02-08%20at%209.32.28%E2%80%AFAM.png)
+<p align="center">
+  <img src="paper/figures/ggterm-figure1.png" alt="ggterm workflow: volcano plot creation, gene labeling, and Kaplan-Meier survival curves" width="900">
+</p>
+
+<p align="center"><em>Conversational visualization workflow. (A) Volcano plot from DESeq2 results. (B) AI-added gene labels for top significant genes. (C) Kaplan-Meier survival curves styled for publication. (D) Live browser viewer with export controls.</em></p>
 
 ## Quick Start
 
 ```bash
-mkdir my-analysis && cd my-analysis
 npx ggterm-plot setup
 ```
 
-That's it. This installs everything, generates a welcome plot, opens the live viewer in your browser, and starts the server. Now talk to Claude:
+That's it. This installs everything, starts the live viewer, and opens your browser. Now open a second terminal and talk to Claude Code:
 
 ```
-You: Load the iris dataset and show me sepal length vs petal length, colored by species
+You: Plot the airway DESeq2 results as a volcano plot
+Claude: [Creates volcano plot — appears in the live viewer]
 
-Claude: [Creates scatter plot — appears instantly in the live viewer]
+You: Label the top 10 most significant genes
+Claude: [Adds gene labels, viewer auto-updates]
 
-You: Add a trend line and style it like Nature journal
-
-Claude: [Updates the plot in place with regression line and Nature styling]
-
-You: Export as PNG for my paper
-
-Claude: [Generates publication-ready output]
+You: Style for Nature and export as SVG
+Claude: [Applies Nature preset, exports publication figure]
 ```
 
-## What You Can Do
+Or use the CLI directly — no AI required:
+
+```bash
+npx ggterm-plot airway log2FoldChange padj gene "DESeq2 Results" volcano
+npx ggterm-plot lung time status sex "Lung Survival" kaplan_meier
+npx ggterm-plot iris sepal_length sepal_width species "Iris" point
+```
+
+## 66 Plot Types
+
+| Category | Types |
+|----------|-------|
+| **Essentials** | scatter, line, bar, area, histogram, density, boxplot, violin |
+| **Advanced** | ridgeline, beeswarm, heatmap, treemap, sankey, calendar heatmap, lollipop, dumbbell, waffle |
+| **Scientific** | volcano, MA plot, Manhattan plot, Kaplan-Meier, forest plot, ROC curve, Q-Q plot, Bland-Altman, PCA biplot |
+| **Diagnostics** | ECDF, funnel plot, control chart, scree plot, correlation matrix, UpSet plot, dendrogram |
+| **Terminal-Native** | sparkline, braille (8x resolution), bullet chart |
+
+See the full [Geometry Reference](./docs/GEOM-REFERENCE.md).
+
+## Built-in Datasets
+
+Start exploring immediately — no files needed:
+
+| Dataset | Rows | Description |
+|---------|------|-------------|
+| **iris** | 150 | Fisher's classic: sepal/petal measurements across 3 species |
+| **mtcars** | 16 | Motor Trend car data: mpg, hp, weight, cylinders |
+| **airway** | 500 | DESeq2 differential expression (Himes et al. 2014): log2FC, p-values, gene symbols |
+| **lung** | 227 | NCCTG lung cancer survival (Loprinzi et al. 1994): time, status, sex, ECOG score |
+
+Or bring your own CSV, JSON, or JSONL files. On setup, ggterm scans your directory, infers column types and value ranges, and writes a data catalog so your AI assistant already knows your data.
+
+## Live Viewer
+
+A companion browser panel connects to ggterm via Server-Sent Events and displays every plot as an interactive Vega-Lite visualization:
+
+- **Live updates** — plots and style changes appear instantly (tooltips, zoom, pan)
+- **Command palette** — `Cmd+K` to fuzzy-search all 66 geom types, export actions, and style presets
+- **Plot history** — every plot saved automatically; `h` for history sidebar, arrow keys to browse
+- **Publication styles** — Wilke, Tufte, Nature, Economist, APA presets; apply without re-rendering
+- **Export** — `s` for SVG, `p` for PNG directly from the viewer
+- **HPC support** — auto-detects SLURM/PBS/LSF/SGE compute nodes and prints SSH tunnel commands
+
+## How It Works
+
+ggterm is a [Grammar of Graphics](https://link.springer.com/book/10.1007/0-387-28695-0) implementation — the same foundation as R's ggplot2. Every plot is a declarative `PlotSpec` (JSON-serializable) consumed by two backends:
+
+1. **Terminal** — Unicode block characters, Braille symbols (8x resolution), ANSI 24-bit color
+2. **Vega-Lite** — interactive browser visualizations, PNG/SVG/PDF export
+
+Eight integration skills for Claude Code connect natural language to deterministic CLI operations. The AI doesn't generate arbitrary code — it invokes specific commands with structured arguments.
+
+## What You Can Say
 
 | You say... | What happens |
 |------------|-------------|
 | "Load my data and show me X vs Y" | Scatter plot with automatic scales and labels |
 | "Color by group" | Color encoding with legend |
 | "Show the distribution of X" | Histogram or density plot |
-| "Compare groups with box plots" | Grouped boxplots with stats |
-| "Add a trend line" | Linear or loess regression overlay |
-| "Style like Tufte / Economist / Nature" | Publication style presets |
-| "Export as PNG" | Publication-ready output |
+| "Create a volcano plot of the DESeq2 results" | Domain-specific visualization |
+| "Label the top 10 significant genes" | AI customization of the current plot |
+| "Style like Nature" | Publication style preset |
+| "Export as SVG" | Publication-ready vector output |
 | "Show me my previous plots" | Browse plot history |
 
-## 66 Plot Types
-
-ggterm includes specialized visualizations across domains:
-
-| Category | Types |
-|----------|-------|
-| **Essentials** | scatter, line, bar, area, histogram, density, boxplot, violin |
-| **Advanced** | ridgeline, beeswarm, heatmap, treemap, sankey, calendar heatmap, lollipop, waffle |
-| **Scientific** | volcano plot, Manhattan plot, Kaplan-Meier curves, forest plot, ROC curve, Q-Q plot, Bland-Altman, PCA biplot |
-| **Diagnostics** | ECDF, funnel plot, control chart, scree plot, correlation matrix, UpSet plot, dendrogram |
-| **Terminal-Native** | sparkline, braille (8x resolution), bullet chart, waffle chart |
-
-See the full [Geometry Reference](./docs/GEOM-REFERENCE.md).
-
-## Built-in Datasets
-
-Start exploring immediately with bundled datasets — no files needed:
-
-```
-You: Plot the iris dataset, sepal length vs petal length, colored by species
-
-You: Create a volcano plot of the airway DESeq2 results
-
-You: Show Kaplan-Meier survival curves for the lung data, stratified by sex
-```
-
-| Dataset | Rows | Columns |
-|---------|------|---------|
-| **iris** | 150 | sepal_length, sepal_width, petal_length, petal_width, species |
-| **mtcars** | 16 | mpg, cyl, hp, wt, name |
-| **airway** | 500 | gene, baseMean, log2FoldChange, lfcSE, pvalue, padj |
-| **lung** | 227 | time, status, age, sex, ph_ecog |
-
-**airway**: DESeq2 differential expression results from Himes et al. 2014 (human airway smooth muscle cells). **lung**: NCCTG lung cancer survival data (Loprinzi et al. 1994).
-
-Or bring your own CSV, JSON, or JSONL files.
-
-## How It Works
-
-ggterm runs as a companion to Claude Code. The live viewer sits in a browser panel (or [Wave terminal](https://www.waveterm.dev/) side panel) and automatically displays every plot you create:
-
-- **Instant display** — plots appear as interactive Vega-Lite visualizations (tooltips, zoom, pan)
-- **Command palette** — press `Cmd+K` to fuzzy-search 80+ commands, all 66 geom types, style presets, and export actions
-- **Plot history** — every plot saved automatically; press `h` for the history sidebar, arrow keys to browse, `Home`/`End` to jump
-- **Help panel** — press `?` for a 5-tab reference (Getting Started, Plot Types, Shortcuts, Styles, Export)
-- **Data inventory** — on setup, ggterm scans your directory for CSV, TSV, JSON, and JSONL files, analyzes column types and ranges, and writes a catalog so Claude already knows your data before you ask
-- **Style in place** — apply publication presets (Wilke, Tufte, Nature, Economist, APA) without re-running; viewer updates live
-- **Export** — press `s`/`p` for SVG/PNG directly from the viewer, or generate standalone HTML
-
-Under the hood, ggterm is a comprehensive [Grammar of Graphics](https://www.amazon.com/Grammar-Graphics-Statistics-Computing/dp/0387245448) implementation — the same foundation as R's ggplot2. Every plot is represented as a declarative `PlotSpec` that can be rendered to terminal ASCII art or converted to Vega-Lite for the browser. 66 geometry types, 75 scales, statistical transforms, faceting, and themes — all composable through the grammar.
-
-## Examples
-
-See complete AI-driven workflows with real data:
-
-| Example | What you'll learn |
-|---------|-------------------|
-| [Exploratory Analysis](./examples/01-exploratory-analysis.md) | Discover patterns in the mtcars dataset through conversation |
-| [Publication Figures](./examples/02-publication-figures.md) | Iteratively refine iris plots to publication quality |
-| [Streaming Dashboard](./examples/03-streaming-dashboard.md) | Build a real-time monitoring display |
-| [Comparative Analysis](./examples/04-comparative-analysis.md) | Compare distributions with statistical annotations |
-| [Scientific Visualizations](./examples/05-scientific-visualizations.md) | Volcano, Manhattan, Kaplan-Meier, forest, ROC plots |
-
-## Installation Options
+## Installation
 
 ### One Command (Recommended)
 
 ```bash
-mkdir my-analysis && cd my-analysis
-npx ggterm-plot setup    # Init + welcome plot + open browser + start server
+npx ggterm-plot setup
 ```
 
 ### Add to Existing Project
 
 ```bash
-npm install @ggterm/core
 npx ggterm-plot init     # Install Claude Code skills
 npx ggterm-plot serve    # Start live viewer
 ```
 
-### Interactive REPL (No AI)
+### CLI Only (No AI)
 
 ```bash
-npx ggterm
+npx ggterm-plot iris sepal_length sepal_width species "Iris" point
+npx ggterm-plot mydata.csv x_col y_col group_col "Title" histogram
 ```
 
-```
-ggterm> .data iris
-Loaded Iris dataset: 150 rows, 5 columns
-
-ggterm> gg(data).aes({x: "sepal_length", y: "petal_length", color: "species"}).geom(geom_point())
-
-              Sepal vs Petal Length
-  7.0 ┤                         ■■■■
-      │                      ■■■■■■■■
-  6.0 ┤                   ■■■■■■■■
-      │               ●●●●●■■■■■
-  5.0 ┤            ●●●●●●●●●
-      │         ●●●●●●●●
-  4.0 ┤       ●●●●●●
-      │     ●●●●
-  3.0 ┤   ●●●
-      │
-  2.0 ┤▲▲▲▲▲▲
-      │▲▲▲▲▲▲▲
-  1.0 ┤▲▲▲▲
-      └──────────────────────────────────
-       4.5   5.0   5.5   6.0   6.5   7.0
-
-      ▲ setosa  ● versicolor  ■ virginica
-```
-
-## For Developers
-
-Use the programmatic API directly:
+### Programmatic API
 
 ```typescript
 import { gg, geom_point, scale_color_viridis } from '@ggterm/core'
@@ -177,8 +138,6 @@ const plot = gg(data)
 console.log(plot.render({ width: 80, height: 24 }))
 ```
 
-Every plot is a backend-agnostic `PlotSpec` — a JSON-serializable specification consumed by the terminal renderer or Vega-Lite exporter. New backends can be added without modifying the grammar layer. See the [Architecture](./docs/ARCHITECTURE.md) for details.
-
 ## Resources
 
 - [Quick Start Guide](./docs/QUICKSTART.md)
@@ -186,8 +145,13 @@ Every plot is a backend-agnostic `PlotSpec` — a JSON-serializable specificatio
 - [Live Viewer Guide](./docs/VIEWER.md) — command palette, history, keyboard shortcuts
 - [Architecture](./docs/ARCHITECTURE.md) — PlotSpec, backends, layer model
 - [API Reference](./docs/API.md)
-- [Migration from ggplot2](./docs/MIGRATION-GGPLOT2.md)
 - [Contributing](./CONTRIBUTING.md)
+
+## Citation
+
+If you use ggterm in published research, please cite this repository:
+
+> Handley SA, Droit LN, Johnson MR, Wang L. ggterm: Grammar of Graphics for Terminal-Based Data Visualization. https://github.com/shandley/ggterm (2026). A manuscript draft is available in [`paper/`](./paper/).
 
 ## License
 

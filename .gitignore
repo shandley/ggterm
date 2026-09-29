@@ -68,3 +68,6 @@ data/run-logs/
 
 # Temporary screenshots
 paper/figures/Screenshot*
+
+# Word lock files
+~$*
