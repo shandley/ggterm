@@ -2,9 +2,12 @@
  * Live plot viewer server
  *
  * Watches .ggterm/plots/ for new plots and pushes them to connected
- * browsers via WebSocket. Renders interactive Vega-Lite in a dark-themed page.
+ * browsers via Server-Sent Events. Renders interactive Vega-Lite in a
+ * dark-themed page.
  *
- * Uses node:http and a minimal WebSocket implementation for Node.js compatibility.
+ * Binds 127.0.0.1 by default. On detected HPC compute nodes it binds all
+ * interfaces so the printed SSH tunnel (local -> login node -> compute node)
+ * can reach it; GGTERM_HOST overrides the bind address in either case.
  */
 
 import { watch, readFileSync, writeFileSync, unlinkSync, existsSync } from 'fs'
@@ -1119,18 +1122,22 @@ function startServer(p: number, attempt: number, maxRetries: number, options?: {
     throw err
   })
 
-  server.listen(p, () => {
+  // Detect HPC compute node environment
+  const isComputeNode = !!(
+    process.env.SLURM_NODELIST ||
+    process.env.SLURM_JOB_ID ||
+    process.env.PBS_JOBID ||
+    process.env.LSB_JOBID ||
+    process.env.SGE_TASK_ID
+  )
+
+  // Loopback only by default; the SSH tunnel printed for compute nodes
+  // arrives over the network, so those need a non-loopback bind.
+  const bindHost = process.env.GGTERM_HOST || (isComputeNode ? '0.0.0.0' : '127.0.0.1')
+
+  server.listen(p, bindHost, () => {
     const url = `http://localhost:${p}`
     const host = hostname()
-
-    // Detect HPC compute node environment
-    const isComputeNode = !!(
-      process.env.SLURM_NODELIST ||
-      process.env.SLURM_JOB_ID ||
-      process.env.PBS_JOBID ||
-      process.env.LSB_JOBID ||
-      process.env.SGE_TASK_ID
-    )
 
     if (isComputeNode) {
       // Try to detect the login node hostname for a complete tunnel command
