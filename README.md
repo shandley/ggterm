@@ -6,6 +6,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@ggterm/core.svg)](https://www.npmjs.com/package/@ggterm/core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23045577.svg)](https://doi.org/10.5281/zenodo.23045577)
 
 **A Grammar of Graphics engine for the terminal, designed for AI coding assistants.**
 
@@ -153,9 +154,9 @@ console.log(plot.render({ width: 80, height: 24 }))
 
 If you use ggterm in published research, please cite this repository:
 
-> Handley SA, Droit LN, Johnson MR, Wang L. ggterm: Grammar of Graphics for Terminal-Based Data Visualization. https://github.com/shandley/ggterm (2026).
+> Handley SA, Droit LN, Johnson MR, Wang L. ggterm: Grammar of Graphics for Terminal-Based Data Visualization. Zenodo (2026). https://doi.org/10.5281/zenodo.23045577
 
-Citation metadata is in [`CITATION.cff`](./CITATION.cff) (used by GitHub's "Cite this repository" button and by Zenodo). A manuscript draft is available in [`paper/`](./paper/).
+The DOI above covers all versions and resolves to the latest release; the v0.3.15 release specifically is [10.5281/zenodo.23045578](https://doi.org/10.5281/zenodo.23045578). Citation metadata is in [`CITATION.cff`](./CITATION.cff) (used by GitHub's "Cite this repository" button and by Zenodo). A manuscript draft is available in [`paper/`](./paper/).
 
 ## License
 

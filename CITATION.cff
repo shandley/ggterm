@@ -19,6 +19,7 @@ authors:
     given-names: Leran
     orcid: "https://orcid.org/0009-0003-6928-9893"
     affiliation: "Department of Pathology and Immunology, Washington University School of Medicine, St. Louis, MO, USA"
+doi: 10.5281/zenodo.23045577
 license: MIT
 repository-code: "https://github.com/shandley/ggterm"
 url: "https://github.com/shandley/ggterm"
