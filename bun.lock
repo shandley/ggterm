@@ -15,7 +15,7 @@
     },
     "packages/core": {
       "name": "@ggterm/core",
-      "version": "0.3.14",
+      "version": "0.3.15",
       "bin": {
         "ggterm": "dist/cli.js",
         "ggterm-plot": "dist/cli-plot.js",
@@ -30,7 +30,7 @@
     },
     "packages/ggterm-plot": {
       "name": "ggterm-plot",
-      "version": "0.3.14",
+      "version": "0.3.15",
       "bin": {
         "ggterm-plot": "bin/ggterm-plot.js",
       },
