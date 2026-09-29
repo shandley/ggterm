@@ -11,6 +11,8 @@
 
 ggterm brings compositional data visualization into terminal workflows where AI assistants like [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [Codex](https://openai.com/codex) operate. Describe what you want to see — ggterm handles scales, legends, colors, and layout. Plots render as terminal ASCII art for instant feedback, and as interactive Vega-Lite in a companion browser viewer for publication-quality output.
 
+> **Project status (September 2026):** stable, not under active development. The npm packages work as documented and the test suite (2,177 tests) passes, but no new features are planned. The reusable declarative core (PlotSpec types, geometry builders, Vega-Lite converter) lives in [`packages/spec`](./packages/spec) as `@ggterm/spec`. Bug reports are welcome; response time will vary.
+
 <p align="center">
   <img src="paper/figures/ggterm-figure1.png" alt="ggterm workflow: volcano plot creation, gene labeling, and Kaplan-Meier survival curves" width="900">
 </p>
