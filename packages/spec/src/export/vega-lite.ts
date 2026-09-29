@@ -5,7 +5,7 @@
  * Vega-Lite can render to SVG, PNG, PDF via vl2svg, vl2png, vl2pdf CLI tools.
  */
 
-import type { PlotSpec, Geom, AestheticMapping } from '../types'
+import type { PlotSpec, Geom, AestheticMapping } from '../types.js'
 
 export interface VegaLiteSpec {
   $schema: string

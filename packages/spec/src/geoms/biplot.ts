@@ -6,7 +6,7 @@
  * relationships between samples and which variables drive the separation.
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface BiplotOptions {
   // Data columns

@@ -32,7 +32,7 @@
  * ```
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface TreemapOptions {
   /** Tiling algorithm: 'squarify', 'binary', 'slice', 'dice' (default: 'squarify') */

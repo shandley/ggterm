@@ -5,7 +5,7 @@
  * showing both individual data points and distribution shape.
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface BeeswarmOptions {
   /** Method for arranging points: 'swarm' | 'center' | 'square' (default: 'swarm') */

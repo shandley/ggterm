@@ -24,7 +24,7 @@
  * ```
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface Bin2dOptions {
   /** Number of bins in both directions (default: 30) */

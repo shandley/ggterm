@@ -25,7 +25,7 @@
  * ```
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface DensityOptions {
   /** Number of points to evaluate density at (default: 512) */

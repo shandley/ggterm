@@ -2,8 +2,8 @@
  * geom_point - Scatter plot geometry
  */
 
-import type { Geom } from '../types'
-import type { Position } from '../positions'
+import type { Geom } from '../types.js'
+import type { Position } from '../positions/index.js'
 
 export interface PointOptions {
   size?: number

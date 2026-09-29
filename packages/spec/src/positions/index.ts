@@ -10,7 +10,7 @@
  * - jitter: Add random noise to avoid overplotting
  */
 
-import type { AestheticMapping, DataSource } from '../types'
+import type { AestheticMapping, DataSource } from '../types.js'
 
 /**
  * Position configuration object

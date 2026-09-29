@@ -2,7 +2,7 @@
  * geom_histogram - Histogram geometry
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface HistogramOptions {
   /** Number of bins (default: 30) */

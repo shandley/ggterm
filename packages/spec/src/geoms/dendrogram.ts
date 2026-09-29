@@ -30,7 +30,7 @@
  * gg(tree).aes({ x: 'id', y: 'height' }).geom(geom_dendrogram())
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface DendrogramOptions {
   /** Orientation: 'vertical' (root at top) or 'horizontal' (root at left) */

@@ -4,7 +4,7 @@
  * Renders contour lines from a 2D density or grid.
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface ContourOptions {
   /** Number of contour levels (default: 10) */

@@ -27,7 +27,7 @@
  * ```
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface MAOptions {
   /** Log2 fold change threshold for coloring (default: 1, meaning 2-fold) */

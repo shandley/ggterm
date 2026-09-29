@@ -4,7 +4,7 @@
  * Renders rectangles at x, y positions with fill based on a value.
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface TileOptions {
   /** Width of each tile (default: auto from data spacing) */

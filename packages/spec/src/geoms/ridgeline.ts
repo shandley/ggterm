@@ -5,7 +5,7 @@
  * Each group gets a ridge that can overlap with neighbors for a compact view.
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface RidgelineOptions {
   /** Height scale for ridges (default: 0.9, higher = more overlap) */

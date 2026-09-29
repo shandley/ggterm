@@ -2,7 +2,7 @@
  * geom_segment - Line segments from (x, y) to (xend, yend)
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface SegmentOptions {
   /** Line width (default: 1) */

@@ -5,7 +5,7 @@
  * Uses linear regression (lm) or LOESS smoothing.
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface SmoothOptions {
   /** Smoothing method: 'lm' for linear, 'loess' or 'lowess' for local regression */

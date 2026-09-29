@@ -21,7 +21,7 @@
  * ```
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface SankeyOptions {
   /** Node width in characters (default: 3) */

@@ -23,7 +23,7 @@
  *   .geom(geom_scree({ show_kaiser: true }))
  */
 
-import type { Geom } from '../types';
+import type { Geom } from '../types.js';
 
 export interface ScreeOptions {
   /**

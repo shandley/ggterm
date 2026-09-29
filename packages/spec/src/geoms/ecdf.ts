@@ -22,7 +22,7 @@
  *   .geom(geom_ecdf())
  */
 
-import type { Geom } from '../types';
+import type { Geom } from '../types.js';
 
 export interface ECDFOptions {
   /**

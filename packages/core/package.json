@@ -54,7 +54,7 @@
     "url": "https://github.com/shandley/ggterm/issues"
   },
   "dependencies": {
-    "@ggterm/spec": "workspace:*"
+    "@ggterm/spec": "^0.1.0"
   },
   "peerDependencies": {},
   "devDependencies": {

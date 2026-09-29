@@ -23,7 +23,7 @@
  *   .geom(geom_funnel({ show_significance: true }))
  */
 
-import type { Geom } from '../types';
+import type { Geom } from '../types.js';
 
 export interface FunnelOptions {
   /**

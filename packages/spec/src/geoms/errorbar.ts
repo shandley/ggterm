@@ -4,7 +4,7 @@
  * Renders vertical or horizontal error bars.
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface ErrorbarOptions {
   /** Width of the error bar caps (default: 0.5) */

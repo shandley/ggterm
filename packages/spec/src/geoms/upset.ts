@@ -30,7 +30,7 @@
  * gg(data).aes({ x: 'sets' }).geom(geom_upset())
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface UpsetOptions {
   /** Set names for binary matrix format */

@@ -23,7 +23,7 @@
  *   .geom(geom_qq({ show_ci: true, conf_level: 0.95 }))
  */
 
-import type { Geom } from '../types';
+import type { Geom } from '../types.js';
 
 export interface QQOptions {
   /**

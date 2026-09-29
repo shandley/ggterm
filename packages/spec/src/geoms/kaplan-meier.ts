@@ -17,7 +17,7 @@
  * ```
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface KaplanMeierOptions {
   /** Show confidence intervals (default: false) */

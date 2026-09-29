@@ -4,7 +4,7 @@
  * Provides arbitrary annotations for plots including text, shapes, and references.
  */
 
-import type { Geom, RGBA } from './types'
+import type { Geom, RGBA } from './types.js'
 
 /**
  * Base annotation options

@@ -24,7 +24,7 @@
  * ```
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface VolcanoOptions {
   /** Log2 fold change threshold for significance (default: 1, meaning 2-fold) */

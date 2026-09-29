@@ -23,7 +23,7 @@
  *   .geom(geom_control({ chart_type: 'xbar' }))
  */
 
-import type { Geom } from '../types';
+import type { Geom } from '../types.js';
 
 export interface ControlOptions {
   /**

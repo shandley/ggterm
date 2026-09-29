@@ -18,7 +18,7 @@
  * ```
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface FlameOptions {
   /** Style: 'flame' (bottom-up) or 'icicle' (top-down) (default: 'flame') */

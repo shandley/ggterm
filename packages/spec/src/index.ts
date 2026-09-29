@@ -7,8 +7,8 @@
  * runtime dependencies.
  */
 
-export * from './types'
-export * from './geoms'
-export * from './positions'
-export * from './annotations'
-export * from './export'
+export * from './types.js'
+export * from './geoms/index.js'
+export * from './positions/index.js'
+export * from './annotations.js'
+export * from './export/index.js'

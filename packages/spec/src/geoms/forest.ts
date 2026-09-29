@@ -19,7 +19,7 @@
  * ```
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface ForestOptions {
   /** Value for null effect line (default: 1 for ratios, 0 for differences) */

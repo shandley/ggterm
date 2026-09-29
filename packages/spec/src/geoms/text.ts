@@ -2,7 +2,7 @@
  * geom_text - Text label geometry
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface TextOptions {
   nudge_x?: number

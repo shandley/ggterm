@@ -6,7 +6,7 @@
  * discrete changes (e.g., stock prices, state machines).
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface StepOptions {
   /** Step direction: 'hv' (right then up/down), 'vh' (up/down then right), 'mid' (midpoint) */

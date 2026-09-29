@@ -4,7 +4,7 @@
  * Combines a boxplot with a rotated kernel density plot on each side.
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface ViolinOptions {
   /** Width of the violin (default: 0.8) */

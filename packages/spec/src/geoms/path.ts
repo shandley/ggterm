@@ -6,7 +6,7 @@
  * drawing shapes, and ordered sequences.
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface PathOptions {
   /** Line width (1-3) */

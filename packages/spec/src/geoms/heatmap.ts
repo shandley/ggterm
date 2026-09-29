@@ -6,7 +6,7 @@
  * and other 2D data.
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface HeatmapOptions {
   // Data format

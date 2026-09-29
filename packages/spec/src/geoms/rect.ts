@@ -4,7 +4,7 @@
  * Renders rectangles defined by xmin, xmax, ymin, ymax.
  */
 
-import type { Geom } from '../types'
+import type { Geom } from '../types.js'
 
 export interface RectOptions {
   /** Alpha transparency */
