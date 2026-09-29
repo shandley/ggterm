@@ -27,9 +27,9 @@ import {
   geom_text,
   geom_tile,
   geom_smooth,
-} from '../../geoms'
+} from '@ggterm/spec/geoms'
 import { renderToCanvas } from '../../pipeline'
-import { plotSpecToVegaLite } from '../../export/vega-lite'
+import { plotSpecToVegaLite } from '@ggterm/spec/export/vega-lite'
 
 /**
  * Helper to test that a plot renders without throwing

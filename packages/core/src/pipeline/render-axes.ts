@@ -3,7 +3,7 @@
  */
 
 import type { TerminalCanvas } from '../canvas/canvas'
-import type { Labels, RGBA, Theme } from '../types'
+import type { Labels, RGBA, Theme } from '@ggterm/spec/types'
 import type { ResolvedScale } from './scales'
 
 /**

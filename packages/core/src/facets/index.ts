@@ -2,10 +2,10 @@
  * Faceting functions for creating small multiples
  */
 
-import type { Facet, DataSource, Labeller } from '../types'
+import type { Facet, DataSource, Labeller } from '@ggterm/spec/types'
 
 // Re-export Labeller type for convenience
-export type { Labeller } from '../types'
+export type { Labeller } from '@ggterm/spec/types'
 
 /**
  * Default labeller - just returns the value

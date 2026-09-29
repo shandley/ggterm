@@ -29,7 +29,7 @@ export type {
   Scale,
   Stat,
   Theme,
-} from './types'
+} from '@ggterm/spec/types'
 
 // Canvas
 export { TerminalCanvas, createCanvas, DEFAULT_FG, DEFAULT_BG } from './canvas'
@@ -128,7 +128,7 @@ export {
   // Set/hierarchical visualizations
   geom_upset,
   geom_dendrogram,
-} from './geoms'
+} from '@ggterm/spec/geoms'
 export type {
   PathOptions,
   RugOptions,
@@ -172,7 +172,7 @@ export type {
   ScreeOptions,
   UpsetOptions,
   DendrogramOptions,
-} from './geoms'
+} from '@ggterm/spec/geoms'
 
 // Position adjustments
 export {
@@ -185,7 +185,7 @@ export {
   isStackPosition,
   isDodgePosition,
   getPositionType,
-} from './positions'
+} from '@ggterm/spec/positions'
 export type {
   Position,
   AdjustedPoint,
@@ -193,7 +193,7 @@ export type {
   JitterOptions,
   StackOptions,
   FillOptions,
-} from './positions'
+} from '@ggterm/spec/positions'
 
 // Statistical transformations
 export {
@@ -386,8 +386,8 @@ export {
   annotate_segment,
   annotate_hline,
   annotate_vline,
-} from './annotations'
-export type { AnnotationOptions } from './annotations'
+} from '@ggterm/spec/annotations'
+export type { AnnotationOptions } from '@ggterm/spec/annotations'
 
 // Terminal utilities
 export {
@@ -503,8 +503,8 @@ export { GGTermREPL, startREPL } from './repl'
 export type { REPLOptions, REPLState } from './repl'
 
 // Export (Publication-quality output)
-export { plotSpecToVegaLite, exportToVegaLiteJSON } from './export'
-export type { VegaLiteSpec, ExportOptions } from './export'
+export { plotSpecToVegaLite, exportToVegaLiteJSON } from '@ggterm/spec/export'
+export type { VegaLiteSpec, ExportOptions } from '@ggterm/spec/export'
 
 // Bundled Datasets
 export { BUILTIN_DATASETS, DATASET_INFO, DATASET_NAMES } from './datasets'

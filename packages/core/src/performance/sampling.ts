@@ -5,7 +5,7 @@
  * Reduces data size while preserving statistical properties.
  */
 
-import type { DataRecord } from '../types'
+import type { DataRecord } from '@ggterm/spec/types'
 
 /**
  * Sampling method types

@@ -14,7 +14,7 @@ import type {
   Scale,
   Stat,
   Theme,
-} from './types'
+} from '@ggterm/spec/types'
 import { defaultTheme } from './themes/default'
 import { coordCartesian } from './coords/cartesian'
 import { renderToString } from './pipeline'

@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from 'bun:test'
-import { geom_smooth } from '../../geoms/smooth'
+import { geom_smooth } from '@ggterm/spec/geoms/smooth'
 import { gg } from '../../grammar'
 import { renderToCanvas } from '../../pipeline'
 import { stat_smooth } from '../../stats'
@@ -141,7 +141,7 @@ describe('geom_smooth', () => {
     ]
 
     it('should render smooth over scatter points', () => {
-      const { geom_point } = require('../../geoms')
+      const { geom_point } = require('@ggterm/spec/geoms')
 
       const spec = gg(data)
         .aes({ x: 'x', y: 'y' })

@@ -3,9 +3,9 @@
  */
 
 import { describe, expect, it } from 'bun:test'
-import { geom_step } from '../../geoms/step'
+import { geom_step } from '@ggterm/spec/geoms/step'
 import { gg } from '../../grammar'
-import { geom_point, geom_line } from '../../geoms'
+import { geom_point, geom_line } from '@ggterm/spec/geoms'
 import { renderToCanvas } from '../../pipeline'
 
 describe('geom_step', () => {

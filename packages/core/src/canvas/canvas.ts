@@ -2,7 +2,7 @@
  * Canvas - Abstract 2D buffer for terminal rendering
  */
 
-import type { Canvas, CanvasCell, RGBA } from '../types'
+import type { Canvas, CanvasCell, RGBA } from '@ggterm/spec/types'
 
 /**
  * Default colors

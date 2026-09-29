@@ -2,7 +2,7 @@
  * stat_smooth - Smoothing and regression lines
  */
 
-import type { AestheticMapping, DataSource, Stat } from '../types'
+import type { AestheticMapping, DataSource, Stat } from '@ggterm/spec/types'
 
 export interface StatSmoothParams {
   /** Method: 'lm' (linear), 'loess', 'lowess' (default: 'lm') */

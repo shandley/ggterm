@@ -4,7 +4,7 @@
  * Maps date/time values to plot coordinates with intelligent tick formatting.
  */
 
-import type { Scale } from '../types'
+import type { Scale } from '@ggterm/spec/types'
 
 /**
  * Time intervals for tick calculation

@@ -2,7 +2,7 @@
  * Default theme for ggterm
  */
 
-import type { Theme } from '../types'
+import type { Theme } from '@ggterm/spec/types'
 
 /**
  * Minimal default theme

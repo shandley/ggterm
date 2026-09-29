@@ -4,8 +4,8 @@
 
 import { describe, expect, it } from 'bun:test'
 import { gg } from '../../grammar'
-import { geom_qq } from '../../geoms/qq'
-import { geom_freqpoly, geom_histogram } from '../../geoms/histogram'
+import { geom_qq } from '@ggterm/spec/geoms/qq'
+import { geom_freqpoly, geom_histogram } from '@ggterm/spec/geoms/histogram'
 import { renderToCanvas } from '../../pipeline'
 
 describe('geom_qq', () => {

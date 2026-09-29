@@ -317,7 +317,7 @@ describe('coordFlipWithLimits', () => {
 
 // Integration tests using the grammar builder
 import { gg } from '../../grammar'
-import { geom_point } from '../../geoms'
+import { geom_point } from '@ggterm/spec/geoms'
 
 describe('coord integration with gg', () => {
   const data = [

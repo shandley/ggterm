@@ -5,7 +5,7 @@
  * estimation. Output is suitable for contour visualization.
  */
 
-import type { AestheticMapping, DataSource, Stat } from '../types'
+import type { AestheticMapping, DataSource, Stat } from '@ggterm/spec/types'
 
 export interface StatDensity2dParams {
   /** Bandwidth for kernel density estimation (default: auto via Scott's rule) */

@@ -4,7 +4,7 @@
  * Maps data values to transparency levels (0-1).
  */
 
-import type { Scale } from '../types'
+import type { Scale } from '@ggterm/spec/types'
 
 export interface AlphaScaleOptions {
   /** Alpha range [min, max] from 0 to 1 */

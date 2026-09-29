@@ -7,9 +7,9 @@
 
 import { describe, expect, it } from 'bun:test'
 import { gg } from '../../grammar'
-import { geom_calendar } from '../../geoms/calendar'
-import { geom_flame, geom_icicle } from '../../geoms/flame'
-import { geom_corrmat } from '../../geoms/corrmat'
+import { geom_calendar } from '@ggterm/spec/geoms/calendar'
+import { geom_flame, geom_icicle } from '@ggterm/spec/geoms/flame'
+import { geom_corrmat } from '@ggterm/spec/geoms/corrmat'
 
 describe('geom_calendar', () => {
   it('should create a calendar geom with default parameters', () => {

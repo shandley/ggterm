@@ -4,7 +4,7 @@
  * Maps data values to point shapes.
  */
 
-import type { Scale } from '../types'
+import type { Scale } from '@ggterm/spec/types'
 
 /**
  * Default shape palette

@@ -2,7 +2,7 @@
  * stat_bin - Bin continuous data for histograms
  */
 
-import type { AestheticMapping, DataSource, Stat } from '../types'
+import type { AestheticMapping, DataSource, Stat } from '@ggterm/spec/types'
 
 export interface StatBinParams {
   /** Number of bins (default: 30) */

@@ -2,7 +2,7 @@
  * stat_boxplot - Compute summary statistics for boxplots
  */
 
-import type { AestheticMapping, DataSource, Stat } from '../types'
+import type { AestheticMapping, DataSource, Stat } from '@ggterm/spec/types'
 
 export interface StatBoxplotParams {
   /** Coefficient for whisker length (default: 1.5 * IQR) */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { geom_kaplan_meier } from '../../geoms/kaplan-meier'
+import { geom_kaplan_meier } from '@ggterm/spec/geoms/kaplan-meier'
 import { gg } from '../../grammar'
 
 describe('geom_kaplan_meier', () => {

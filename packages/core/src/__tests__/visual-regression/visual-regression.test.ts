@@ -36,9 +36,9 @@ import {
   geom_tile,
   geom_hline,
   geom_vline,
-} from '../../geoms'
+} from '@ggterm/spec/geoms'
 import { coordFlip, coordPolar } from '../../coords/cartesian'
-import { position_dodge, position_stack, position_fill } from '../../positions'
+import { position_dodge, position_stack, position_fill } from '@ggterm/spec/positions'
 import { facet_wrap, facet_grid } from '../../facets'
 import { renderToCanvas } from '../../pipeline'
 

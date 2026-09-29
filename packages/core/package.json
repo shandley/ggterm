@@ -53,6 +53,9 @@
   "bugs": {
     "url": "https://github.com/shandley/ggterm/issues"
   },
+  "dependencies": {
+    "@ggterm/spec": "workspace:*"
+  },
   "peerDependencies": {},
   "devDependencies": {
     "typescript": "^5.3.0",

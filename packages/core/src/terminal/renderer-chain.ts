@@ -5,7 +5,7 @@
  * Automatically falls back to simpler renderers when advanced features aren't available.
  */
 
-import type { Canvas, RenderOptions, Renderer } from '../types'
+import type { Canvas, RenderOptions, Renderer } from '@ggterm/spec/types'
 import {
   detectCapabilities,
   getCapabilities,

@@ -26,8 +26,8 @@ import {
   geom_boxplot,
   geom_area,
   geom_tile,
-} from '../../geoms'
-import { plotSpecToVegaLite } from '../../export/vega-lite'
+} from '@ggterm/spec/geoms'
+import { plotSpecToVegaLite } from '@ggterm/spec/export/vega-lite'
 
 // Output directory for generated HTML files
 const OUTPUT_DIR = join(dirname(import.meta.path), 'vega-lite-output')

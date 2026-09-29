@@ -10,7 +10,7 @@ import type {
   RGBA,
   Scale,
   ScaleTransform,
-} from '../types'
+} from '@ggterm/spec/types'
 
 /**
  * Infer the domain (min/max) for a continuous aesthetic from data

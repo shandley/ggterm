@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
-import { plotSpecToVegaLite, exportToVegaLiteJSON } from '../../export'
-import type { PlotSpec } from '../../types'
+import { plotSpecToVegaLite, exportToVegaLiteJSON } from '@ggterm/spec/export'
+import type { PlotSpec } from '@ggterm/spec/types'
 
 describe('Vega-Lite export', () => {
   const simpleSpec: PlotSpec = {

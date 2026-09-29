@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { geom_bland_altman } from '../../geoms/bland-altman'
+import { geom_bland_altman } from '@ggterm/spec/geoms/bland-altman'
 import { gg } from '../../grammar'
 
 describe('geom_bland_altman', () => {

@@ -36,7 +36,7 @@ import {
   getAvailablePalettes,
   getPaletteColors,
 } from '../../scales/color'
-import type { RGBA } from '../../types'
+import type { RGBA } from '@ggterm/spec/types'
 
 describe('scale_color_continuous', () => {
   it('should create a continuous color scale', () => {

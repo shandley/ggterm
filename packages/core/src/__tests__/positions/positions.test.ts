@@ -13,7 +13,7 @@ import {
   isStackPosition,
   isDodgePosition,
   getPositionType,
-} from '../../positions'
+} from '@ggterm/spec/positions'
 
 describe('position_identity', () => {
   it('should create identity position', () => {
@@ -310,7 +310,7 @@ describe('applyPositionAdjustment with string positions', () => {
 
 // Integration tests with geoms
 import { gg } from '../../grammar'
-import { geom_bar, geom_col, geom_point } from '../../geoms'
+import { geom_bar, geom_col, geom_point } from '@ggterm/spec/geoms'
 import { renderToCanvas } from '../../pipeline'
 
 describe('position integration with geoms', () => {

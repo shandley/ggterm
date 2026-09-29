@@ -1,0 +1,36 @@
+{
+  "name": "@ggterm/spec",
+  "version": "0.1.0",
+  "description": "Declarative PlotSpec for Grammar of Graphics visualization: types, 66 geometry builders, and a Vega-Lite converter. No rendering, no dependencies.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./geoms": "./src/geoms/index.ts",
+    "./positions": "./src/positions/index.ts",
+    "./export": "./src/export/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "grammar-of-graphics",
+    "plotspec",
+    "declarative",
+    "vega-lite",
+    "visualization"
+  ],
+  "author": "Scott Handley",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shandley/ggterm.git",
+    "directory": "packages/spec"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}

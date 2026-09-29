@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { geom_manhattan, ManhattanOptions } from '../../geoms/manhattan'
+import { geom_manhattan, ManhattanOptions } from '@ggterm/spec/geoms/manhattan'
 import { gg } from '../../grammar'
 
 describe('geom_manhattan', () => {

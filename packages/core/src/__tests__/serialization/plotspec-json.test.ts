@@ -7,14 +7,14 @@
 
 import { describe, expect, it } from 'bun:test'
 import { gg, GGPlot } from '../../grammar'
-import { geom_point } from '../../geoms/point'
-import { geom_line } from '../../geoms/line'
-import { geom_bar } from '../../geoms/bar'
-import { geom_histogram } from '../../geoms/histogram'
+import { geom_point } from '@ggterm/spec/geoms/point'
+import { geom_line } from '@ggterm/spec/geoms/line'
+import { geom_bar } from '@ggterm/spec/geoms/bar'
+import { geom_histogram } from '@ggterm/spec/geoms/histogram'
 import { scale_x_continuous, scale_y_continuous } from '../../scales/continuous'
 import { scale_color_discrete } from '../../scales/discrete'
 import { renderToString } from '../../pipeline'
-import type { PlotSpec } from '../../types'
+import type { PlotSpec } from '@ggterm/spec/types'
 
 describe('PlotSpec JSON serialization', () => {
   describe('basic roundtrip', () => {

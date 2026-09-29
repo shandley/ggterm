@@ -2,7 +2,7 @@
  * Continuous scales
  */
 
-import type { Scale, ScaleTransform } from '../types'
+import type { Scale, ScaleTransform } from '@ggterm/spec/types'
 
 export interface ContinuousScaleOptions {
   limits?: [number, number]

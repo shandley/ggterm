@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'bun:test'
 import { stat_xdensity } from '../../stats/density'
 import { gg } from '../../grammar'
-import { geom_ridgeline, geom_joy } from '../../geoms'
+import { geom_ridgeline, geom_joy } from '@ggterm/spec/geoms'
 import { renderToCanvas } from '../../pipeline'
 
 describe('stat_xdensity', () => {

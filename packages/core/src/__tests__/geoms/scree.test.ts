@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { geom_scree } from '../../geoms/scree'
+import { geom_scree } from '@ggterm/spec/geoms/scree'
 import { gg } from '../../grammar'
 
 describe('geom_scree', () => {

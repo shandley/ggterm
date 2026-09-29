@@ -4,7 +4,7 @@
  * Orchestrates the full flow from PlotSpec to rendered output.
  */
 
-import type { AestheticMapping, DataSource, Facet, Geom, PlotSpec, RenderOptions, RGBA } from '../types'
+import type { AestheticMapping, DataSource, Facet, Geom, PlotSpec, RenderOptions, RGBA } from '@ggterm/spec/types'
 import { TerminalCanvas, createCanvas } from '../canvas/canvas'
 import { buildScaleContext, inferContinuousDomain, niceDomain } from './scales'
 import type { ScaleContext } from './scales'

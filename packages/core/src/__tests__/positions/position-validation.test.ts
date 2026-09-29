@@ -22,9 +22,9 @@ import {
   getPositionType,
   type AdjustedPoint,
   type Position,
-} from '../../positions'
+} from '@ggterm/spec/positions'
 import { gg } from '../../grammar'
-import { geom_bar, geom_col, geom_point, geom_line, geom_area } from '../../geoms'
+import { geom_bar, geom_col, geom_point, geom_line, geom_area } from '@ggterm/spec/geoms'
 import { renderToCanvas } from '../../pipeline'
 
 // Test data fixtures

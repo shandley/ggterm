@@ -518,7 +518,7 @@ describe('calculateGridStripLayout', () => {
 describe('faceted plot rendering integration', () => {
   // These tests verify the full rendering pipeline with facets
   const { gg } = require('../../index')
-  const { geom_point } = require('../../geoms/point')
+  const { geom_point } = require('@ggterm/spec/geoms/point')
 
   it('should render a facet_wrap plot without errors', () => {
     const data = [

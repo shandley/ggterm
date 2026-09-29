@@ -5,7 +5,7 @@
  * in each cell. Useful for visualizing dense scatter data as a heatmap.
  */
 
-import type { AestheticMapping, DataSource, Stat } from '../types'
+import type { AestheticMapping, DataSource, Stat } from '@ggterm/spec/types'
 import { rectbin } from '../performance/binning'
 
 export interface StatBin2dParams {

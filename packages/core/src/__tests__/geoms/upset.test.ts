@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'bun:test'
 import { gg } from '../../grammar'
-import { geom_upset } from '../../geoms/upset'
+import { geom_upset } from '@ggterm/spec/geoms/upset'
 import { renderToCanvas } from '../../pipeline'
 
 describe('geom_upset', () => {

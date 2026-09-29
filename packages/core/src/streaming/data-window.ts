@@ -5,7 +5,7 @@
  * Provides sliding window views over streaming data.
  */
 
-import type { DataRecord } from '../types'
+import type { DataRecord } from '@ggterm/spec/types'
 import { DataBuffer } from './data-buffer'
 
 /**

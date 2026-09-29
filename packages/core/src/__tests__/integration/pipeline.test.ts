@@ -6,11 +6,11 @@
 
 import { describe, expect, it } from 'bun:test'
 import { gg } from '../../grammar'
-import { geom_point } from '../../geoms/point'
-import { geom_line } from '../../geoms/line'
-import { geom_bar, geom_col } from '../../geoms/bar'
-import { geom_area } from '../../geoms/area'
-import { geom_text } from '../../geoms/text'
+import { geom_point } from '@ggterm/spec/geoms/point'
+import { geom_line } from '@ggterm/spec/geoms/line'
+import { geom_bar, geom_col } from '@ggterm/spec/geoms/bar'
+import { geom_area } from '@ggterm/spec/geoms/area'
+import { geom_text } from '@ggterm/spec/geoms/text'
 import {
   scale_x_continuous,
   scale_y_continuous,
@@ -24,7 +24,7 @@ import {
 import { scale_color_discrete, scale_color_manual } from '../../scales/color'
 import { defaultTheme } from '../../themes/default'
 import { coordCartesian, coordFlip } from '../../coords/cartesian'
-import { plotSpecToVegaLite } from '../../export/vega-lite'
+import { plotSpecToVegaLite } from '@ggterm/spec/export/vega-lite'
 import { renderToCanvas } from '../../pipeline'
 
 describe('Rendering Pipeline Integration', () => {

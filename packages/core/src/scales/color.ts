@@ -5,7 +5,7 @@
  * including sequential, diverging, and categorical palettes.
  */
 
-import type { Scale, RGBA } from '../types'
+import type { Scale, RGBA } from '@ggterm/spec/types'
 
 // Color palette definitions organized by type
 const PALETTES = {

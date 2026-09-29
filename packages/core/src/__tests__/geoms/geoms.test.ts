@@ -3,19 +3,19 @@
  */
 
 import { describe, expect, it } from 'bun:test'
-import { geom_point } from '../../geoms/point'
-import { geom_line, geom_hline, geom_vline } from '../../geoms/line'
-import { geom_bar, geom_col } from '../../geoms/bar'
-import { geom_area, geom_ribbon } from '../../geoms/area'
-import { geom_histogram } from '../../geoms/histogram'
-import { geom_boxplot } from '../../geoms/boxplot'
-import { geom_segment, geom_curve } from '../../geoms/segment'
-import { geom_violin } from '../../geoms/violin'
-import { geom_text, geom_label } from '../../geoms/text'
-import { geom_tile, geom_raster } from '../../geoms/tile'
-import { geom_errorbar, geom_errorbarh, geom_crossbar, geom_linerange, geom_pointrange } from '../../geoms/errorbar'
-import { geom_contour, geom_contour_filled, geom_density_2d } from '../../geoms/contour'
-import { geom_rect, geom_abline } from '../../geoms/rect'
+import { geom_point } from '@ggterm/spec/geoms/point'
+import { geom_line, geom_hline, geom_vline } from '@ggterm/spec/geoms/line'
+import { geom_bar, geom_col } from '@ggterm/spec/geoms/bar'
+import { geom_area, geom_ribbon } from '@ggterm/spec/geoms/area'
+import { geom_histogram } from '@ggterm/spec/geoms/histogram'
+import { geom_boxplot } from '@ggterm/spec/geoms/boxplot'
+import { geom_segment, geom_curve } from '@ggterm/spec/geoms/segment'
+import { geom_violin } from '@ggterm/spec/geoms/violin'
+import { geom_text, geom_label } from '@ggterm/spec/geoms/text'
+import { geom_tile, geom_raster } from '@ggterm/spec/geoms/tile'
+import { geom_errorbar, geom_errorbarh, geom_crossbar, geom_linerange, geom_pointrange } from '@ggterm/spec/geoms/errorbar'
+import { geom_contour, geom_contour_filled, geom_density_2d } from '@ggterm/spec/geoms/contour'
+import { geom_rect, geom_abline } from '@ggterm/spec/geoms/rect'
 
 describe('geom_point', () => {
   it('should create a point geometry', () => {

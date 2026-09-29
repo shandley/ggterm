@@ -5,7 +5,7 @@
  * Provides O(1) push/pop operations and automatic capacity management.
  */
 
-import type { DataRecord } from '../types'
+import type { DataRecord } from '@ggterm/spec/types'
 
 /**
  * Buffer configuration options

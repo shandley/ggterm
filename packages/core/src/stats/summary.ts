@@ -2,7 +2,7 @@
  * stat_summary - Summarize y values at each unique x
  */
 
-import type { AestheticMapping, DataSource, Stat } from '../types'
+import type { AestheticMapping, DataSource, Stat } from '@ggterm/spec/types'
 
 export type SummaryFun = (values: number[]) => number
 

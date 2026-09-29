@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { geom_volcano, VolcanoOptions } from '../../geoms/volcano'
+import { geom_volcano, VolcanoOptions } from '@ggterm/spec/geoms/volcano'
 import { gg } from '../../grammar'
 
 describe('geom_volcano', () => {

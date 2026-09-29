@@ -6,7 +6,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, readdirSync } from 'fs'
 import { join } from 'path'
-import type { PlotSpec } from '../types'
+import type { PlotSpec } from '@ggterm/spec/types'
 
 export interface PlotProvenance {
   id: string

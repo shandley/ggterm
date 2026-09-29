@@ -4,8 +4,8 @@
 
 import { describe, expect, it } from 'bun:test'
 import { gg, GGPlot } from '../grammar'
-import { geom_point } from '../geoms/point'
-import { geom_line } from '../geoms/line'
+import { geom_point } from '@ggterm/spec/geoms/point'
+import { geom_line } from '@ggterm/spec/geoms/line'
 import { scale_x_continuous, scale_y_continuous } from '../scales/continuous'
 import { coordCartesian } from '../coords/cartesian'
 

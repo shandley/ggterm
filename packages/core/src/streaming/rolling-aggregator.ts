@@ -5,7 +5,7 @@
  * Supports mean, sum, min, max, count, variance, and custom aggregations.
  */
 
-import type { DataRecord } from '../types'
+import type { DataRecord } from '@ggterm/spec/types'
 
 /**
  * Built-in aggregation types

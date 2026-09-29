@@ -45,6 +45,8 @@ interface VegaLiteLayer {
   encoding?: Record<string, unknown>
   data?: { values: Record<string, unknown>[] }
   params?: VegaLiteParam[]
+  transform?: Record<string, unknown>[]
+  [key: string]: unknown
 }
 
 /**
@@ -529,7 +531,7 @@ function hasXRangeFields(data: Record<string, unknown>[], aes: AestheticMapping)
  * Build y-range encoding for pre-computed data (ymin/ymax fields exist).
  */
 function buildYRangeEncoding(
-  data: Record<string, unknown>[],
+  _data: Record<string, unknown>[],
   aes: AestheticMapping
 ): { y: Record<string, unknown>; y2: Record<string, unknown> } {
   const yminField = aes.ymin || 'ymin'
@@ -544,7 +546,7 @@ function buildYRangeEncoding(
  * Build x-range encoding for pre-computed data.
  */
 function buildXRangeEncoding(
-  data: Record<string, unknown>[],
+  _data: Record<string, unknown>[],
   aes: AestheticMapping
 ): { x: Record<string, unknown>; x2: Record<string, unknown> } {
   const xminField = aes.xmin || 'xmin'
@@ -1745,7 +1747,6 @@ export function plotSpecToVegaLite(
     const lowColor = (opts.low_color as string) ?? '#313695'
     const midColor = (opts.mid_color as string) ?? '#ffffbf'
     const highColor = (opts.high_color as string) ?? '#a50026'
-    const naColor = (opts.na_color as string) ?? '#808080'
 
     const xField = aes.x ?? 'x'
     // Heatmap: x=row, y=column, color=value. CLI maps: x, y, color
@@ -1787,7 +1788,7 @@ export function plotSpecToVegaLite(
   /**
    * Build density plot spec: use Vega-Lite's native density transform
    */
-  function buildDensitySpec(data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
+  function buildDensitySpec(_data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
     const xField = aes.x as string ?? 'x'
     const opts = geom.params ?? {}
     const bandwidth = opts.bw as number | undefined
@@ -2202,7 +2203,7 @@ export function plotSpecToVegaLite(
   /**
    * Build lollipop spec: vertical/horizontal stems with point caps
    */
-  function buildLollipopSpec(data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
+  function buildLollipopSpec(_data: Record<string, unknown>[], aes: AestheticMapping, geom: Geom): VegaLiteLayer[] {
     const xField = aes.x as string ?? 'x'
     const yField = aes.y as string ?? 'y'
     const opts = geom.params ?? {}

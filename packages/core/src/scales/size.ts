@@ -4,7 +4,7 @@
  * Maps data values to point sizes.
  */
 
-import type { Scale } from '../types'
+import type { Scale } from '@ggterm/spec/types'
 
 export interface SizeScaleOptions {
   /** Size range [min, max] in character widths */

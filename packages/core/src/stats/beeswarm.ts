@@ -5,7 +5,7 @@
  * creating a "swarm" pattern that reveals both distribution and individual values.
  */
 
-import type { AestheticMapping, DataSource, Stat } from '../types'
+import type { AestheticMapping, DataSource, Stat } from '@ggterm/spec/types'
 
 export interface StatBeeswarmParams {
   /** Method for arranging points: 'swarm' | 'center' | 'square' (default: 'swarm') */

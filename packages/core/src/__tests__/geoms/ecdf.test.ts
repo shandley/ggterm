@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { geom_ecdf } from '../../geoms/ecdf'
+import { geom_ecdf } from '@ggterm/spec/geoms/ecdf'
 import { gg } from '../../grammar'
 
 describe('geom_ecdf', () => {

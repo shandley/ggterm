@@ -5,7 +5,7 @@
  * Supports hexagonal and rectangular binning.
  */
 
-import type { DataRecord, RGBA } from '../types'
+import type { DataRecord, RGBA } from '@ggterm/spec/types'
 
 /**
  * Bin options

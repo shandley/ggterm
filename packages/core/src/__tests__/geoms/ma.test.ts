@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { geom_ma, MAOptions } from '../../geoms/ma'
+import { geom_ma, MAOptions } from '@ggterm/spec/geoms/ma'
 import { gg } from '../../grammar'
 
 describe('geom_ma', () => {

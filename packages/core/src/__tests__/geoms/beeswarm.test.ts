@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'bun:test'
 import { stat_beeswarm, computeBeeswarm } from '../../stats/beeswarm'
 import { gg } from '../../grammar'
-import { geom_beeswarm, geom_quasirandom } from '../../geoms'
+import { geom_beeswarm, geom_quasirandom } from '@ggterm/spec/geoms'
 import { renderToCanvas } from '../../pipeline'
 
 describe('stat_beeswarm', () => {

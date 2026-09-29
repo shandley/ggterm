@@ -1076,7 +1076,7 @@ function handlePlot(args: string[]): void {
 
   // Also save Vega-Lite spec so style/customize skills can edit it
   try {
-    const { plotSpecToVegaLite } = require('./export')
+    const { plotSpecToVegaLite } = require('@ggterm/spec/export')
     const vlSpec = plotSpecToVegaLite(spec, { interactive: true })
     writeFileSync(
       join(getGGTermDir(), 'last-plot-vegalite.json'),
@@ -1202,7 +1202,7 @@ function handleExport(idOrFile?: string, outputFile?: string): void {
   }
 
   // Convert to Vega-Lite with interactivity enabled
-  const { plotSpecToVegaLite } = require('./export')
+  const { plotSpecToVegaLite } = require('@ggterm/spec/export')
   const spec = plotSpecToVegaLite(plotSpec, {
     interactive: true,
   })

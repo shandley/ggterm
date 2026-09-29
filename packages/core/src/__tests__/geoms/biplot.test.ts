@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { geom_biplot, BiplotOptions } from '../../geoms/biplot'
+import { geom_biplot, BiplotOptions } from '@ggterm/spec/geoms/biplot'
 import { gg } from '../../grammar'
 
 describe('geom_biplot', () => {

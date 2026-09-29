@@ -5,10 +5,10 @@
  */
 
 import type { TerminalCanvas } from '../canvas/canvas'
-import type { AestheticMapping, DataSource, Geom, RGBA } from '../types'
+import type { AestheticMapping, DataSource, Geom, RGBA } from '@ggterm/spec/types'
 import type { ScaleContext, ResolvedColorScale } from './scales'
 import { DEFAULT_POINT_COLOR } from './scales'
-import { applyPositionAdjustment, getPositionType } from '../positions'
+import { applyPositionAdjustment, getPositionType } from '@ggterm/spec/positions'
 
 /**
  * Point shapes for scatter plots

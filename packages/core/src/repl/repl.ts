@@ -7,7 +7,7 @@
 import * as readline from 'readline'
 import { BUILTIN_DATASETS, DATASET_INFO } from '../datasets'
 import { gg, GGPlot } from '../grammar'
-import type { DataSource } from '../types'
+import type { DataSource } from '@ggterm/spec/types'
 import { defaultTheme, themeMinimal, themeDark } from '../themes/default'
 import {
   geom_point,
@@ -21,7 +21,7 @@ import {
   geom_vline,
   geom_tile,
   geom_errorbar,
-} from '../geoms'
+} from '@ggterm/spec/geoms'
 import {
   scale_x_continuous,
   scale_y_continuous,

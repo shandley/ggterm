@@ -11,7 +11,7 @@ import {
   annotate_segment,
   annotate_hline,
   annotate_vline,
-} from '../../annotations'
+} from '@ggterm/spec/annotations'
 import { gg, geom_point, geom_line, renderToString } from '../../index'
 
 describe('annotate()', () => {

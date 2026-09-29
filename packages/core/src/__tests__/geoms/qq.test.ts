@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { geom_qq } from '../../geoms/qq'
+import { geom_qq } from '@ggterm/spec/geoms/qq'
 import { gg } from '../../grammar'
 
 describe('geom_qq', () => {

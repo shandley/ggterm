@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'bun:test'
 import { stat_density_2d, computeDensity2d } from '../../stats/density2d'
 import { gg } from '../../grammar'
-import { geom_density_2d } from '../../geoms'
+import { geom_density_2d } from '@ggterm/spec/geoms'
 import { renderToCanvas } from '../../pipeline'
 
 describe('stat_density_2d', () => {

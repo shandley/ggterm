@@ -5,7 +5,7 @@
  * Automatically adjusts detail level for performance.
  */
 
-import type { DataRecord } from '../types'
+import type { DataRecord } from '@ggterm/spec/types'
 import { systematicSample, lttbSample } from './sampling'
 
 /**

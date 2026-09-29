@@ -5,7 +5,7 @@
  * Combines data buffering, windowing, aggregation, and rendering.
  */
 
-import type { DataRecord, AestheticMapping, Geom, Scale, Theme, Labels } from '../types'
+import type { DataRecord, AestheticMapping, Geom, Scale, Theme, Labels } from '@ggterm/spec/types'
 import { GGPlot, gg } from '../grammar'
 import { DataBuffer } from './data-buffer'
 import { DataWindow } from './data-window'

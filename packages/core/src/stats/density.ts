@@ -2,7 +2,7 @@
  * stat_density - Kernel density estimation for smooth density plots
  */
 
-import type { AestheticMapping, DataSource, Stat } from '../types'
+import type { AestheticMapping, DataSource, Stat } from '@ggterm/spec/types'
 
 export interface StatDensityParams {
   /** Bandwidth for kernel density estimation (default: auto via Silverman's rule) */

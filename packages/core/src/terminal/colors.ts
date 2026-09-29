@@ -7,7 +7,7 @@
  * - 16 color ANSI palette
  */
 
-import type { RGBA } from '../types'
+import type { RGBA } from '@ggterm/spec/types'
 
 /**
  * Standard ANSI 16 colors

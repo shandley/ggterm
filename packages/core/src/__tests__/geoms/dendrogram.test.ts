@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'bun:test'
 import { gg } from '../../grammar'
-import { geom_dendrogram } from '../../geoms/dendrogram'
+import { geom_dendrogram } from '@ggterm/spec/geoms/dendrogram'
 import { renderToCanvas } from '../../pipeline'
 
 describe('geom_dendrogram', () => {

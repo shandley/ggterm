@@ -4,8 +4,8 @@
 
 import { describe, expect, it } from 'bun:test'
 import { gg } from '../../grammar'
-import { geom_sankey } from '../../geoms/sankey'
-import { geom_treemap } from '../../geoms/treemap'
+import { geom_sankey } from '@ggterm/spec/geoms/sankey'
+import { geom_treemap } from '@ggterm/spec/geoms/treemap'
 
 describe('geom_sankey', () => {
   it('should create a sankey geom with default parameters', () => {

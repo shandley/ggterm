@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { geom_funnel } from '../../geoms/funnel'
+import { geom_funnel } from '@ggterm/spec/geoms/funnel'
 import { gg } from '../../grammar'
 
 describe('geom_funnel', () => {

@@ -7,7 +7,7 @@
  * reference distribution.
  */
 
-import type { AestheticMapping, DataSource, Stat } from '../types'
+import type { AestheticMapping, DataSource, Stat } from '@ggterm/spec/types'
 
 export interface StatQQParams {
   /** Distribution to compare against (default: 'norm') */

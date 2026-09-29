@@ -9,7 +9,7 @@
  * - coordPolar: Polar coordinates (angle + radius)
  */
 
-import type { Coord } from '../types'
+import type { Coord } from '@ggterm/spec/types'
 
 export interface CartesianOptions {
   xlim?: [number, number]

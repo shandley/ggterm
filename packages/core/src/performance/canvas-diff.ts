@@ -5,7 +5,7 @@
  * Useful for streaming updates where most of the canvas stays the same.
  */
 
-import type { Canvas, CanvasCell, RGBA } from '../types'
+import type { Canvas, CanvasCell, RGBA } from '@ggterm/spec/types'
 
 /**
  * Diff options

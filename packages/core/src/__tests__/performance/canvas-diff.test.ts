@@ -10,7 +10,7 @@ import {
   type CellChange,
   type RegionChange,
 } from '../../performance/canvas-diff'
-import type { Canvas, CanvasCell, RGBA } from '../../types'
+import type { Canvas, CanvasCell, RGBA } from '@ggterm/spec/types'
 
 /**
  * Create a mock canvas for testing

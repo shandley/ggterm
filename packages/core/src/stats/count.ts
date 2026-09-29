@@ -2,7 +2,7 @@
  * stat_count - Count occurrences of each x value
  */
 
-import type { DataSource, AestheticMapping } from '../types'
+import type { DataSource, AestheticMapping } from '@ggterm/spec/types'
 
 export interface StatCountParams {
   // No parameters needed for basic count

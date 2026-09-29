@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'bun:test'
 import { gg } from '../../grammar'
-import { geom_density } from '../../geoms/density'
+import { geom_density } from '@ggterm/spec/geoms/density'
 import { stat_density, computeDensity } from '../../stats/density'
 
 describe('geom_density', () => {

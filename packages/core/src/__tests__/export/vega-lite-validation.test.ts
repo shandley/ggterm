@@ -16,8 +16,8 @@
  */
 
 import { describe, expect, it } from 'bun:test'
-import { plotSpecToVegaLite, exportToVegaLiteJSON } from '../../export/vega-lite'
-import type { PlotSpec, Geom } from '../../types'
+import { plotSpecToVegaLite, exportToVegaLiteJSON } from '@ggterm/spec/export/vega-lite'
+import type { PlotSpec, Geom } from '@ggterm/spec/types'
 
 // Helper to create minimal PlotSpec
 function createSpec(overrides: Partial<PlotSpec> = {}): PlotSpec {

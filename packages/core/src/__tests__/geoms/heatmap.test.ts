@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { geom_heatmap, HeatmapOptions } from '../../geoms/heatmap'
+import { geom_heatmap, HeatmapOptions } from '@ggterm/spec/geoms/heatmap'
 import { gg } from '../../grammar'
 
 describe('geom_heatmap', () => {

@@ -7,7 +7,7 @@
  * - reverse: Reverse the order
  */
 
-import type { Scale } from '../types'
+import type { Scale } from '@ggterm/spec/types'
 
 /**
  * Ordering strategy for discrete scales

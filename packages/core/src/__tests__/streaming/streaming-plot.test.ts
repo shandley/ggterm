@@ -8,7 +8,7 @@ import {
   createStreamingPlot,
   createTimeSeriesPlot,
 } from '../../streaming/streaming-plot'
-import { geom_line, geom_point } from '../../geoms'
+import { geom_line, geom_point } from '@ggterm/spec/geoms'
 
 describe('StreamingPlot', () => {
   describe('initialization', () => {

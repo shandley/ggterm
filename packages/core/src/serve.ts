@@ -23,10 +23,10 @@ import {
   getGGTermDir,
   ensureHistoryDirs,
 } from './history'
-import { plotSpecToVegaLite } from './export'
+import { plotSpecToVegaLite } from '@ggterm/spec/export'
 import { ensureInit } from './init'
 import type { HistoricalPlot } from './history'
-import type { VegaLiteSpec } from './export'
+import type { VegaLiteSpec } from '@ggterm/spec/export'
 
 // Composite marks in Vega-Lite that don't support selection parameters
 const COMPOSITE_MARKS = new Set([

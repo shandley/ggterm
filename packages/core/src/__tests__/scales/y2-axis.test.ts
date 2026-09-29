@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'bun:test'
 import { gg } from '../../grammar'
-import { geom_line, geom_point } from '../../geoms'
+import { geom_line, geom_point } from '@ggterm/spec/geoms'
 import { renderToCanvas, calculateLayout, buildScaleContext } from '../../pipeline'
 import {
   scale_y2_continuous,
