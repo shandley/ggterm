@@ -153,7 +153,9 @@ console.log(plot.render({ width: 80, height: 24 }))
 
 If you use ggterm in published research, please cite this repository:
 
-> Handley SA, Droit LN, Johnson MR, Wang L. ggterm: Grammar of Graphics for Terminal-Based Data Visualization. https://github.com/shandley/ggterm (2026). A manuscript draft is available in [`paper/`](./paper/).
+> Handley SA, Droit LN, Johnson MR, Wang L. ggterm: Grammar of Graphics for Terminal-Based Data Visualization. https://github.com/shandley/ggterm (2026).
+
+Citation metadata is in [`CITATION.cff`](./CITATION.cff) (used by GitHub's "Cite this repository" button and by Zenodo). A manuscript draft is available in [`paper/`](./paper/).
 
 ## License
 

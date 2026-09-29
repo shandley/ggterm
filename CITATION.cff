@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "If you use ggterm in your research, please cite it using this metadata."
+title: "ggterm: Grammar of Graphics for Terminal-Based Data Visualization"
+type: software
+authors:
+  - family-names: Handley
+    given-names: Scott A.
+    orcid: "https://orcid.org/0000-0002-2143-6570"
+    affiliation: "Department of Pathology and Immunology, Washington University School of Medicine, St. Louis, MO, USA"
+  - family-names: Droit
+    given-names: Lindsay N.
+    orcid: "https://orcid.org/0000-0002-5771-1490"
+    affiliation: "Department of Pathology and Immunology, Washington University School of Medicine, St. Louis, MO, USA"
+  - family-names: Johnson
+    given-names: Megan R.
+    orcid: "https://orcid.org/0009-0009-2735-3272"
+    affiliation: "Department of Pathology and Immunology, Washington University School of Medicine, St. Louis, MO, USA"
+  - family-names: Wang
+    given-names: Leran
+    orcid: "https://orcid.org/0009-0003-6928-9893"
+    affiliation: "Department of Pathology and Immunology, Washington University School of Medicine, St. Louis, MO, USA"
+license: MIT
+repository-code: "https://github.com/shandley/ggterm"
+url: "https://github.com/shandley/ggterm"
+version: 0.3.14
+date-released: "2026-03-09"
+keywords:
+  - grammar-of-graphics
+  - data-visualization
+  - terminal
+  - vega-lite
+  - bioinformatics
+  - ai-agents
+abstract: >-
+  A Grammar of Graphics engine for the terminal, designed for AI coding
+  assistants. Every plot is a declarative, JSON-serializable PlotSpec
+  consumed by two backends: a terminal ASCII renderer and a Vega-Lite
+  converter for interactive, publication-quality output. Provides 66
+  geometry types including domain-specific visualizations for genomics
+  and clinical research (volcano, Kaplan-Meier, Manhattan, forest, ROC,
+  Bland-Altman), a live browser viewer, and integration skills for
+  Claude Code.
