@@ -1,0 +1,29 @@
+Title:
+Show HN: ggterm – Grammar of Graphics in the terminal, built for AI coding assistants
+
+URL: https://github.com/shandley/ggterm
+
+Top-level comment:
+
+Hey HN. I built ggterm because of a gap in AI-assisted workflows. Coding assistants like Claude Code and Codex are great at manipulating data in the terminal, but the moment you want to see something, you have to switch to R/Python/Jupyter, reload the data, and write plotting code in a different language. That breaks the conversational flow.
+
+ggterm is a Grammar of Graphics engine in TypeScript. Every plot is a declarative JSON spec (a PlotSpec) that gets rendered two ways: as terminal ASCII art for instant feedback, and as interactive Vega-Lite in a companion browser viewer for publication-quality output. 66 geometry types, 75 scales, faceting, themes.
+
+Try it in 30 seconds:
+
+  npx ggterm-plot setup
+  npx ggterm-plot iris sepal_length sepal_width species "Iris" point
+
+That works standalone, no AI needed. But if you're in Claude Code or another AI assistant, you can also say:
+
+  "Plot my data as a scatter plot, color by group"
+  "Add labels to the outliers"
+  "Style for Nature journal and export as SVG"
+
+Each step modifies the JSON spec and the viewer updates live via SSE. No code generated, no tool switching.
+
+It also includes domain-specific chart types for scientific work (volcano plots, Kaplan-Meier survival curves, Manhattan plots, forest plots, ROC curves) and built-in datasets so you can explore immediately. Works on HPC clusters too. It auto-detects SLURM/PBS compute nodes and prints the correct SSH tunnel command.
+
+The architecture is simple: PlotSpec (JSON) goes to two backends (terminal renderer, Vega-Lite exporter). Adding a new backend means implementing one function. The AI integration is 8 deterministic skill files, not a prompt chain. The assistant calls specific CLI commands rather than generating arbitrary plotting code.
+
+Happy to answer questions about the design or the Grammar of Graphics implementation.
